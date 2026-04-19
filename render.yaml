@@ -6,7 +6,6 @@ services:
     buildCommand: npm install
     startCommand: node src/index.js
     healthCheckPath: /health
-    ipAllowList: []
     envVars:
       - key: NODE_ENV
         value: production
@@ -25,8 +24,6 @@ services:
         sync: false
       - key: JWT_SECRET
         generateValue: true
-      - key: QUIDO_WEBHOOK_SECRET
-        generateValue: true
 
   - type: web
     name: nuqe-web
@@ -34,11 +31,6 @@ services:
     rootDir: web
     buildCommand: npm install && npm run build
     staticPublishPath: dist
-    ipAllowList: []
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
     envVars:
       - key: VITE_API_URL
         fromService:
@@ -50,10 +42,9 @@ services:
     name: nuqe-redis
     plan: starter
     maxmemoryPolicy: noeviction
-    ipAllowList: []
 
 databases:
   - name: nuqe-db
-    plan: starter
+    plan: basic
     databaseName: nuqe
     user: nuqe_user
