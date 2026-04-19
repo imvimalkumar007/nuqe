@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { pool } from '../db/pool.js';
 import { calculateDeadlines } from './deadlineEngine.js';
+import { retrieveContext } from './knowledgeLayer.js';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MODEL = 'claude-sonnet-4-6';
@@ -341,10 +342,26 @@ export async function draftResponse(caseId, communicationId) {
         customer: customerRows[0],
         ruleset: { jurisdiction, version, rules: allRules },
         timeline,
+        knowledge_context: [],
       };
     } finally {
       client.release();
     }
+  }
+
+  // Enrich with time-anchored knowledge context (as-at the case open date)
+  try {
+    const latestComm = context.timeline.at(-1);
+    const queryText = latestComm?.body_plain || latestComm?.subject || context.case.category || '';
+    if (queryText) {
+      context.knowledge_context = await retrieveContext(queryText, {
+        jurisdiction: context.customer.jurisdiction,
+        asAtDate:     context.case.opened_at,
+        limit:        4,
+      });
+    }
+  } catch {
+    // knowledge context is best-effort — never fail a draft over it
   }
 
   const inputText = JSON.stringify(context, null, 2);

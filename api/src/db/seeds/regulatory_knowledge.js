@@ -585,8 +585,8 @@ async function seed() {
       const result = await client.query(
         `INSERT INTO knowledge_chunks
            (namespace, jurisdiction, document_type, source_document, title,
-            chunk_text, confidence_tier, status, token_count)
-         VALUES ($1, $2, $3, $4, $5, $6, 'verified', 'active', $7)
+            chunk_text, confidence_tier, status, token_count, effective_from)
+         VALUES ($1, $2, $3, $4, $5, $6, 'verified', 'active', $7, '2024-01-01')
          ON CONFLICT (source_document, title) DO NOTHING`,
         [
           chunk.namespace,
@@ -606,6 +606,14 @@ async function seed() {
         console.log(`  – [${chunk.jurisdiction ?? 'global'}] ${chunk.title} (already present, skipped)`);
       }
     }
+
+    // Backfill effective_from for any previously seeded rows that lack it
+    await client.query(
+      `UPDATE knowledge_chunks
+       SET effective_from = '2024-01-01'
+       WHERE effective_from IS NULL
+         AND confidence_tier = 'verified'`
+    );
 
     await client.query('COMMIT');
     console.log(`\nDone. ${inserted} inserted, ${skipped} skipped.`);

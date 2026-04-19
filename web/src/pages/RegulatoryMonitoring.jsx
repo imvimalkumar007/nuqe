@@ -1,398 +1,442 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePendingActions } from '../context/PendingActionsContext';
-
-// ─── Brand tokens ─────────────────────────────────────────────────────────────
-const C = {
-  purple:  '#7C3AED',
-  surface: '#111318',
-  text:    '#E8EAF0',
-  muted:   '#6B7280',
-  ok:      '#10B981',
-  warn:    '#F59E0B',
-  danger:  '#EF4444',
-  border:  'rgba(255,255,255,0.07)',
-};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function relativeTime(iso) {
-  if (!iso) return 'never';
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1)  return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24)  return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
+function fmtDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('en-GB', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
 }
 
-function jurisdictionColour(j) {
-  if (j === 'UK') return { color: '#818CF8', background: 'rgba(129,140,248,0.12)', border: 'rgba(129,140,248,0.3)' };
-  if (j === 'IN') return { color: C.warn,    background: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.3)' };
-  if (j === 'EU') return { color: C.ok,      background: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)' };
-  return { color: C.muted, background: 'transparent', border: C.border };
+function fmtDateShort(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('en-GB', {
+    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+  });
 }
 
-// Compute overall health from sources array.
-// Returns 'green' | 'amber' | 'red' | 'unknown'
-function computeHealth(sources) {
-  const active = sources.filter((s) => s.is_active);
-  if (!active.length) return 'unknown';
-
-  let maxFactor = 0;
-  const now = Date.now();
-  for (const s of active) {
-    if (!s.last_checked_at) { maxFactor = Math.max(maxFactor, 5); continue; }
-    const freqMs  = (s.check_frequency_hours ?? 24) * 3_600_000;
-    const elapsed = now - new Date(s.last_checked_at).getTime();
-    maxFactor = Math.max(maxFactor, elapsed / freqMs);
-  }
-
-  if (maxFactor >= 4) return 'red';
-  if (maxFactor >= 2) return 'amber';
-  return 'green';
+function HealthDot({ status }) {
+  const colour =
+    status === 'ok' ? 'bg-emerald-400'
+    : status === 'amber' ? 'bg-amber-400'
+    : 'bg-red-400';
+  return <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${colour}`} />;
 }
 
-const HEALTH_LABEL = { green: 'All systems nominal', amber: 'Some sources overdue', red: 'Sources significantly overdue', unknown: 'No active sources' };
-const HEALTH_COLOUR = { green: C.ok, amber: C.warn, red: C.danger, unknown: C.muted };
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function JurisdictionBadge({ j }) {
-  const s = jurisdictionColour(j);
+function Badge({ children, colour = 'gray' }) {
+  const map = {
+    gray:   'bg-white/5 text-nuqe-muted',
+    amber:  'bg-amber-500/15 text-amber-400 border border-amber-500/25',
+    red:    'bg-red-500/15 text-red-400 border border-red-500/25',
+    green:  'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25',
+    purple: 'bg-nuqe-purple/15 text-nuqe-purple border border-nuqe-purple/25',
+    blue:   'bg-blue-500/15 text-blue-400 border border-blue-500/25',
+  };
   return (
-    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
-      style={{ color: s.color, background: s.background, borderColor: s.border }}>
-      {j ?? 'global'}
+    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${map[colour] ?? map.gray}`}>
+      {children}
     </span>
   );
 }
 
-function StatusDot({ isActive }) {
-  return (
-    <span className="inline-block w-2 h-2 rounded-full mr-1.5"
-      style={{ background: isActive ? C.ok : C.muted }} />
-  );
-}
+// ─── Review modal ─────────────────────────────────────────────────────────────
 
-function SectionHeader({ title }) {
-  return (
-    <p className="text-[10px] font-semibold uppercase tracking-widest mb-3"
-      style={{ color: C.muted }}>
-      {title}
-    </p>
-  );
-}
+function ReviewModal({ chunk, onClose, onDone }) {
+  const [submitting, setSubmitting] = useState(false);
 
-// Inline knowledge chunk reviewer
-function ChunkReviewer({ chunk, onDone }) {
-  const { refresh } = usePendingActions();
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState(null);
-
-  async function submit(status) {
-    setLoading(true);
-    setError(null);
+  async function handleDecision(decision) {
+    setSubmitting(true);
     try {
-      const res = await fetch(`/api/v1/knowledge-chunks/${chunk.id}/review`, {
-        method:  'PATCH',
+      await fetch(`/api/v1/knowledge-chunks/${chunk.id}/review`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ status, reviewer_id: 'staff-placeholder' }),
+        body: JSON.stringify({ status: decision === 'approve' ? 'active' : 'archived' }),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
-      refresh();
-      onDone(data);
-    } catch (err) {
-      setError(err.message);
+      onDone();
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   }
 
   return (
-    <div className="mt-3 rounded-md p-3 space-y-3"
-      style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${C.border}` }}>
-      <p className="text-xs leading-relaxed whitespace-pre-wrap line-clamp-8"
-        style={{ color: C.text }}>{chunk.chunk_text}</p>
-      {error && (
-        <p className="text-xs" style={{ color: C.danger }}>⚠ {error}</p>
-      )}
-      <div className="flex gap-2">
-        <button
-          onClick={() => submit('active')}
-          disabled={loading}
-          className="text-xs px-3 py-1.5 rounded-md border transition-colors disabled:opacity-40"
-          style={{ color: C.ok,     background: 'rgba(16,185,129,0.1)',  borderColor: 'rgba(16,185,129,0.3)' }}>
-          {loading ? '…' : 'Approve'}
-        </button>
-        <button
-          onClick={() => submit('archived')}
-          disabled={loading}
-          className="text-xs px-3 py-1.5 rounded-md border transition-colors disabled:opacity-40"
-          style={{ color: C.danger, background: 'rgba(239,68,68,0.1)',   borderColor: 'rgba(239,68,68,0.3)' }}>
-          Reject
-        </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="bg-nuqe-surface border border-white/10 rounded-xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl">
+        <div className="flex items-start justify-between px-5 py-4 border-b border-white/5">
+          <div>
+            <p className="text-sm font-semibold text-nuqe-text">{chunk.title}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge colour="gray">{chunk.jurisdiction ?? 'global'}</Badge>
+              <Badge colour="gray">{chunk.document_type}</Badge>
+              {chunk.source_name && <Badge colour="blue">{chunk.source_name}</Badge>}
+            </div>
+          </div>
+          <button onClick={onClose} className="text-nuqe-muted hover:text-nuqe-text ml-4 shrink-0">✕</button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-5 py-4">
+          <p className="text-xs text-nuqe-muted mb-1 uppercase tracking-widest">Chunk text</p>
+          <pre className="text-xs text-nuqe-text whitespace-pre-wrap leading-relaxed font-sans">
+            {chunk.chunk_text}
+          </pre>
+        </div>
+        <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-white/5">
+          <button
+            onClick={() => handleDecision('reject')}
+            disabled={submitting}
+            className="px-4 py-1.5 rounded-md text-sm bg-red-500/10 text-red-400 hover:bg-red-500/20 disabled:opacity-40"
+          >
+            Reject
+          </button>
+          <button
+            onClick={() => handleDecision('approve')}
+            disabled={submitting}
+            className="px-4 py-1.5 rounded-md text-sm bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-40"
+          >
+            {submitting ? 'Saving…' : 'Approve'}
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-// ─── Main page ────────────────────────────────────────────────────────────────
+// ─── Panel wrapper ────────────────────────────────────────────────────────────
+
+function Panel({ title, count, children }) {
+  return (
+    <div className="bg-nuqe-surface border border-white/5 rounded-xl flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+        <p className="text-xs font-semibold uppercase tracking-widest text-nuqe-muted">{title}</p>
+        {count != null && (
+          <span className="text-[10px] tabular-nums bg-white/5 text-nuqe-muted rounded px-1.5 py-0.5">
+            {count}
+          </span>
+        )}
+      </div>
+      <div className="flex-1 overflow-y-auto">{children}</div>
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function RegulatoryMonitoring() {
-  const [sources,           setSources]           = useState([]);
-  const [pendingChunks,     setPendingChunks]     = useState([]);
-  const [supersededChunks,  setSupersededChunks]  = useState([]);
-  const [loading,           setLoading]           = useState(true);
-  const [error,             setError]             = useState(null);
-  const [expandedChunkId,   setExpandedChunkId]   = useState(null);
-  const [togglingId,        setTogglingId]        = useState(null);
+  const { refresh: refreshPending } = usePendingActions();
+
+  const [sources,       setSources]      = useState([]);
+  const [pendingChunks, setPendingChunks] = useState([]);
+  const [recentChanges, setRecentChanges] = useState([]);
+  const [health,        setHealth]       = useState([]);
+  const [reviewTarget,  setReviewTarget] = useState(null);
+  const [loading,       setLoading]      = useState(true);
+  const mountedRef = useRef(true);
 
   const load = useCallback(async () => {
-    setError(null);
     try {
-      const [srcRes, pendRes, supRes] = await Promise.all([
+      const [sRes, cRes, rRes, hRes] = await Promise.all([
         fetch('/api/v1/regulatory/sources'),
-        fetch('/api/v1/knowledge-chunks?status=pending_review&limit=20'),
-        fetch('/api/v1/knowledge-chunks?status=superseded&days=30&limit=20'),
+        fetch('/api/v1/knowledge-chunks?status=pending_review&limit=100'),
+        fetch('/api/v1/regulatory/recent-changes?limit=50'),
+        fetch('/api/v1/regulatory/health'),
       ]);
-      if (!srcRes.ok)  throw new Error(`Sources: HTTP ${srcRes.status}`);
-      if (!pendRes.ok) throw new Error(`Chunks: HTTP ${pendRes.status}`);
-
-      setSources(await srcRes.json());
-      setPendingChunks(await pendRes.json());
-      setSupersededChunks(supRes.ok ? await supRes.json() : []);
-    } catch (err) {
-      setError(err.message);
+      if (!mountedRef.current) return;
+      if (sRes.ok) setSources(await sRes.json());
+      if (cRes.ok) setPendingChunks(await cRes.json());
+      if (rRes.ok) setRecentChanges(await rRes.json());
+      if (hRes.ok) setHealth(await hRes.json());
+    } catch {
+      // silently handle
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    mountedRef.current = true;
+    load();
+    return () => { mountedRef.current = false; };
+  }, [load]);
 
-  async function toggleSource(source) {
-    setTogglingId(source.id);
-    try {
-      const res = await fetch(`/api/v1/regulatory/sources/${source.id}`, {
-        method:  'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ is_active: !source.is_active }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const updated = await res.json();
-      setSources((prev) => prev.map((s) => (s.id === source.id ? { ...s, ...updated } : s)));
-    } catch (err) {
-      console.error('toggle failed:', err.message);
-    } finally {
-      setTogglingId(null);
-    }
+  const anyUnhealthy = health.some((h) => h.health_status !== 'ok');
+  const sourceMap = Object.fromEntries(sources.map((s) => [s.id, s]));
+
+  const juriHealth = ['UK', 'EU', 'IN'].map((jur) => {
+    const juriSources = health.filter((h) => h.jurisdiction === jur);
+    const worst = juriSources.some((h) => h.health_status === 'red') ? 'red'
+      : juriSources.some((h) => h.health_status === 'amber') ? 'amber'
+      : 'ok';
+    const totalDocs = juriSources.reduce((s, h) => s + (h.documents_ingested_last_30_days ?? 0), 0);
+    return { jur, worst, totalDocs, count: juriSources.length };
+  });
+
+  function handleReviewDone() {
+    setReviewTarget(null);
+    load();
+    refreshPending();
   }
 
-  async function triggerCheck(source) {
-    await fetch(`/api/v1/regulatory/sources/${source.id}/check`, { method: 'POST' });
+  async function triggerCheck(sourceId) {
+    await fetch(`/api/v1/regulatory/sources/${sourceId}/check`, { method: 'POST' });
   }
 
-  const health = computeHealth(sources);
-  const healthColor = HEALTH_COLOUR[health];
-
-  if (loading) return (
-    <div className="p-6 space-y-4 animate-pulse">
-      {[0,1,2].map((i) => <div key={i} className="h-24 rounded-lg" style={{ background: C.surface }} />)}
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full text-nuqe-muted text-sm">
+        Loading…
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 space-y-5 min-h-full">
-
-      {/* ── Page header ──────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
+    <div className="p-6 space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold" style={{ color: C.text }}>Regulatory Monitoring</h1>
-          <p className="text-xs mt-0.5" style={{ color: C.muted }}>
-            Automated source monitoring · knowledge base currency
+          <h1 className="text-lg font-semibold text-nuqe-text">Regulatory Monitoring</h1>
+          <p className="text-xs text-nuqe-muted mt-0.5">
+            Live knowledge base health, pending reviews, and change history
           </p>
         </div>
-
-        {/* Health indicator */}
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg"
-          style={{ background: C.surface, border: `1px solid ${C.border}` }}>
-          <span className="w-2 h-2 rounded-full" style={{ background: healthColor }} />
-          <span className="text-xs font-medium" style={{ color: healthColor }}>
-            {HEALTH_LABEL[health]}
-          </span>
-        </div>
+        <button
+          onClick={load}
+          className="text-xs px-3 py-1.5 rounded-md bg-white/5 text-nuqe-muted hover:text-nuqe-text hover:bg-white/10 transition-colors"
+        >
+          Refresh
+        </button>
       </div>
 
-      {error && (
-        <div className="rounded-lg p-4 text-sm" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: C.danger }}>
-          {error}
+      {/* Warning banner */}
+      {anyUnhealthy && (
+        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm">
+          <span>⚠</span>
+          <span>
+            One or more monitoring sources are overdue. Review the sources table and trigger a manual check if needed.
+          </span>
         </div>
       )}
 
-      {/* ── Sources table ─────────────────────────────────────────────────────── */}
-      <div className="rounded-lg overflow-hidden" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
-        <div className="px-5 pt-5 pb-3">
-          <SectionHeader title="Configured Sources" />
-        </div>
-        <table className="w-full text-xs">
-          <thead>
-            <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-              {['Source', 'Jurisdiction', 'Type', 'Last checked', 'This month', 'Status', ''].map((h) => (
-                <th key={h} className="px-5 py-2 text-left font-medium" style={{ color: C.muted }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {sources.map((src) => {
-              const overdueMs  = (src.check_frequency_hours ?? 24) * 3_600_000;
-              const elapsedMs  = src.last_checked_at ? Date.now() - new Date(src.last_checked_at).getTime() : Infinity;
-              const overdueX   = elapsedMs / overdueMs;
-              const rowColour  = overdueX >= 4 ? C.danger : overdueX >= 2 ? C.warn : C.text;
-
-              return (
-                <tr key={src.id} style={{ borderBottom: `1px solid ${C.border}` }}
-                  className="hover:bg-white/[0.02] transition-colors">
-                  <td className="px-5 py-3 font-medium" style={{ color: C.text }}>
-                    <div className="flex items-center">
-                      <StatusDot isActive={src.is_active} />
-                      {src.name}
-                    </div>
-                    {src.last_check_error && (
-                      <p className="text-[10px] mt-0.5 truncate max-w-[200px]" style={{ color: C.danger }}>
-                        {src.last_check_error}
-                      </p>
-                    )}
-                  </td>
-                  <td className="px-5 py-3"><JurisdictionBadge j={src.jurisdiction} /></td>
-                  <td className="px-5 py-3 font-mono uppercase" style={{ color: C.muted }}>{src.source_type}</td>
-                  <td className="px-5 py-3" style={{ color: rowColour }}>
-                    {relativeTime(src.last_checked_at)}
-                    <span className="ml-1 text-[10px]" style={{ color: C.muted }}>
-                      (every {src.check_frequency_hours}h)
-                    </span>
-                  </td>
-                  <td className="px-5 py-3" style={{ color: C.text }}>
-                    {src.ingested_this_month ?? 0}
-                  </td>
-                  <td className="px-5 py-3">
-                    <button
-                      onClick={() => toggleSource(src)}
-                      disabled={togglingId === src.id}
-                      className="text-[10px] px-2 py-0.5 rounded-full border transition-colors disabled:opacity-40"
-                      style={src.is_active
-                        ? { color: C.ok,   background: 'rgba(16,185,129,0.1)', borderColor: 'rgba(16,185,129,0.3)' }
-                        : { color: C.muted, background: 'transparent',         borderColor: C.border }}>
-                      {src.is_active ? 'Active' : 'Paused'}
-                    </button>
-                  </td>
-                  <td className="px-5 py-3">
-                    <button
-                      onClick={() => triggerCheck(src)}
-                      className="text-[10px] px-2 py-0.5 rounded-md border transition-colors"
-                      style={{ color: C.muted, borderColor: C.border }}
-                      title="Trigger immediate check">
-                      Check now
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-            {sources.length === 0 && (
-              <tr><td colSpan={7} className="px-5 py-8 text-center text-xs" style={{ color: C.muted }}>No sources configured.</td></tr>
-            )}
-          </tbody>
-        </table>
+      {/* Jurisdiction health cards */}
+      <div className="grid grid-cols-3 gap-4">
+        {juriHealth.map(({ jur, worst, totalDocs, count }) => (
+          <div key={jur} className="bg-nuqe-surface border border-white/5 rounded-xl px-4 py-3 flex items-center gap-3">
+            <HealthDot status={worst} />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-nuqe-text">{jur}</p>
+              <p className="text-[11px] text-nuqe-muted">
+                {count} source{count !== 1 ? 's' : ''} · {totalDocs} docs / 30 d
+              </p>
+            </div>
+            <Badge colour={worst === 'ok' ? 'green' : worst === 'amber' ? 'amber' : 'red'}>
+              {worst.toUpperCase()}
+            </Badge>
+          </div>
+        ))}
       </div>
 
-      {/* ── Bottom panels ─────────────────────────────────────────────────────── */}
-      <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(460px,1fr))' }}>
+      {/* 4-panel grid */}
+      <div className="grid grid-cols-2 gap-4" style={{ minHeight: 480 }}>
 
-        {/* Recent Ingestions */}
-        <div className="rounded-lg p-5" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
-          <SectionHeader title={`Recent Ingestions Awaiting Review (${pendingChunks.length})`} />
-
-          {pendingChunks.length === 0 ? (
-            <p className="text-xs py-8 text-center" style={{ color: C.muted }}>No pending chunks — knowledge base is current.</p>
-          ) : (
-            <div className="space-y-3">
-              {pendingChunks.map((chunk) => (
-                <div key={chunk.id} className="rounded-md p-3"
-                  style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${C.border}` }}>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium truncate" style={{ color: C.text }}>{chunk.title}</p>
-                      <p className="text-[10px] mt-0.5 truncate" style={{ color: C.muted }}>
-                        {chunk.source_name ?? chunk.source_document}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <JurisdictionBadge j={chunk.jurisdiction} />
-                      <button
-                        onClick={() => setExpandedChunkId((id) => id === chunk.id ? null : chunk.id)}
-                        className="text-[10px] px-2 py-0.5 rounded-md border transition-colors"
-                        style={{ color: C.purple, borderColor: 'rgba(124,58,237,0.3)', background: 'rgba(124,58,237,0.1)' }}>
-                        {expandedChunkId === chunk.id ? 'Collapse' : 'Review'}
-                      </button>
-                    </div>
-                  </div>
-
-                  <p className="text-[10px] mt-1" style={{ color: C.muted }}>
-                    {relativeTime(chunk.created_at)}
-                  </p>
-
-                  {expandedChunkId === chunk.id && (
-                    <ChunkReviewer
-                      chunk={chunk}
-                      onDone={() => {
-                        setExpandedChunkId(null);
-                        setPendingChunks((prev) => prev.filter((c) => c.id !== chunk.id));
-                      }}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Superseded Chunks */}
-        <div className="rounded-lg p-5" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
-          <SectionHeader title="Superseded Chunks (last 30 days)" />
-
-          {supersededChunks.length === 0 ? (
-            <p className="text-xs py-8 text-center" style={{ color: C.muted }}>No chunks superseded in the last 30 days.</p>
-          ) : (
-            <div className="space-y-3">
-              {supersededChunks.map((chunk) => (
-                <div key={chunk.id} className="rounded-md p-3"
-                  style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${C.border}`, opacity: 0.7 }}>
-                  <div className="flex items-start gap-2">
-                    <JurisdictionBadge j={chunk.jurisdiction} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs truncate" style={{ color: C.text }}>{chunk.title}</p>
-                      <p className="text-[10px] mt-0.5" style={{ color: C.muted }}>
-                        {chunk.source_document}
-                      </p>
-                      {chunk.superseded_by_title && (
-                        <p className="text-[10px] mt-1 flex items-center gap-1" style={{ color: C.warn }}>
-                          <span>→</span>
-                          <span className="truncate">Replaced by: {chunk.superseded_by_title}</span>
+        {/* Panel 1 — Sources */}
+        <Panel title="Monitored Sources" count={sources.length}>
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-left text-nuqe-muted border-b border-white/5">
+                <th className="px-4 py-2 font-medium">Source</th>
+                <th className="px-4 py-2 font-medium">Last check</th>
+                <th className="px-4 py-2 font-medium" />
+              </tr>
+            </thead>
+            <tbody>
+              {sources.map((s) => {
+                const h = health.find((x) => x.id === s.id);
+                return (
+                  <tr key={s.id} className="border-b border-white/5 hover:bg-white/[0.03]">
+                    <td className="px-4 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <HealthDot status={h?.health_status ?? 'ok'} />
+                        <div>
+                          <p className="text-nuqe-text font-medium leading-tight">{s.name}</p>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <Badge colour="gray">{s.jurisdiction}</Badge>
+                            <Badge colour="gray">{s.source_type}</Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-2.5 text-nuqe-muted whitespace-nowrap">
+                      {h?.last_check_at ? fmtDateShort(h.last_check_at) : '—'}
+                      {h?.last_check_error && (
+                        <p
+                          className="text-red-400 text-[10px] mt-0.5 truncate max-w-[130px]"
+                          title={h.last_check_error}
+                        >
+                          {h.last_check_error}
                         </p>
                       )}
-                      <p className="text-[10px] mt-0.5" style={{ color: C.muted }}>
-                        Superseded {relativeTime(chunk.effective_to)}
-                      </p>
+                    </td>
+                    <td className="px-4 py-2.5 text-right">
+                      <button
+                        onClick={() => triggerCheck(s.id)}
+                        className="text-[10px] px-2 py-1 rounded bg-white/5 text-nuqe-muted hover:text-nuqe-text"
+                      >
+                        Check
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+              {sources.length === 0 && (
+                <tr>
+                  <td colSpan={3} className="px-4 py-6 text-center text-nuqe-muted">
+                    No sources configured
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </Panel>
+
+        {/* Panel 2 — Pending Review */}
+        <Panel title="Pending Review" count={pendingChunks.length}>
+          {pendingChunks.length === 0 ? (
+            <div className="flex items-center justify-center h-full text-nuqe-muted text-xs py-10">
+              No chunks pending review
+            </div>
+          ) : (
+            <ul className="divide-y divide-white/5">
+              {pendingChunks.map((c) => {
+                const src = c.source_id ? sourceMap[c.source_id] : null;
+                return (
+                  <li key={c.id} className="px-4 py-3 hover:bg-white/[0.03]">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-nuqe-text truncate">{c.title}</p>
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                          <Badge colour="gray">{c.jurisdiction ?? 'global'}</Badge>
+                          <Badge colour="gray">{c.document_type}</Badge>
+                          {src && <Badge colour="blue">{src.name}</Badge>}
+                          <span className="text-nuqe-muted text-[10px]">{fmtDateShort(c.created_at)}</span>
+                        </div>
+                        <p className="text-[11px] text-nuqe-muted mt-1.5 line-clamp-2">
+                          {c.chunk_text?.slice(0, 200)}…
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setReviewTarget({ ...c, source_name: src?.name })}
+                        className="shrink-0 text-[10px] px-2.5 py-1.5 rounded-md bg-nuqe-purple/15 text-nuqe-purple hover:bg-nuqe-purple/25"
+                      >
+                        Review
+                      </button>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Panel>
+
+        {/* Panel 3 — Recent Changes timeline */}
+        <Panel title="Recent Changes" count={recentChanges.length}>
+          {recentChanges.length === 0 ? (
+            <div className="flex items-center justify-center h-full text-nuqe-muted text-xs py-10">
+              No changes in the last 30 days
+            </div>
+          ) : (
+            <div className="relative px-4 py-3">
+              <div className="absolute left-[27px] top-0 bottom-0 w-px bg-white/5" />
+              <ul className="space-y-4">
+                {recentChanges.map((entry) => {
+                  const actionColour = {
+                    approved:      'green',
+                    superseded:    'amber',
+                    rejected:      'red',
+                    auto_ingested: 'blue',
+                  }[entry.action] ?? 'gray';
+
+                  const actionIcon = {
+                    approved:      '✓',
+                    superseded:    '↻',
+                    rejected:      '✕',
+                    auto_ingested: '↓',
+                  }[entry.action] ?? '·';
+
+                  return (
+                    <li key={entry.id} className="flex gap-3 relative">
+                      <div className="w-7 h-7 rounded-full bg-nuqe-bg border border-white/10 flex items-center justify-center shrink-0 z-10">
+                        <span className="text-[9px]">{actionIcon}</span>
+                      </div>
+                      <div className="flex-1 min-w-0 pt-0.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <Badge colour={actionColour}>{entry.action.replace(/_/g, ' ')}</Badge>
+                          {entry.jurisdiction && <Badge colour="gray">{entry.jurisdiction}</Badge>}
+                        </div>
+                        <p className="text-xs text-nuqe-text mt-1 truncate">
+                          {entry.chunk_title ?? entry.entity_id}
+                        </p>
+                        <p className="text-[10px] text-nuqe-muted mt-0.5">{fmtDate(entry.created_at)}</p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           )}
-        </div>
+        </Panel>
+
+        {/* Panel 4 — Monitoring Health detail */}
+        <Panel title="Source Health Detail">
+          {health.length === 0 ? (
+            <div className="flex items-center justify-center h-full text-nuqe-muted text-xs py-10">
+              No health data
+            </div>
+          ) : (
+            <ul className="divide-y divide-white/5">
+              {health.map((h) => (
+                <li key={h.id} className="px-4 py-3">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <HealthDot status={h.health_status} />
+                    <p className="text-xs font-medium text-nuqe-text flex-1 truncate">{h.name}</p>
+                    <Badge
+                      colour={
+                        h.health_status === 'ok' ? 'green'
+                        : h.health_status === 'amber' ? 'amber'
+                        : 'red'
+                      }
+                    >
+                      {h.health_status.toUpperCase()}
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 text-[11px] text-nuqe-muted ml-4">
+                    <span>
+                      Last check:{' '}
+                      {h.hours_since_check != null ? `${h.hours_since_check}h ago` : 'Never'}
+                    </span>
+                    <span>Every {h.check_frequency_hours}h</span>
+                    <span>30-day docs: {h.documents_ingested_last_30_days}</span>
+                    {h.last_check_error && (
+                      <span className="text-red-400 col-span-2 truncate" title={h.last_check_error}>
+                        Error: {h.last_check_error}
+                      </span>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
 
       </div>
+
+      {/* Review modal */}
+      {reviewTarget && (
+        <ReviewModal
+          chunk={reviewTarget}
+          onClose={() => setReviewTarget(null)}
+          onDone={handleReviewDone}
+        />
+      )}
     </div>
   );
 }

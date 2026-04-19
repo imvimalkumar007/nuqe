@@ -1,11 +1,10 @@
 import { Router } from 'express';
 import { pool } from '../db/pool.js';
-import { checkSources } from '../engines/regulatoryMonitor.js';
+import { checkSources, getMonitoringHealth } from '../engines/regulatoryMonitor.js';
 
 const router = Router();
 
 // ─── GET /sources ─────────────────────────────────────────────────────────────
-// Returns all sources enriched with: last log entry, docs ingested this month.
 router.get('/sources', async (req, res) => {
   try {
     const { rows } = await pool.query(
@@ -38,8 +37,50 @@ router.get('/sources', async (req, res) => {
   }
 });
 
+// ─── GET /health ──────────────────────────────────────────────────────────────
+router.get('/health', async (req, res) => {
+  try {
+    const health = await getMonitoringHealth();
+    res.json(health);
+  } catch (err) {
+    console.error('[regulatory/health GET]', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── GET /recent-changes ──────────────────────────────────────────────────────
+// Returns audit_log entries for knowledge_chunk review/supersession in last 30 days.
+router.get('/recent-changes', async (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit ?? '50', 10), 200);
+  try {
+    const { rows } = await pool.query(
+      `SELECT
+         al.id,
+         al.entity_id,
+         al.action,
+         al.new_value,
+         al.created_at,
+         kc.title       AS chunk_title,
+         kc.jurisdiction,
+         kc.document_type,
+         kc.status      AS chunk_status
+       FROM audit_log al
+       LEFT JOIN knowledge_chunks kc ON kc.id = al.entity_id
+       WHERE al.entity_type = 'knowledge_chunk'
+         AND al.action IN ('auto_ingested', 'approved', 'rejected', 'superseded')
+         AND al.created_at >= NOW() - INTERVAL '30 days'
+       ORDER BY al.created_at DESC
+       LIMIT $1`,
+      [limit]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('[regulatory/recent-changes GET]', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ─── PATCH /sources/:id ───────────────────────────────────────────────────────
-// Toggle is_active or update check_frequency_hours.
 router.patch('/sources/:id', async (req, res) => {
   const { id } = req.params;
   const { is_active, check_frequency_hours } = req.body;
@@ -77,10 +118,8 @@ router.patch('/sources/:id', async (req, res) => {
 });
 
 // ─── POST /sources/:id/check ──────────────────────────────────────────────────
-// Manually trigger an immediate check for a single source.
 router.post('/sources/:id/check', async (req, res) => {
   const { id } = req.params;
-
   try {
     const { rows } = await pool.query(
       `SELECT jurisdiction FROM regulatory_sources WHERE id = $1 AND is_active = TRUE`,
@@ -88,7 +127,6 @@ router.post('/sources/:id/check', async (req, res) => {
     );
     if (!rows.length) return res.status(404).json({ error: 'Active source not found' });
 
-    // Run async — return immediately so the UI is not blocked
     setImmediate(() => {
       checkSources([rows[0].jurisdiction]).catch((err) =>
         console.error('[regulatory/sources/check]', err.message)

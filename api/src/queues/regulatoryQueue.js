@@ -15,48 +15,46 @@ const connection = {
   maxRetriesPerRequest: null,
 };
 
-const QUEUE_NAME = 'regulatory-monitor';
+function makeQueue(name) {
+  return new Queue(name, { connection });
+}
 
-export const regulatoryQueue = new Queue(QUEUE_NAME, { connection });
+function makeWorker(name, jurisdictions) {
+  const worker = new Worker(
+    name,
+    async () => { await checkSources(jurisdictions); },
+    { connection }
+  );
+  worker.on('completed', (job) => console.log(`[regulatoryQueue] ${name}/${job.name} completed`));
+  worker.on('failed', (job, err) => console.error(`[regulatoryQueue] ${name}/${job?.name} failed:`, err.message));
+  return worker;
+}
 
-export const regulatoryWorker = new Worker(
-  QUEUE_NAME,
-  async (job) => {
-    const { jurisdictions } = job.data ?? {};
-    await checkSources(jurisdictions ?? null);
-  },
-  { connection }
-);
+export const ukQueue  = makeQueue('regulatory-monitor-uk');
+export const euQueue  = makeQueue('regulatory-monitor-eu');
+export const inQueue  = makeQueue('regulatory-monitor-in');
 
-regulatoryWorker.on('completed', (job) => {
-  console.log(`[regulatoryQueue] ${job.name} completed`);
-});
-
-regulatoryWorker.on('failed', (job, err) => {
-  console.error(`[regulatoryQueue] ${job?.name} failed:`, err.message);
-});
+export const ukWorker = makeWorker('regulatory-monitor-uk',  ['UK']);
+export const euWorker = makeWorker('regulatory-monitor-eu',  ['EU']);
+export const inWorker = makeWorker('regulatory-monitor-in',  ['IN']);
 
 // Safe to call on every startup — BullMQ deduplicates repeatable jobs by jobId.
 export async function scheduleRegulatoryMonitor() {
-  // UK + EU: every 12 hours
-  await regulatoryQueue.add(
-    'check-uk-eu',
-    { jurisdictions: ['UK', 'EU'] },
-    {
-      repeat:  { every: 12 * 60 * 60 * 1000 },
-      jobId:   'regulatory-monitor-uk-eu',
-    }
+  await ukQueue.add(
+    'check-uk',
+    {},
+    { repeat: { every: 12 * 60 * 60 * 1000 }, jobId: 'regulatory-monitor-uk-repeat' }
   );
-
-  // India: every 24 hours
-  await regulatoryQueue.add(
+  await euQueue.add(
+    'check-eu',
+    {},
+    { repeat: { every: 12 * 60 * 60 * 1000 }, jobId: 'regulatory-monitor-eu-repeat' }
+  );
+  await inQueue.add(
     'check-in',
-    { jurisdictions: ['IN'] },
-    {
-      repeat:  { every: 24 * 60 * 60 * 1000 },
-      jobId:   'regulatory-monitor-in',
-    }
+    {},
+    { repeat: { every: 24 * 60 * 60 * 1000 }, jobId: 'regulatory-monitor-in-repeat' }
   );
 
-  console.log('[regulatoryQueue] scheduled: UK+EU every 12 h, IN every 24 h');
+  console.log('[regulatoryQueue] scheduled: UK every 12 h, EU every 12 h, IN every 24 h (separate queues)');
 }

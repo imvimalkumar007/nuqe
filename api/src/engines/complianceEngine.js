@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { pool } from '../db/pool.js';
+import { retrieveContext } from './knowledgeLayer.js';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MODEL = 'claude-sonnet-4-6';
@@ -253,6 +254,21 @@ export async function assessRulesetImpact(newRulesetVersion, jurisdiction) {
       (c) => casesDeadlineTypes.has(c.rule_type) || c.change === 'added'
     );
 
+    // Fetch time-anchored knowledge context for this case
+    let knowledgeContext = [];
+    try {
+      knowledgeContext = await retrieveContext(
+        relevantChanges.map((c) => c.rule_type).join(' '),
+        {
+          jurisdiction: kase.jurisdiction,
+          asAtDate:     kase.opened_at,
+          limit:        4,
+        }
+      );
+    } catch {
+      // best-effort — never fail an assessment over it
+    }
+
     const contextPayload = {
       case: {
         case_ref: kase.case_ref,
@@ -270,6 +286,7 @@ export async function assessRulesetImpact(newRulesetVersion, jurisdiction) {
       changes: relevantChanges,
       current_version: currentVersion,
       new_version: newRulesetVersion,
+      knowledge_context: knowledgeContext,
     };
 
     const inputText = JSON.stringify(contextPayload, null, 2);
