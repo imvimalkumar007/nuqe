@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"const c=require\\('crypto'\\);console.log\\(c.randomBytes\\(32\\).toString\\('hex'\\)\\)\")",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)",
+      "Bash(cmd.exe /c \"docker ps --format \\\\\"table {{.Names}}\\\\t{{.Status}}\\\\t{{.Ports}}\\\\\"\")",
+      "Bash(cmd.exe /c \"cd /d e:\\\\Nuqe && docker compose up -d postgres redis\")",
+      "Bash(cmd.exe /c \"docker info 2>&1 | head -5\")",
+      "Bash(node --input-type=module)",
+      "Bash(node --input-type=module --eval ' *)",
+      "Bash(git init *)",
+      "Bash(git commit -m ' *)"
+    ]
+  }
+}
