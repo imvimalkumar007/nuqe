@@ -1,5 +1,4 @@
 services:
-  # ── API service ────────────────────────────────────────────
   - type: web
     name: nuqe-api
     runtime: node
@@ -7,6 +6,7 @@ services:
     buildCommand: npm install
     startCommand: node src/index.js
     healthCheckPath: /health
+    ipAllowList: []
     envVars:
       - key: NODE_ENV
         value: production
@@ -22,17 +22,23 @@ services:
           type: redis
           property: connectionString
       - key: ANTHROPIC_API_KEY
-        sync: false          # You set this manually in Render dashboard
+        sync: false
       - key: JWT_SECRET
-        generateValue: true  # Render generates a secure value automatically
+        generateValue: true
+      - key: QUIDO_WEBHOOK_SECRET
+        generateValue: true
 
-  # ── Web frontend ───────────────────────────────────────────
   - type: web
     name: nuqe-web
     runtime: static
     rootDir: web
     buildCommand: npm install && npm run build
     staticPublishPath: dist
+    ipAllowList: []
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
     envVars:
       - key: VITE_API_URL
         fromService:
@@ -40,15 +46,14 @@ services:
           type: web
           property: host
 
-  # ── Redis ──────────────────────────────────────────────────
   - type: redis
     name: nuqe-redis
-    plan: free
+    plan: starter
     maxmemoryPolicy: noeviction
+    ipAllowList: []
 
 databases:
-  # ── PostgreSQL ─────────────────────────────────────────────
   - name: nuqe-db
-    plan: free
+    plan: starter
     databaseName: nuqe
     user: nuqe_user
