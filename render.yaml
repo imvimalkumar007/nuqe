@@ -42,9 +42,9 @@ services:
     name: nuqe-redis
     plan: starter
     maxmemoryPolicy: noeviction
+    ipAllowList: []
 
 databases:
   - name: nuqe-db
-    plan: basic
     databaseName: nuqe
     user: nuqe_user
