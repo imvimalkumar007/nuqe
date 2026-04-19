@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --nuqe-purple:       #7C3AED;
+  --nuqe-purple-light: #EDE9FE;
+  --nuqe-dark:         #1E1B4B;
+  --nuqe-bg:           #0A0C10;
+  --nuqe-surface:      #111318;
+  --nuqe-text:         #E8EAF0;
+  --nuqe-muted:        #6B7280;
+  --nuqe-danger:       #EF4444;
+  --nuqe-warn:         #F59E0B;
+  --nuqe-ok:           #10B981;
+  --nuqe-border:       rgba(255,255,255,0.07);
+}
+
+body {
+  background-color: var(--nuqe-bg);
+  color: var(--nuqe-text);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ─── Pending AI treatment ───────────────────────────────────────────────── */
+
+@keyframes pending-pulse {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 0.82; }
+}
+
+.pending-ai {
+  position: relative;
+  opacity: 0.6;
+  border: 1px solid var(--nuqe-border) !important;
+  animation: pending-pulse 2.8s ease-in-out infinite;
+}
+
+.pending-ai::after {
+  content: 'Pending review';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--nuqe-warn);
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 9999px;
+  padding: 3px 8px;
+  pointer-events: none;
+  z-index: 10;
+  white-space: nowrap;
+  letter-spacing: 0.03em;
+}
+
+/* ─── Thin scrollbar for sidebar and content panels ──────────────────────── */
+::-webkit-scrollbar        { width: 4px; height: 4px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: var(--nuqe-muted); border-radius: 2px; }
