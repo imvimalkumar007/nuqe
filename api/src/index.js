@@ -2,7 +2,8 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { pool } from './db/pool.js';
-import { scheduleDeadlineMonitor } from './queues/deadlineQueue.js';
+import { scheduleDeadlineMonitor }    from './queues/deadlineQueue.js';
+import { scheduleRegulatoryMonitor }  from './queues/regulatoryQueue.js';
 
 import casesRouter        from './routes/cases.js';
 import communicationsRouter from './routes/communications.js';
@@ -12,6 +13,8 @@ import aiRouter           from './routes/ai.js';
 import auditRouter        from './routes/audit.js';
 import metricsRouter      from './routes/metrics.js';
 import webhooksRouter     from './routes/webhooks.js';
+import knowledgeRouter    from './routes/knowledge.js';
+import regulatoryRouter   from './routes/regulatory.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -41,8 +44,11 @@ app.use('/api/v1/ai-actions',     aiRouter);
 app.use('/api/v1/audit',          auditRouter);
 app.use('/api/v1/metrics',        metricsRouter);
 app.use('/api/v1/webhooks',       webhooksRouter);
+app.use('/api/v1/knowledge-chunks', knowledgeRouter);
+app.use('/api/v1/regulatory',       regulatoryRouter);
 
 app.listen(PORT, async () => {
   console.log(`API listening on port ${PORT}`);
   await scheduleDeadlineMonitor();
+  await scheduleRegulatoryMonitor();
 });

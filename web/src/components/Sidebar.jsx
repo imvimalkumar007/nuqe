@@ -21,9 +21,10 @@ const NAV = [
   {
     group: 'Compliance',
     items: [
-      { label: 'Consumer Duty', to: '/consumer-duty', icon: <IconShield /> },
-      { label: 'Audit trail',   to: '/audit-trail',   icon: <IconClock /> },
-      { label: 'Reg updates',   to: '/reg-updates',   icon: <IconBell /> },
+      { label: 'Consumer Duty',   to: '/consumer-duty',         icon: <IconShield /> },
+      { label: 'Audit trail',     to: '/audit-trail',           icon: <IconClock /> },
+      { label: 'Reg updates',     to: '/reg-updates',           icon: <IconBell /> },
+      { label: 'Reg monitoring',  to: '/regulatory-monitoring', icon: <IconRadar /> },
     ],
   },
   {
@@ -36,13 +37,14 @@ const NAV = [
 
 // Routes that should show the pending AI actions badge, mapped to the
 // total pending count. Add more route→count mappings here as pages mature.
-function badgeFor(to, pendingCount) {
-  if (to === '/complaints' && pendingCount > 0) return pendingCount;
+function badgeFor(to, pendingCount, pendingChunksCount) {
+  if (to === '/complaints'            && pendingCount       > 0) return pendingCount;
+  if (to === '/regulatory-monitoring' && pendingChunksCount > 0) return pendingChunksCount;
   return null;
 }
 
 export default function Sidebar() {
-  const { pendingCount } = usePendingActions();
+  const { pendingCount, pendingChunksCount } = usePendingActions();
   return (
     <aside className="flex flex-col w-56 shrink-0 h-screen bg-nuqe-surface border-r border-white/5 overflow-y-auto">
       {/* Wordmark */}
@@ -65,7 +67,7 @@ export default function Sidebar() {
             </p>
             <ul className="space-y-0.5">
               {items.map(({ label, to, icon }) => {
-                const badge = badgeFor(to, pendingCount);
+                const badge = badgeFor(to, pendingCount, pendingChunksCount);
                 return (
                   <li key={to}>
                     <NavLink
@@ -175,6 +177,15 @@ function IconChart() {
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
       <path d="M2 12V7l3-3 3 3 3-4v9" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M2 12h12" strokeLinecap="round" />
+    </svg>
+  );
+}
+function IconRadar() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="8" cy="8" r="5.5" />
+      <circle cx="8" cy="8" r="2.5" />
+      <path d="M8 8L11.5 4.5" strokeLinecap="round" />
     </svg>
   );
 }

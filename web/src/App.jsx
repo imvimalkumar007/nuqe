@@ -11,7 +11,8 @@ import PostalQueue  from './pages/PostalQueue';
 import ConsumerDuty from './pages/ConsumerDuty';
 import AuditTrail   from './pages/AuditTrail';
 import RegUpdates        from './pages/RegUpdates';
-import MetricsDashboard  from './pages/MetricsDashboard';
+import MetricsDashboard        from './pages/MetricsDashboard';
+import RegulatoryMonitoring    from './pages/RegulatoryMonitoring';
 
 export default function App() {
   return (
@@ -32,7 +33,8 @@ export default function App() {
             <Route path="/consumer-duty" element={<ConsumerDuty />} />
             <Route path="/audit-trail"  element={<AuditTrail />} />
             <Route path="/reg-updates"  element={<RegUpdates />} />
-            <Route path="/analytics"    element={<MetricsDashboard />} />
+            <Route path="/analytics"              element={<MetricsDashboard />} />
+            <Route path="/regulatory-monitoring" element={<RegulatoryMonitoring />} />
           </Routes>
         </main>
       </div>
