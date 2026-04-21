@@ -15,6 +15,7 @@ import RegulatoryMonitoring          from './pages/RegulatoryMonitoring';
 import CaseView                      from './components/CaseView';
 import AnalyticsDashboard            from './components/AnalyticsDashboard';
 import RegulatoryMonitoringScreen    from './components/RegulatoryMonitoringScreen';
+import SettingsScreen                from './components/SettingsScreen';
 
 export default function App() {
   return (
@@ -39,6 +40,7 @@ export default function App() {
             <Route path="/analytics"              element={<AnalyticsDashboard />} />
             <Route path="/regulatory-monitoring"          element={<RegulatoryMonitoring />} />
             <Route path="/compliance/regulatory-monitoring" element={<RegulatoryMonitoringScreen />} />
+            <Route path="/settings"                         element={<SettingsScreen />} />
           </Routes>
         </main>
       </div>
