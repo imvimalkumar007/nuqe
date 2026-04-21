@@ -13,8 +13,9 @@ import aiRouter           from './routes/ai.js';
 import auditRouter        from './routes/audit.js';
 import metricsRouter      from './routes/metrics.js';
 import webhooksRouter     from './routes/webhooks.js';
-import knowledgeRouter    from './routes/knowledge.js';
-import regulatoryRouter   from './routes/regulatory.js';
+import knowledgeRouter            from './routes/knowledge.js';
+import knowledgeMonitoringRouter  from './routes/knowledgeMonitoring.js';
+import regulatoryRouter           from './routes/regulatory.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -45,6 +46,7 @@ app.use('/api/v1/audit',          auditRouter);
 app.use('/api/v1/metrics',        metricsRouter);
 app.use('/api/v1/webhooks',       webhooksRouter);
 app.use('/api/v1/knowledge-chunks', knowledgeRouter);
+app.use('/api/v1/knowledge',        knowledgeMonitoringRouter);
 app.use('/api/v1/regulatory',       regulatoryRouter);
 
 app.listen(PORT, async () => {
