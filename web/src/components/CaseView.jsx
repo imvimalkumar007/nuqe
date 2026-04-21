@@ -1,146 +1,103 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useMemo } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { useCase }           from '../hooks/useCase';
+import { useCommunications } from '../hooks/useCommunications';
+import { useAiActions }      from '../hooks/useAiActions';
+import client                from '../api/client';
+import ErrorBanner           from './shared/ErrorBanner';
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
+// ─── Data normalisers (API snake_case ↔ component camelCase) ─────────────────
 
-const CASE = {
-  id:              'COMP-2024-0041',
-  customer:        { name: 'Sarah Mitchell', ref: 'ACC-88412', loanRef: 'LN-2023-55821', vulnerableFlag: true },
-  category:        'Irresponsible lending',
-  jurisdiction:    'UK / FCA',
-  status:          'breach_risk',
-  handler:         'James Elliot',
-  openedAt:        '14 Feb 2024, 09:22',
-  channelReceived: 'Email',
-  notes:           'Customer disclosed financial distress and health impact during live chat (01 Mar). Vulnerability protocol applied. Affordability assessment under review by compliance — do not close without senior sign-off.',
-  milestones: [
-    {
-      id:        'm1',
-      label:     'Acknowledge by',
-      rule:      'DISP 1.6.1',
-      dueDate:   '17 Feb 2024',
-      status:    'met',
-      metDate:   '15 Feb 2024',
-      daysLeft:  null,
-      daysTotal: null,
-      note:      null,
-    },
-    {
-      id:        'm2',
-      label:     'Final response by',
-      rule:      'DISP 1.6.2',
-      dueDate:   '10 Apr 2024',
-      status:    'pending',
-      metDate:   null,
-      daysLeft:  1,
-      daysTotal: 56,
-      note:      null,
-    },
-    {
-      id:        'm3',
-      label:     'FOS referral eligible',
-      rule:      'DISP 2.8',
-      dueDate:   '10 Apr 2024',
-      status:    'pending',
-      metDate:   null,
-      daysLeft:  1,
-      daysTotal: null,
-      note:      'Eligible if no final response by deadline',
-    },
-  ],
-  aiActions: [
-    {
-      id:         'ai-1',
-      type:       'complaint_classification',
-      status:     'approved',
-      model:      'claude-sonnet-4-6',
-      confidence: 0.94,
-      summary:    'Classified as complaint. Explicit dissatisfaction with lending decision; financial harm alleged.',
-      createdAt:  '14 Feb 2024, 09:25',
-    },
-    {
-      id:         'ai-2',
-      type:       'implicit_complaint_detection',
-      status:     'approved',
-      model:      'claude-sonnet-4-6',
-      confidence: 0.88,
-      summary:    'Vulnerability signals detected in live chat: financial distress, health impact, FOS escalation intent.',
-      createdAt:  '01 Mar 2024, 11:17',
-    },
-    {
-      id:         'ai-3',
-      type:       'response_draft',
-      status:     'pending',
-      model:      'claude-sonnet-4-6',
-      confidence: 0.91,
-      summary:    'Final response draft generated. Complaint upheld. Redress: £1,247.80 refund + balance write-off.',
-      createdAt:  '09 Apr 2024, 16:03',
-    },
-  ],
-};
+function fmtTime(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('en-GB', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+}
 
-const INITIAL_COMMS = [
-  {
-    id:        'c1',
-    direction: 'inbound',
-    channel:   'email',
-    sender:    'Sarah Mitchell',
-    time:      '14 Feb 2024, 09:22',
-    subject:   'Complaint regarding loan approval — Ref LN-2023-55821',
-    body:      'Dear Meridian Digital Finance,\n\nI am writing to formally complain about the loan I was approved for in August 2023 (reference LN-2023-55821). At the time of application, I clearly stated that my income was £1,400 per month after tax. The monthly repayment of £340 represents nearly 25% of my take-home pay and I am now struggling significantly.\n\nI do not believe an adequate affordability assessment was carried out. I have missed two payments and incurred additional charges as a result. I am requesting a full review of how this lending decision was made and appropriate redress.\n\nYours sincerely,\nSarah Mitchell',
-    state:     'normal',
-    aiModel:   null,
-    confidence: null,
-  },
-  {
-    id:        'c2',
-    direction: 'outbound',
-    channel:   'email',
-    sender:    'James Elliot',
-    time:      '15 Feb 2024, 14:30',
-    subject:   'Re: Your complaint — Ref COMP-2024-0041',
-    body:      'Dear Ms Mitchell,\n\nThank you for contacting us. We have received and registered your complaint under reference COMP-2024-0041.\n\nYour complaint will be handled by our specialist team. We aim to provide a full response within 8 weeks in line with DISP 1.6 of the FCA Dispute Resolution Sourcebook. If we are unable to do so, we will write to you with an update and a revised timescale.\n\nIf you are experiencing financial difficulty in the meantime, please do not hesitate to contact us to discuss your options.\n\nYours sincerely,\nJames Elliot\nComplaints Handler',
-    state:     'normal',
-    aiModel:   null,
-    confidence: null,
-  },
-  {
-    id:        'c3',
-    direction: 'inbound',
-    channel:   'chat',
-    sender:    'Sarah Mitchell',
-    time:      '01 Mar 2024, 11:15',
-    subject:   null,
-    body:      "Hi — I sent a formal complaint about my loan three weeks ago and haven't heard anything other than the initial acknowledgement. I'm really struggling financially and the stress is starting to affect my health. Is there any update on my case? I'm seriously considering going to the financial ombudsman if I don't hear something more concrete soon.",
-    state:     'normal',
-    aiModel:   null,
-    confidence: null,
-  },
-  {
-    id:        'c4',
-    direction: 'outbound',
-    channel:   'email',
-    sender:    'James Elliot',
-    time:      '02 Mar 2024, 09:45',
-    subject:   'Update on your complaint COMP-2024-0041',
-    body:      'Dear Ms Mitchell,\n\nThank you for getting in touch. We can confirm your complaint is under active investigation. Our team is reviewing the affordability assessment process applied to your application and is taking your concerns very seriously.\n\nWe anticipate being in a position to provide our full response by 10 April 2024. Should we require further information in the meantime, we will contact you promptly.\n\nWe understand this has been a stressful experience and we appreciate your patience.\n\nYours sincerely,\nJames Elliot',
-    state:     'normal',
-    aiModel:   null,
-    confidence: null,
-  },
-  {
-    id:         'c5',
-    direction:  'outbound',
-    channel:    'email',
-    sender:     'AI Draft',
-    time:       '09 Apr 2024, 16:03',
-    subject:    'Final response to your complaint — COMP-2024-0041',
-    body:       'Dear Ms Mitchell,\n\nWe write with our final response to your complaint of 14 February 2024 (reference COMP-2024-0041).\n\nHaving reviewed your case in full, including the original affordability assessment and your account history, we uphold your complaint. Our investigation found that the assessment did not adequately account for your stated income relative to your financial commitments, and did not meet the standards required under CONC 7 of the FCA Consumer Credit Sourcebook.\n\nAs redress, we will:\n\n1. Refund all interest and charges paid to date: £1,247.80\n2. Write off the outstanding balance in full\n3. Notify credit reference agencies to remove any adverse entries related to this account\n\nWe are sorry for the distress this has caused. A separate letter confirming these steps will follow within 5 business days.\n\nIf you are not satisfied with this response, you have the right to refer your complaint to the Financial Ombudsman Service (FOS) within 6 months. Contact FOS at www.financial-ombudsman.org.uk or 0800 023 4567 (free of charge).\n\nYours sincerely,\n[Pending handler approval]',
-    state:      'pending_ai',
-    aiModel:    'claude-sonnet-4-6',
-    confidence: 0.91,
-  },
-];
+function normalizeMilestone(raw, idx) {
+  return {
+    id:        raw.id        ?? `m${idx}`,
+    label:     raw.label     ?? raw.milestone_type ?? '—',
+    rule:      raw.rule      ?? raw.ruleset_ref    ?? '',
+    dueDate:   raw.due_date  ? fmtTime(raw.due_date)  : (raw.dueDate  ?? '—'),
+    status:    raw.status    ?? 'pending',
+    metDate:   raw.met_date  ? fmtTime(raw.met_date)  : (raw.metDate  ?? null),
+    daysLeft:  raw.days_left  ?? raw.daysLeft  ?? null,
+    daysTotal: raw.days_total ?? raw.daysTotal ?? null,
+    note:      raw.note      ?? null,
+  };
+}
+
+function normalizeCase(raw) {
+  if (!raw) return null;
+  return {
+    id:           raw.id,
+    customer: {
+      name:          raw.customer_name ?? raw.customer?.name ?? '—',
+      ref:           raw.customer_ref  ?? raw.account_ref   ?? raw.customer?.ref   ?? '—',
+      loanRef:       raw.loan_ref      ?? raw.customer?.loanRef ?? '—',
+      vulnerableFlag: raw.vulnerable_flag ?? raw.customer?.vulnerableFlag ?? false,
+    },
+    category:        raw.category        ?? raw.issue          ?? '—',
+    jurisdiction:    raw.jurisdiction    ?? 'UK / FCA',
+    status:          raw.status          ?? 'open',
+    handler:         raw.handler         ?? raw.assigned_handler ?? '—',
+    openedAt:        raw.opened_at ? fmtTime(raw.opened_at) : (raw.openedAt ?? '—'),
+    channelReceived: raw.channel_received ?? raw.channelReceived ?? '—',
+    notes:           raw.notes           ?? '',
+    milestones:      (raw.milestones ?? []).map(normalizeMilestone),
+  };
+}
+
+function normalizeAiAction(raw) {
+  return {
+    id:         raw.id,
+    type:       raw.action_type ?? raw.type       ?? '',
+    status:     raw.status      ?? 'pending',
+    model:      raw.ai_model    ?? raw.model       ?? '—',
+    confidence: raw.confidence  ?? 0,
+    summary:    raw.ai_output   ?? raw.summary     ?? '',
+    createdAt:  raw.created_at ? fmtTime(raw.created_at) : (raw.createdAt ?? '—'),
+  };
+}
+
+function normalizeComm(raw, normalizedActions) {
+  // Derive pending/approved/rejected state by cross-referencing ai_actions
+  let state = raw.state ?? 'normal';
+  const aiActionId = raw.ai_action_id ?? raw.aiActionId ?? null;
+
+  if (raw.ai_generated || raw.aiGenerated) {
+    const linked = aiActionId
+      ? normalizedActions.find((a) => a.id === aiActionId)
+      : normalizedActions.find((a) => a.type === 'response_draft');
+
+    if (linked) {
+      if (linked.status === 'pending')  state = 'pending_ai';
+      else if (linked.status === 'approved') state = 'approved_ai';
+      else if (linked.status === 'rejected') state = 'rejected_ai';
+    }
+  }
+
+  return {
+    id:          raw.id,
+    direction:   raw.direction,
+    channel:     raw.channel,
+    sender:      raw.author_name   ?? raw.sender ?? (raw.direction === 'inbound' ? 'Customer' : 'Staff'),
+    time:        raw.sent_at ? fmtTime(raw.sent_at) : (raw.time ?? '—'),
+    subject:     raw.subject       ?? null,
+    body:        raw.body_plain    ?? raw.body ?? '',
+    state,
+    aiModel:     raw.ai_model      ?? raw.aiModel      ?? null,
+    confidence:  raw.confidence    ?? null,
+    aiActionId,
+  };
+}
+
+function getReviewerId() {
+  return localStorage.getItem('userId') ?? 'reviewer';
+}
 
 // ─── Channel icons ────────────────────────────────────────────────────────────
 
@@ -181,10 +138,10 @@ function ChannelIcon({ channel }) {
 
 function MilestoneItem({ milestone: m }) {
   const cfg = {
-    met:     { icon: '✓', colour: 'text-nuqe-ok',     bar: 'bg-nuqe-ok',     desc: `Met ${m.metDate}` },
-    pending: { icon: '◐', colour: 'text-nuqe-warn',   bar: 'bg-nuqe-warn',   desc: `${m.daysLeft} day${m.daysLeft !== 1 ? 's' : ''} remaining` },
-    breached:{ icon: '!', colour: 'text-nuqe-danger',  bar: 'bg-nuqe-danger', desc: `${Math.abs(m.daysLeft)} days overdue` },
-  }[m.status];
+    met:     { icon: '✓', colour: 'text-nuqe-ok',    bar: 'bg-nuqe-ok',    desc: `Met ${m.metDate}`                         },
+    pending: { icon: '◐', colour: 'text-nuqe-warn',  bar: 'bg-nuqe-warn',  desc: `${m.daysLeft} day${m.daysLeft !== 1 ? 's' : ''} remaining` },
+    breached:{ icon: '!', colour: 'text-nuqe-danger', bar: 'bg-nuqe-danger',desc: `${Math.abs(m.daysLeft)} days overdue`      },
+  }[m.status] ?? { icon: '◐', colour: 'text-nuqe-muted', bar: 'bg-nuqe-muted', desc: '—' };
 
   const pct = m.daysTotal
     ? Math.min(100, ((m.daysTotal - (m.daysLeft ?? 0)) / m.daysTotal) * 100)
@@ -215,7 +172,7 @@ function MilestoneItem({ milestone: m }) {
 
 const PREVIEW = 340;
 
-function CommCard({ comm, expanded, onToggle, onApprove, onReject, onEdit }) {
+function CommCard({ comm, expanded, onToggle, onApprove, onReject, onEdit, submitting }) {
   const isPending  = comm.state === 'pending_ai';
   const isApproved = comm.state === 'approved_ai';
   const isRejected = comm.state === 'rejected_ai';
@@ -265,7 +222,7 @@ function CommCard({ comm, expanded, onToggle, onApprove, onReject, onEdit }) {
               {comm.aiModel && (
                 <span className="text-[10px] font-mono text-nuqe-muted">{comm.aiModel}</span>
               )}
-              {comm.confidence && (
+              {comm.confidence != null && (
                 <span className="text-[10px] text-nuqe-muted">{Math.round(comm.confidence * 100)}% confidence</span>
               )}
             </div>
@@ -295,10 +252,7 @@ function CommCard({ comm, expanded, onToggle, onApprove, onReject, onEdit }) {
           {bodyText}
         </pre>
         {isLong && (
-          <button
-            onClick={onToggle}
-            className="mt-2 text-[11px] text-nuqe-purple hover:underline"
-          >
+          <button onClick={onToggle} className="mt-2 text-[11px] text-nuqe-purple hover:underline">
             {expanded ? 'Show less' : 'Show more'}
           </button>
         )}
@@ -309,24 +263,54 @@ function CommCard({ comm, expanded, onToggle, onApprove, onReject, onEdit }) {
         <div className="flex items-center gap-2 px-4 py-3 border-t border-white/5 bg-nuqe-bg/50">
           <button
             onClick={onApprove}
-            className="px-3 py-1.5 text-xs font-medium rounded border border-nuqe-ok/30 bg-nuqe-ok/10 text-nuqe-ok hover:bg-nuqe-ok/20 transition-colors"
+            disabled={submitting}
+            className="px-3 py-1.5 text-xs font-medium rounded border border-nuqe-ok/30 bg-nuqe-ok/10 text-nuqe-ok hover:bg-nuqe-ok/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Approve
+            {submitting === 'approve' ? 'Approving…' : 'Approve'}
           </button>
           <button
             onClick={onEdit}
-            className="px-3 py-1.5 text-xs font-medium rounded border border-nuqe-purple/30 bg-nuqe-purple/10 text-nuqe-purple hover:bg-nuqe-purple/20 transition-colors"
+            disabled={submitting}
+            className="px-3 py-1.5 text-xs font-medium rounded border border-nuqe-purple/30 bg-nuqe-purple/10 text-nuqe-purple hover:bg-nuqe-purple/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Edit &amp; Approve
           </button>
           <button
             onClick={onReject}
-            className="px-3 py-1.5 text-xs font-medium rounded border border-nuqe-danger/30 bg-nuqe-danger/10 text-nuqe-danger hover:bg-nuqe-danger/20 transition-colors ml-auto"
+            disabled={submitting}
+            className="px-3 py-1.5 text-xs font-medium rounded border border-nuqe-danger/30 bg-nuqe-danger/10 text-nuqe-danger hover:bg-nuqe-danger/20 transition-colors ml-auto disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Reject
+            {submitting === 'reject' ? 'Rejecting…' : 'Reject'}
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Timeline loading skeleton ────────────────────────────────────────────────
+
+function TimelineSkeleton() {
+  return (
+    <div className="space-y-3">
+      {[1, 0.75, 0.55].map((opacity, i) => (
+        <div
+          key={i}
+          className="rounded-lg border border-white/5 overflow-hidden bg-nuqe-surface"
+          style={{ opacity, animation: 'skeleton-pulse 1.6s ease-in-out infinite' }}
+        >
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-white/5 bg-white/[0.02]">
+            <div className="w-3.5 h-3.5 rounded" style={{ background: 'rgba(255,255,255,0.08)' }} />
+            <div className="h-3 w-28 rounded"   style={{ background: 'rgba(255,255,255,0.08)' }} />
+            <div className="h-3 w-16 rounded ml-auto" style={{ background: 'rgba(255,255,255,0.06)' }} />
+          </div>
+          <div className="px-4 py-3 space-y-1.5">
+            <div className="h-2.5 w-full rounded" style={{ background: 'rgba(255,255,255,0.06)' }} />
+            <div className="h-2.5 w-4/5 rounded" style={{ background: 'rgba(255,255,255,0.05)' }} />
+            <div className="h-2.5 w-2/3 rounded" style={{ background: 'rgba(255,255,255,0.04)' }} />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -344,18 +328,17 @@ function DetailRow({ label, value, mono, accent }) {
 
 function DetailsTab({ caseData }) {
   const [notes, setNotes] = useState(caseData.notes);
-
   return (
     <div className="space-y-5">
-      <DetailRow label="Assigned handler"  value={caseData.handler} />
-      <DetailRow label="Date opened"       value={caseData.openedAt} />
+      <DetailRow label="Assigned handler"  value={caseData.handler}         />
+      <DetailRow label="Date opened"       value={caseData.openedAt}        />
       <DetailRow label="Channel received"  value={caseData.channelReceived} />
       <DetailRow
         label="Vulnerability"
         value={caseData.customer.vulnerableFlag ? '⚠ Flagged' : 'Not flagged'}
         accent={caseData.customer.vulnerableFlag ? 'text-amber-400 font-medium' : 'text-nuqe-muted'}
       />
-      <DetailRow label="Loan reference"    value={caseData.customer.loanRef} mono />
+      <DetailRow label="Loan reference" value={caseData.customer.loanRef} mono />
 
       <div>
         <p className="text-[10px] font-semibold uppercase tracking-widest text-nuqe-muted mb-2">
@@ -375,26 +358,29 @@ function DetailsTab({ caseData }) {
   );
 }
 
-// ─── Right panel — AI actions tab ─────────────────────────────────────────────
+// ─── Right panel — AI actions tab ────────────────────────────────────────────
 
 const AI_TYPE_LABELS = {
-  complaint_classification:    'Classification',
-  implicit_complaint_detection:'Implicit detect',
-  response_draft:              'Response draft',
-  ruleset_impact_assessment:   'Ruleset impact',
+  complaint_classification:     'Classification',
+  implicit_complaint_detection: 'Implicit detect',
+  response_draft:               'Response draft',
+  ruleset_impact_assessment:    'Ruleset impact',
 };
 
 const AI_STATUS_CFG = {
-  pending:  { cls: 'text-nuqe-warn    border-nuqe-warn/30    bg-nuqe-warn/10',    label: 'Pending'  },
-  approved: { cls: 'text-nuqe-ok      border-nuqe-ok/30      bg-nuqe-ok/10',      label: 'Approved' },
-  rejected: { cls: 'text-nuqe-danger  border-nuqe-danger/30  bg-nuqe-danger/10',  label: 'Rejected' },
+  pending:  { cls: 'text-nuqe-warn   border-nuqe-warn/30   bg-nuqe-warn/10',   label: 'Pending'  },
+  approved: { cls: 'text-nuqe-ok     border-nuqe-ok/30     bg-nuqe-ok/10',     label: 'Approved' },
+  rejected: { cls: 'text-nuqe-danger border-nuqe-danger/30 bg-nuqe-danger/10', label: 'Rejected' },
 };
 
 function AiActionsTab({ actions }) {
+  if (!actions.length) {
+    return <p className="text-xs text-nuqe-muted">No AI actions recorded for this case.</p>;
+  }
   return (
     <div className="space-y-3">
       {actions.map((a) => {
-        const statusCfg = AI_STATUS_CFG[a.status];
+        const statusCfg = AI_STATUS_CFG[a.status] ?? AI_STATUS_CFG.pending;
         return (
           <div key={a.id} className="rounded-lg border border-white/5 bg-nuqe-bg/40 p-3 space-y-2">
             <div className="flex items-center justify-between gap-2">
@@ -405,9 +391,7 @@ function AiActionsTab({ actions }) {
                 {statusCfg.label}
               </span>
             </div>
-
             <p className="text-[11px] text-nuqe-muted leading-snug">{a.summary}</p>
-
             <div className="flex items-center gap-3 text-[10px] text-nuqe-muted">
               <span className="font-mono">{a.model}</span>
               <span className="tabular-nums">{Math.round(a.confidence * 100)}% confidence</span>
@@ -420,7 +404,17 @@ function AiActionsTab({ actions }) {
   );
 }
 
-// ─── Status badge config ──────────────────────────────────────────────────────
+// ─── Badge ────────────────────────────────────────────────────────────────────
+
+function Badge({ children, cls }) {
+  return (
+    <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded border ${cls}`}>
+      {children}
+    </span>
+  );
+}
+
+// ─── Status badge map ─────────────────────────────────────────────────────────
 
 const STATUS_CFG = {
   breach_risk:  { label: 'Breach risk',  cls: 'text-nuqe-danger border-nuqe-danger/30 bg-nuqe-danger/10' },
@@ -432,40 +426,155 @@ const STATUS_CFG = {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function CaseView() {
-  const [comms,          setComms]          = useState(INITIAL_COMMS);
+  const { id } = useParams();
+
+  // Data hooks
+  const { caseData: rawCase,  loading: caseLoading, error: caseError,  refetch: refetchCase }  = useCase(id);
+  const { communications: rawComms, loading: commsLoading, error: commsError, refetch: refetchComms } = useCommunications(id);
+  const { aiActions: rawActions,    pendingCount,           loading: actionsLoading, refetch: refetchActions }   = useAiActions(id);
+
+  // UI state
   const [expanded,       setExpanded]       = useState({});
   const [activeTab,      setActiveTab]      = useState('details');
   const [composeChannel, setComposeChannel] = useState('email');
   const [composeSubject, setComposeSubject] = useState('');
   const [composeBody,    setComposeBody]    = useState('');
+  const [submittingId,   setSubmittingId]   = useState(null);
+  const [isSending,      setIsSending]      = useState(false);
+  const [sendError,      setSendError]      = useState(null);
 
-  const hasPendingAI = comms.some((c) => c.state === 'pending_ai');
+  // Normalise data
+  const caseData   = useMemo(() => normalizeCase(rawCase),                              [rawCase]);
+  const aiActions  = useMemo(() => rawActions.map(normalizeAiAction),                   [rawActions]);
+  const comms      = useMemo(() => rawComms.map((c) => normalizeComm(c, aiActions)),    [rawComms, aiActions]);
 
-  function toggleExpand(id) {
-    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+  const hasPendingAI = pendingCount > 0;
+  const statusBadge  = STATUS_CFG[caseData?.status] ?? STATUS_CFG.open;
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  function toggleExpand(commId) {
+    setExpanded((prev) => ({ ...prev, [commId]: !prev[commId] }));
   }
 
-  function approveAI(id) {
-    setComms((prev) => prev.map((c) => c.id === id ? { ...c, state: 'approved_ai' } : c));
+  async function reviewAction(actionId, status, humanOutput) {
+    await client.patch(`/api/v1/ai-actions/${actionId}/review`, {
+      status,
+      human_output: humanOutput,
+      reviewer_id:  getReviewerId(),
+    });
+    await Promise.all([refetchComms(), refetchActions()]);
   }
 
-  function rejectAI(id) {
-    setComms((prev) => prev.map((c) => c.id === id ? { ...c, state: 'rejected_ai' } : c));
+  async function handleApprove(comm) {
+    const actionId = comm.aiActionId
+      ?? aiActions.find((a) => a.type === 'response_draft' && a.status === 'pending')?.id;
+    if (!actionId) return;
+    setSubmittingId(comm.id + '-approve');
+    try {
+      await reviewAction(actionId, 'approved', comm.body);
+    } catch (err) {
+      console.error('[approve]', err.message);
+    } finally {
+      setSubmittingId(null);
+    }
   }
 
-  function editAI(comm) {
+  async function handleReject(comm) {
+    const actionId = comm.aiActionId
+      ?? aiActions.find((a) => a.type === 'response_draft' && a.status === 'pending')?.id;
+    if (!actionId) return;
+    setSubmittingId(comm.id + '-reject');
+    try {
+      // API only requires human_output when approving; send a marker for audit trail
+      await reviewAction(actionId, 'rejected', 'rejected_by_reviewer');
+    } catch (err) {
+      console.error('[reject]', err.message);
+    } finally {
+      setSubmittingId(null);
+    }
+  }
+
+  async function handleEditApprove(comm) {
+    // Populate compose area then approve the AI action so audit trail is correct
     setComposeChannel(comm.channel);
     setComposeSubject(comm.subject ?? '');
     setComposeBody(comm.body);
-    approveAI(comm.id);
+
+    const actionId = comm.aiActionId
+      ?? aiActions.find((a) => a.type === 'response_draft' && a.status === 'pending')?.id;
+    if (!actionId) return;
+    setSubmittingId(comm.id + '-approve');
+    try {
+      await reviewAction(actionId, 'approved', comm.body);
+    } catch (err) {
+      console.error('[edit-approve]', err.message);
+    } finally {
+      setSubmittingId(null);
+    }
   }
 
-  const statusBadge = STATUS_CFG[CASE.status] ?? STATUS_CFG.open;
+  async function handleSend() {
+    if (!composeBody.trim() || hasPendingAI) return;
+    setIsSending(true);
+    setSendError(null);
+    try {
+      await client.post('/api/v1/communications', {
+        caseId:    id,
+        channel:   composeChannel,
+        subject:   composeChannel === 'email' ? composeSubject : undefined,
+        body:      composeBody,
+        direction: 'outbound',
+      });
+      setComposeSubject('');
+      setComposeBody('');
+      await refetchComms();
+    } catch (err) {
+      setSendError(err.response?.data?.error ?? err.message ?? 'Send failed');
+    } finally {
+      setIsSending(false);
+    }
+  }
+
+  // ── Render: case-level loading / error ────────────────────────────────────
+
+  if (caseLoading && !caseData) {
+    return (
+      <div className="flex flex-col h-full min-h-0">
+        <style>{`@keyframes skeleton-pulse { 0%,100%{opacity:.4} 50%{opacity:.9} }`}</style>
+        <header className="shrink-0 flex items-center gap-3 px-5 py-3.5 border-b border-white/5 bg-nuqe-surface">
+          <Link to="/complaints" className="text-nuqe-muted hover:text-nuqe-text transition-colors p-1 -ml-1 rounded hover:bg-white/5">
+            <svg viewBox="0 0 16 16" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M10 3L5 8l5 5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </Link>
+          <div className="h-4 w-36 rounded" style={{ background: 'rgba(255,255,255,0.08)', animation: 'skeleton-pulse 1.6s ease-in-out infinite' }} />
+        </header>
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-nuqe-muted text-sm">Loading case…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (caseError && !caseData) {
+    return (
+      <div className="p-6 space-y-4">
+        <Link to="/complaints" className="text-nuqe-muted hover:text-nuqe-text text-xs flex items-center gap-1">
+          ← Back to complaints
+        </Link>
+        <ErrorBanner message={caseError} onRetry={refetchCase} />
+      </div>
+    );
+  }
+
+  // ── Render: full view ─────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col h-full min-h-0">
+      <style>{`@keyframes skeleton-pulse { 0%,100%{opacity:.4} 50%{opacity:.9} }`}</style>
 
-      {/* ── Case header ───────────────────────────────────────────────────── */}
+      {/* ── Case header ─────────────────────────────────────────────────── */}
       <header className="shrink-0 flex items-center gap-3 px-5 py-3.5 border-b border-white/5 bg-nuqe-surface">
         <Link
           to="/complaints"
@@ -478,31 +587,36 @@ export default function CaseView() {
         </Link>
 
         <span className="text-white/15">|</span>
-        <span className="font-mono text-nuqe-purple font-semibold tracking-tight text-sm">{CASE.id}</span>
+        <span className="font-mono text-nuqe-purple font-semibold tracking-tight text-sm">{caseData?.id ?? id}</span>
         <span className="text-white/15">·</span>
-        <span className="font-semibold text-nuqe-text text-sm">{CASE.customer.name}</span>
-        <span className="font-mono text-xs text-nuqe-muted">{CASE.customer.ref}</span>
+        <span className="font-semibold text-nuqe-text text-sm">{caseData?.customer.name}</span>
+        <span className="font-mono text-xs text-nuqe-muted">{caseData?.customer.ref}</span>
 
-        <div className="flex items-center gap-2 ml-1">
-          <Badge cls="border-nuqe-purple/30 bg-nuqe-purple/10 text-nuqe-purple">{CASE.category}</Badge>
-          <Badge cls="border-blue-700/30 bg-blue-900/20 text-blue-400">{CASE.jurisdiction}</Badge>
-          <Badge cls={statusBadge.cls}>{statusBadge.label}</Badge>
-          {CASE.customer.vulnerableFlag && (
+        <div className="flex items-center gap-2 ml-1 flex-wrap">
+          {caseData?.category    && <Badge cls="border-nuqe-purple/30 bg-nuqe-purple/10 text-nuqe-purple">{caseData.category}</Badge>}
+          {caseData?.jurisdiction && <Badge cls="border-blue-700/30 bg-blue-900/20 text-blue-400">{caseData.jurisdiction}</Badge>}
+          {caseData?.status      && <Badge cls={statusBadge.cls}>{statusBadge.label}</Badge>}
+          {caseData?.customer.vulnerableFlag && (
             <Badge cls="border-amber-600/30 bg-amber-500/10 text-amber-400">⚠ Vulnerable</Badge>
           )}
         </div>
       </header>
 
-      {/* ── DISP milestones strip ─────────────────────────────────────────── */}
-      <div className="shrink-0 border-b border-white/5 bg-nuqe-surface">
-        <div className="grid grid-cols-3 divide-x divide-white/5">
-          {CASE.milestones.map((m) => (
-            <MilestoneItem key={m.id} milestone={m} />
-          ))}
+      {/* ── DISP milestones strip ────────────────────────────────────────── */}
+      {caseData?.milestones?.length > 0 && (
+        <div className="shrink-0 border-b border-white/5 bg-nuqe-surface">
+          <div
+            className="grid divide-x divide-white/5"
+            style={{ gridTemplateColumns: `repeat(${caseData.milestones.length}, 1fr)` }}
+          >
+            {caseData.milestones.map((m) => (
+              <MilestoneItem key={m.id} milestone={m} />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* ── Main split layout ─────────────────────────────────────────────── */}
+      {/* ── Main split layout ────────────────────────────────────────────── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
 
         {/* Left: timeline + compose */}
@@ -511,19 +625,34 @@ export default function CaseView() {
           {/* Timeline */}
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-nuqe-muted">
-              Communication timeline — {comms.length} entries
+              Communication timeline{!commsLoading && ` — ${comms.length} entries`}
             </p>
-            {comms.map((c) => (
-              <CommCard
-                key={c.id}
-                comm={c}
-                expanded={!!expanded[c.id]}
-                onToggle={() => toggleExpand(c.id)}
-                onApprove={() => approveAI(c.id)}
-                onReject={() => rejectAI(c.id)}
-                onEdit={() => editAI(c)}
-              />
-            ))}
+
+            {commsError && <ErrorBanner message={commsError} onRetry={refetchComms} />}
+
+            {commsLoading && comms.length === 0
+              ? <TimelineSkeleton />
+              : comms.map((c) => (
+                  <CommCard
+                    key={c.id}
+                    comm={c}
+                    expanded={!!expanded[c.id]}
+                    onToggle={() => toggleExpand(c.id)}
+                    onApprove={() => handleApprove(c)}
+                    onReject={() => handleReject(c)}
+                    onEdit={() => handleEditApprove(c)}
+                    submitting={
+                      submittingId === c.id + '-approve' ? 'approve'
+                      : submittingId === c.id + '-reject'  ? 'reject'
+                      : null
+                    }
+                  />
+                ))
+            }
+
+            {!commsLoading && !commsError && comms.length === 0 && (
+              <p className="text-xs text-nuqe-muted">No communications recorded yet.</p>
+            )}
           </div>
 
           {/* Compose area */}
@@ -571,28 +700,32 @@ export default function CaseView() {
               </button>
 
               <button
-                disabled={hasPendingAI || !composeBody.trim()}
-                title={hasPendingAI ? 'Review the pending AI draft before sending' : undefined}
+                onClick={handleSend}
+                disabled={hasPendingAI || !composeBody.trim() || isSending}
+                title={hasPendingAI ? 'Review all pending AI actions before sending' : undefined}
                 className="px-4 py-1.5 text-xs font-medium rounded border border-white/15 bg-white/5 text-nuqe-text hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                Send
+                {isSending ? 'Sending…' : 'Send'}
               </button>
             </div>
 
             {hasPendingAI && (
               <p className="text-[10px] text-amber-400 mt-2">
-                Send disabled — review and action the pending AI draft above before proceeding.
+                Review all pending AI actions before sending.
               </p>
+            )}
+            {sendError && (
+              <p className="text-[10px] text-nuqe-danger mt-2">{sendError}</p>
             )}
           </div>
         </div>
 
-        {/* Right: details/AI-actions panel */}
+        {/* Right: details / AI-actions panel */}
         <div className="w-[300px] xl:w-[340px] shrink-0 flex flex-col bg-nuqe-surface">
 
           {/* Tab strip */}
           <div className="flex shrink-0 border-b border-white/5">
-            {[['details', 'Case details'], ['ai', 'AI actions']].map(([key, label]) => (
+            {[['details', 'Case details'], ['ai', `AI actions${pendingCount > 0 ? ` (${pendingCount})` : ''}`]].map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setActiveTab(key)}
@@ -610,24 +743,17 @@ export default function CaseView() {
 
           {/* Tab content */}
           <div className="flex-1 overflow-y-auto p-4">
-            {activeTab === 'details'
-              ? <DetailsTab caseData={CASE} />
-              : <AiActionsTab actions={CASE.aiActions} />
-            }
+            {actionsLoading && activeTab === 'ai' ? (
+              <p className="text-xs text-nuqe-muted">Loading AI actions…</p>
+            ) : activeTab === 'details' && caseData ? (
+              <DetailsTab caseData={caseData} />
+            ) : activeTab === 'ai' ? (
+              <AiActionsTab actions={aiActions} />
+            ) : null}
           </div>
         </div>
 
       </div>
     </div>
-  );
-}
-
-// ─── Tiny badge helper ────────────────────────────────────────────────────────
-
-function Badge({ children, cls }) {
-  return (
-    <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded border ${cls}`}>
-      {children}
-    </span>
   );
 }
