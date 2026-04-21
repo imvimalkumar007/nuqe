@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import client from '../api/client';
 
 // ─── Brand tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -13,54 +14,6 @@ const C = {
   border:  'rgba(255,255,255,0.07)',
   blue:    '#3B82F6',
 };
-
-// ─── Mock tokeniser additions ─────────────────────────────────────────────────
-const INITIAL_TOKENS = [
-  {
-    id:      't1',
-    pattern: String.raw`\b[A-Z]{2}\d{6}[A-Z]\b`,
-    type:    'NI Number',
-    label:   'National Insurance reference',
-    scope:   'organisation',
-    status:  'active',
-    addedBy: 'Sarah Jennings',
-    addedAt: '2026-03-10',
-    active:  true,
-  },
-  {
-    id:      't2',
-    pattern: String.raw`\b\d{13,19}\b`,
-    type:    'Payment Card',
-    label:   'Card number (PAN)',
-    scope:   'organisation',
-    status:  'active',
-    addedBy: 'Michael Thornton',
-    addedAt: '2026-02-14',
-    active:  true,
-  },
-  {
-    id:      't3',
-    pattern: String.raw`\bACC-\d{5,6}\b`,
-    type:    'Account Ref',
-    label:   'Internal account reference',
-    scope:   'organisation',
-    status:  'active',
-    addedBy: 'System',
-    addedAt: '2026-01-08',
-    active:  true,
-  },
-  {
-    id:      't4',
-    pattern: String.raw`(?i)\bvulnerable\s+customer\b`,
-    type:    'Vulnerability Flag',
-    label:   'Sensitive case context marker',
-    scope:   'global',
-    status:  'pending_review',
-    addedBy: 'Amanda Kovacs',
-    addedAt: '2026-04-18',
-    active:  false,
-  },
-];
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
 function Label({ children, htmlFor, required }) {
@@ -87,10 +40,10 @@ function Input({ id, value, onChange, type = 'text', placeholder, disabled, clas
       disabled={disabled}
       className={`w-full text-sm rounded-md px-3 py-2 focus:outline-none transition-colors ${className}`}
       style={{
-        background:  C.bg,
-        border:      `1px solid ${C.border}`,
-        color:       disabled ? C.muted : C.text,
-        cursor:      disabled ? 'not-allowed' : undefined,
+        background: C.bg,
+        border:     `1px solid ${C.border}`,
+        color:      disabled ? C.muted : C.text,
+        cursor:     disabled ? 'not-allowed' : undefined,
       }}
       onFocus={(e) => !disabled && (e.target.style.borderColor = 'rgba(124,58,237,0.5)')}
       onBlur={(e)  => (e.target.style.borderColor = C.border)}
@@ -106,10 +59,10 @@ function Select({ id, value, onChange, options }) {
       onChange={(e) => onChange(e.target.value)}
       className="w-full text-sm rounded-md px-3 py-2 focus:outline-none appearance-none"
       style={{
-        background:  C.bg,
-        border:      `1px solid ${C.border}`,
-        color:       C.text,
-        cursor:      'pointer',
+        background: C.bg,
+        border:     `1px solid ${C.border}`,
+        color:      C.text,
+        cursor:     'pointer',
       }}
     >
       {options.map((o) => (
@@ -141,17 +94,10 @@ function Toggle({ on, onChange, id }) {
 
 function SectionHeading({ children }) {
   return (
-    <p
-      className="text-[10px] font-semibold uppercase tracking-widest mb-4"
-      style={{ color: C.muted }}
-    >
+    <p className="text-[10px] font-semibold uppercase tracking-widest mb-4" style={{ color: C.muted }}>
       {children}
     </p>
   );
-}
-
-function Divider() {
-  return <div className="my-6" style={{ borderTop: `1px solid ${C.border}` }} />;
 }
 
 function Btn({ children, onClick, variant = 'ghost', disabled, type = 'button', loading }) {
@@ -160,6 +106,7 @@ function Btn({ children, onClick, variant = 'ghost', disabled, type = 'button', 
     ghost:   { color: C.muted },
     primary: { background: C.purple, color: '#fff' },
     outline: { border: `1px solid ${C.border}`, color: C.text },
+    danger:  { border: `1px solid rgba(239,68,68,0.3)`, color: C.danger },
   };
   return (
     <button
@@ -167,18 +114,33 @@ function Btn({ children, onClick, variant = 'ghost', disabled, type = 'button', 
       onClick={onClick}
       disabled={disabled || loading}
       className={base}
-      style={styles[variant]}
+      style={styles[variant] ?? styles.ghost}
     >
-      {loading ? 'Testing…' : children}
+      {loading ? <span style={{ opacity: 0.7 }}>Loading…</span> : children}
     </button>
+  );
+}
+
+function InlineBanner({ kind, children }) {
+  const s = kind === 'ok'
+    ? { bg: 'rgba(16,185,129,0.08)',  border: 'rgba(16,185,129,0.2)',  color: C.ok }
+    : { bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.2)',   color: C.danger };
+  return (
+    <div
+      className="flex items-center gap-2 rounded-md px-3 py-2 text-xs font-medium"
+      style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.color }}
+    >
+      <span>{kind === 'ok' ? '✓' : '✕'}</span>
+      <span>{children}</span>
+    </div>
   );
 }
 
 // ─── AI Configuration panel ───────────────────────────────────────────────────
 const PROVIDERS = [
-  { value: 'Claude',  label: 'Claude (Anthropic)' },
-  { value: 'OpenAI',  label: 'OpenAI'             },
-  { value: 'Gemini',  label: 'Gemini (Google)'    },
+  { value: 'Claude',  label: 'Claude (Anthropic)'  },
+  { value: 'OpenAI',  label: 'OpenAI'               },
+  { value: 'Gemini',  label: 'Gemini (Google)'      },
   { value: 'Custom',  label: 'Custom / Self-hosted' },
 ];
 
@@ -200,6 +162,16 @@ const DATA_TIERS = [
   },
 ];
 
+const BLANK_MODEL = { provider: 'Claude', model: '', apiKey: '', endpoint: '' };
+
+function isKeyMasked(key) {
+  return key && key.startsWith('****');
+}
+
+function buildPayloadKey(key) {
+  return isKeyMasked(key) ? undefined : key || undefined;
+}
+
 function ModelFieldGroup({ prefix, provider, model, apiKey, endpoint, onChange }) {
   const isCustom = provider === 'Custom';
   return (
@@ -214,7 +186,7 @@ function ModelFieldGroup({ prefix, provider, model, apiKey, endpoint, onChange }
         />
       </div>
       <div>
-        <Label htmlFor={`${prefix}-model`}>Model name</Label>
+        <Label htmlFor={`${prefix}-model`} required>Model name</Label>
         <Input
           id={`${prefix}-model`}
           value={model}
@@ -229,7 +201,7 @@ function ModelFieldGroup({ prefix, provider, model, apiKey, endpoint, onChange }
           type="password"
           value={apiKey}
           onChange={(v) => onChange('apiKey', v)}
-          placeholder="sk-…"
+          placeholder={isKeyMasked(apiKey) ? 'Leave unchanged' : 'sk-…'}
         />
         <p className="text-[10px] mt-1" style={{ color: C.muted }}>
           Stored encrypted at rest. Only the last four characters are displayed.
@@ -251,23 +223,46 @@ function ModelFieldGroup({ prefix, provider, model, apiKey, endpoint, onChange }
 }
 
 function AiConfigPanel() {
-  const [primary, setPrimary] = useState({
-    provider: 'Claude',
-    model:    'claude-sonnet-4-6',
-    apiKey:   '****3AED',
-    endpoint: '',
-  });
-  const [challenger, setChallenger] = useState({
-    provider: 'OpenAI',
-    model:    'gpt-4o',
-    apiKey:   '****7F9B',
-    endpoint: '',
-  });
-  const [routing,   setRouting]   = useState(30);
-  const [dataTier,  setDataTier]  = useState('enterprise_zero');
-  const [piiOn,     setPiiOn]     = useState(true);
-  const [testState, setTestState] = useState(null); // null | 'loading' | 'ok' | 'err'
-  const [saved,     setSaved]     = useState(false);
+  const [primary,    setPrimary]    = useState(BLANK_MODEL);
+  const [challenger, setChallenger] = useState(BLANK_MODEL);
+  const [routing,    setRouting]    = useState(0);
+  const [dataTier,   setDataTier]   = useState('standard');
+  const [piiOn,      setPiiOn]      = useState(true);
+
+  const [configLoading, setConfigLoading] = useState(true);
+  const [configError,   setConfigError]   = useState(null);
+
+  const [testState,  setTestState]  = useState(null); // null | 'loading' | 'ok' | 'err'
+  const [testMsg,    setTestMsg]    = useState('');
+  const [saveState,  setSaveState]  = useState(null); // null | 'loading' | 'ok' | 'err'
+  const [saveMsg,    setSaveMsg]    = useState('');
+  const [validErr,   setValidErr]   = useState('');
+
+  useEffect(() => {
+    client.get('/api/v1/settings/ai-config')
+      .then(({ data }) => {
+        const d = data ?? {};
+        setPrimary({
+          provider: d.ai_provider   ?? d.primary?.provider ?? 'Claude',
+          model:    d.ai_model      ?? d.primary?.model    ?? '',
+          apiKey:   d.primary_key   ?? d.primary?.api_key  ?? '',
+          endpoint: d.endpoint      ?? d.primary?.endpoint ?? '',
+        });
+        setChallenger({
+          provider: d.challenger_provider ?? d.challenger?.provider ?? 'Claude',
+          model:    d.challenger_model    ?? d.challenger?.model    ?? '',
+          apiKey:   d.challenger_key      ?? d.challenger?.api_key  ?? '',
+          endpoint: d.challenger_endpoint ?? d.challenger?.endpoint ?? '',
+        });
+        setRouting(d.routing_pct   ?? d.ab_split   ?? 0);
+        setDataTier(d.data_tier ?? 'standard');
+        setPiiOn(d.pii_tokenisation ?? d.pii_enabled ?? true);
+      })
+      .catch((err) => {
+        setConfigError(err.response?.data?.error ?? err.message ?? 'Failed to load config');
+      })
+      .finally(() => setConfigLoading(false));
+  }, []);
 
   function updatePrimary(field, value) {
     setPrimary((p) => {
@@ -279,46 +274,116 @@ function AiConfigPanel() {
     });
   }
 
-  function handleTest() {
+  async function handleTest() {
     setTestState('loading');
-    setTimeout(() => setTestState('ok'), 1500);
+    setTestMsg('');
+    try {
+      const { data } = await client.post('/api/v1/settings/ai-config/test');
+      const ms    = data.response_time_ms ?? data.latency_ms ?? data.responseTime ?? '—';
+      const model = data.model ?? primary.model;
+      setTestMsg(`${model} responded in ${ms}ms.`);
+      setTestState('ok');
+    } catch (err) {
+      setTestMsg(err.response?.data?.error ?? 'Check your API key and endpoint.');
+      setTestState('err');
+    }
   }
 
-  function handleSave() {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+  async function handleSave() {
+    setValidErr('');
+    if (!primary.model.trim()) {
+      setValidErr('Primary model name is required.');
+      return;
+    }
+    setSaveState('loading');
+    setSaveMsg('');
+    try {
+      const payload = {
+        ai_provider:          primary.provider,
+        ai_model:             primary.model,
+        challenger_provider:  challenger.provider,
+        challenger_model:     challenger.model,
+        routing_pct:          routing,
+        data_tier:            dataTier,
+        pii_tokenisation:     piiOn,
+      };
+      const pk = buildPayloadKey(primary.apiKey);
+      const ck = buildPayloadKey(challenger.apiKey);
+      if (pk) payload.primary_key    = pk;
+      if (ck) payload.challenger_key = ck;
+      if (primary.endpoint)    payload.endpoint             = primary.endpoint;
+      if (challenger.endpoint) payload.challenger_endpoint  = challenger.endpoint;
+
+      await client.post('/api/v1/settings/ai-config', payload);
+      setSaveMsg('Settings saved.');
+      setSaveState('ok');
+    } catch (err) {
+      setSaveMsg(err.response?.data?.error ?? 'Save failed. Please try again.');
+      setSaveState('err');
+    }
+    setTimeout(() => setSaveState(null), 4000);
+  }
+
+  if (configLoading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="rounded-lg p-6"
+            style={{ background: C.surface, border: `1px solid ${C.border}`, opacity: 1 - i * 0.2 }}
+          >
+            <div className="h-3 w-24 rounded mb-4" style={{ background: 'rgba(255,255,255,0.08)' }} />
+            <div className="space-y-3">
+              {[1, 2].map((j) => (
+                <div key={j} className="h-9 rounded-md" style={{ background: 'rgba(255,255,255,0.05)' }} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (configError) {
+    return (
+      <div
+        className="rounded-lg p-6 text-sm"
+        style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.25)', color: C.danger }}
+      >
+        Failed to load AI configuration: {configError}
+      </div>
+    );
   }
 
   return (
     <div className="space-y-0">
 
+      {validErr && (
+        <div
+          className="rounded-md px-4 py-3 mb-4 text-sm"
+          style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: C.danger }}
+        >
+          {validErr}
+        </div>
+      )}
+
       {/* Primary model */}
-      <div
-        className="rounded-lg p-6"
-        style={{ background: C.surface, border: `1px solid ${C.border}` }}
-      >
+      <div className="rounded-lg p-6" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
         <SectionHeading>Primary model</SectionHeading>
-        <ModelFieldGroup
-          prefix="primary"
-          {...primary}
-          onChange={updatePrimary}
-        />
+        <ModelFieldGroup prefix="primary" {...primary} onChange={updatePrimary} />
       </div>
 
       <div className="my-4" />
 
       {/* Challenger model */}
-      <div
-        className="rounded-lg p-6"
-        style={{ background: C.surface, border: `1px solid ${C.border}` }}
-      >
+      <div className="rounded-lg p-6" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
         <SectionHeading>Challenger model</SectionHeading>
         <ModelFieldGroup
           prefix="challenger"
           {...challenger}
           onChange={(field, value) => setChallenger((c) => ({ ...c, [field]: value }))}
         />
-
         <div className="mt-6 space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="routing-slider">
@@ -341,7 +406,7 @@ function AiConfigPanel() {
             onChange={(e) => setRouting(Number(e.target.value))}
             className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
             style={{
-              background: `linear-gradient(to right, ${C.purple} ${routing}%, rgba(255,255,255,0.1) ${routing}%)`,
+              background:  `linear-gradient(to right, ${C.purple} ${routing}%, rgba(255,255,255,0.1) ${routing}%)`,
               accentColor: C.purple,
             }}
           />
@@ -360,10 +425,7 @@ function AiConfigPanel() {
       <div className="my-4" />
 
       {/* Data agreement tier */}
-      <div
-        className="rounded-lg p-6"
-        style={{ background: C.surface, border: `1px solid ${C.border}` }}
-      >
+      <div className="rounded-lg p-6" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
         <SectionHeading>Data agreement tier</SectionHeading>
         <div className="space-y-3">
           {DATA_TIERS.map((tier) => {
@@ -373,8 +435,8 @@ function AiConfigPanel() {
                 key={tier.id}
                 className="flex items-start gap-3 rounded-md px-4 py-3 cursor-pointer transition-colors"
                 style={{
-                  background:   selected ? 'rgba(124,58,237,0.08)' : C.bg,
-                  border:       `1px solid ${selected ? 'rgba(124,58,237,0.3)' : C.border}`,
+                  background: selected ? 'rgba(124,58,237,0.08)' : C.bg,
+                  border:     `1px solid ${selected ? 'rgba(124,58,237,0.3)' : C.border}`,
                 }}
               >
                 <input
@@ -390,9 +452,7 @@ function AiConfigPanel() {
                   <p className="text-sm font-medium" style={{ color: selected ? C.text : C.muted }}>
                     {tier.label}
                   </p>
-                  <p className="text-xs mt-0.5" style={{ color: C.muted }}>
-                    {tier.desc}
-                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: C.muted }}>{tier.desc}</p>
                 </div>
               </label>
             );
@@ -403,18 +463,15 @@ function AiConfigPanel() {
       <div className="my-4" />
 
       {/* PII tokenisation toggle */}
-      <div
-        className="rounded-lg p-6"
-        style={{ background: C.surface, border: `1px solid ${C.border}` }}
-      >
+      <div className="rounded-lg p-6" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-nuqe-text">
+            <p className="text-sm font-medium" style={{ color: C.text }}>
               Enable PII tokenisation before AI calls
             </p>
             <p className="text-xs mt-1" style={{ color: C.muted }}>
-              When enabled, personally identifiable and sensitive data is replaced with tokens before
-              leaving Nuqe and restored in the response. Recommended for all configurations.
+              Personally identifiable data is replaced with tokens before leaving Nuqe and restored in the
+              response. Recommended for all configurations.
             </p>
           </div>
           <Toggle on={piiOn} onChange={setPiiOn} id="pii-toggle" />
@@ -438,39 +495,21 @@ function AiConfigPanel() {
           >
             Test connection
           </Btn>
-          {testState === 'ok' && (
-            <div
-              className="flex items-center gap-2 rounded-md px-3 py-2"
-              style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}
-            >
-              <span className="text-emerald-400 text-sm">✓</span>
-              <span className="text-xs text-emerald-400 font-medium">
-                Connection verified. {primary.model} responded in 340ms.
-              </span>
-            </div>
-          )}
-          {testState === 'err' && (
-            <div
-              className="flex items-center gap-2 rounded-md px-3 py-2"
-              style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}
-            >
-              <span className="text-red-400 text-sm">✕</span>
-              <span className="text-xs text-red-400 font-medium">
-                Connection failed. Check your API key and endpoint.
-              </span>
-            </div>
-          )}
+          {testState === 'ok'  && <InlineBanner kind="ok">{testMsg}</InlineBanner>}
+          {testState === 'err' && <InlineBanner kind="err">{testMsg}</InlineBanner>}
         </div>
 
         <div className="flex items-center gap-3 pt-2 border-t" style={{ borderColor: C.border }}>
-          <Btn variant="primary" onClick={handleSave}>
+          <Btn
+            variant="primary"
+            onClick={handleSave}
+            loading={saveState === 'loading'}
+            disabled={saveState === 'loading'}
+          >
             Save changes
           </Btn>
-          {saved && (
-            <span className="text-xs" style={{ color: C.ok }}>
-              ✓ Settings saved
-            </span>
-          )}
+          {saveState === 'ok'  && <InlineBanner kind="ok">{saveMsg}</InlineBanner>}
+          {saveState === 'err' && <InlineBanner kind="err">{saveMsg}</InlineBanner>}
         </div>
       </div>
 
@@ -478,13 +517,122 @@ function AiConfigPanel() {
   );
 }
 
+// ─── Add Pattern Modal ─────────────────────────────────────────────────────────
+const TOKEN_TYPES = ['NI Number', 'Payment Card', 'Account Ref', 'Vulnerability Flag', 'Custom'];
+const BLANK_PATTERN = { pattern: '', type: 'Custom', label: '', scope: 'organisation' };
+
+function AddPatternModal({ onClose, onAdded }) {
+  const [form,    setForm]    = useState(BLANK_PATTERN);
+  const [saving,  setSaving]  = useState(false);
+  const [errMsg,  setErrMsg]  = useState('');
+
+  function set(field, value) {
+    setForm((f) => ({ ...f, [field]: value }));
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!form.pattern.trim()) { setErrMsg('Pattern is required.'); return; }
+    if (!form.label.trim())   { setErrMsg('Label is required.');   return; }
+    setSaving(true);
+    setErrMsg('');
+    try {
+      const { data } = await client.post('/api/v1/tokeniser/additions', {
+        pattern: form.pattern,
+        type:    form.type,
+        label:   form.label,
+        scope:   form.scope,
+      });
+      onAdded(data);
+      onClose();
+    } catch (err) {
+      setErrMsg(err.response?.data?.error ?? 'Failed to add pattern.');
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.65)' }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <form
+        onSubmit={handleSubmit}
+        className="rounded-xl p-6 w-full max-w-md space-y-4"
+        style={{ background: C.surface, border: `1px solid ${C.border}` }}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-sm font-semibold" style={{ color: C.text }}>Add tokeniser pattern</p>
+          <button type="button" onClick={onClose} className="text-lg leading-none" style={{ color: C.muted }}>×</button>
+        </div>
+
+        {errMsg && (
+          <div
+            className="rounded-md px-3 py-2 text-xs"
+            style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: C.danger }}
+          >
+            {errMsg}
+          </div>
+        )}
+
+        <div>
+          <Label htmlFor="ap-pattern" required>Regex pattern</Label>
+          <Input
+            id="ap-pattern"
+            value={form.pattern}
+            onChange={(v) => set('pattern', v)}
+            placeholder={String.raw`\bACC-\d{5,6}\b`}
+            className="font-mono"
+          />
+        </div>
+        <div>
+          <Label htmlFor="ap-type">Token type</Label>
+          <Select
+            id="ap-type"
+            value={form.type}
+            onChange={(v) => set('type', v)}
+            options={TOKEN_TYPES.map((t) => ({ value: t, label: t }))}
+          />
+        </div>
+        <div>
+          <Label htmlFor="ap-label" required>Label</Label>
+          <Input
+            id="ap-label"
+            value={form.label}
+            onChange={(v) => set('label', v)}
+            placeholder="Human-readable description"
+          />
+        </div>
+        <div>
+          <Label htmlFor="ap-scope">Scope</Label>
+          <Select
+            id="ap-scope"
+            value={form.scope}
+            onChange={(v) => set('scope', v)}
+            options={[
+              { value: 'organisation', label: 'Organisation' },
+              { value: 'global',       label: 'Global'       },
+            ]}
+          />
+        </div>
+
+        <div className="flex justify-end gap-3 pt-2">
+          <Btn variant="ghost" onClick={onClose} type="button">Cancel</Btn>
+          <Btn variant="primary" type="submit" loading={saving} disabled={saving}>Add pattern</Btn>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 // ─── Tokeniser Additions panel ─────────────────────────────────────────────────
 function TypeBadge({ type }) {
   const colors = {
-    'NI Number':        { color: C.blue,   bg: 'rgba(59,130,246,0.12)',  border: 'rgba(59,130,246,0.25)' },
-    'Payment Card':     { color: C.danger, bg: 'rgba(239,68,68,0.12)',   border: 'rgba(239,68,68,0.25)' },
-    'Account Ref':      { color: C.purple, bg: 'rgba(124,58,237,0.12)', border: 'rgba(124,58,237,0.25)' },
-    'Vulnerability Flag':{ color: C.warn,  bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.25)' },
+    'NI Number':          { color: C.blue,   bg: 'rgba(59,130,246,0.12)',  border: 'rgba(59,130,246,0.25)' },
+    'Payment Card':       { color: C.danger, bg: 'rgba(239,68,68,0.12)',   border: 'rgba(239,68,68,0.25)'  },
+    'Account Ref':        { color: C.purple, bg: 'rgba(124,58,237,0.12)', border: 'rgba(124,58,237,0.25)' },
+    'Vulnerability Flag': { color: C.warn,   bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.25)' },
   };
   const s = colors[type] ?? { color: C.muted, bg: 'rgba(255,255,255,0.05)', border: C.border };
   return (
@@ -533,11 +681,12 @@ function StatusBadge({ status }) {
   );
 }
 
-function SmallToggle({ on, onChange }) {
+function SmallToggle({ on, onChange, disabled }) {
   return (
     <button
-      onClick={() => onChange(!on)}
-      className="relative inline-flex items-center w-8 h-4 rounded-full transition-colors shrink-0"
+      onClick={() => !disabled && onChange(!on)}
+      disabled={disabled}
+      className="relative inline-flex items-center w-8 h-4 rounded-full transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
       style={{ background: on ? C.purple : 'rgba(255,255,255,0.1)' }}
     >
       <span
@@ -548,11 +697,57 @@ function SmallToggle({ on, onChange }) {
   );
 }
 
-function TokeniserPanel() {
-  const [tokens, setTokens] = useState(INITIAL_TOKENS);
+function normalizeToken(raw) {
+  return {
+    id:      raw.id      ?? raw._id,
+    pattern: raw.pattern ?? '',
+    type:    raw.type    ?? raw.token_type ?? 'Custom',
+    label:   raw.label   ?? '',
+    scope:   raw.scope   ?? 'organisation',
+    status:  raw.status  ?? (raw.active ? 'active' : 'pending_review'),
+    addedBy: raw.added_by ?? raw.addedBy ?? 'System',
+    addedAt: raw.added_at ?? raw.addedAt ?? raw.created_at ?? '',
+    active:  raw.active  ?? (raw.status === 'active'),
+  };
+}
 
-  function toggleActive(id, val) {
-    setTokens((prev) => prev.map((t) => (t.id === id ? { ...t, active: val } : t)));
+function TokeniserPanel() {
+  const [tokens,     setTokens]     = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState(null);
+  const [showModal,  setShowModal]  = useState(false);
+  const [toggling,   setToggling]   = useState(new Set());
+
+  const fetchTokens = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data } = await client.get('/api/v1/tokeniser/additions');
+      const raw = Array.isArray(data) ? data : (data.additions ?? data.tokens ?? []);
+      setTokens(raw.map(normalizeToken));
+    } catch (err) {
+      setError(err.response?.data?.error ?? err.message ?? 'Failed to load tokeniser additions');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchTokens(); }, [fetchTokens]);
+
+  async function handleToggle(id, value) {
+    setToggling((s) => new Set([...s, id]));
+    try {
+      await client.patch(`/api/v1/tokeniser/additions/${id}`, { active: value });
+      setTokens((prev) => prev.map((t) => t.id === id ? { ...t, active: value } : t));
+    } catch {
+      // revert silently — toggle snaps back
+    } finally {
+      setToggling((s) => { const n = new Set(s); n.delete(id); return n; });
+    }
+  }
+
+  function handleAdded(raw) {
+    setTokens((prev) => [normalizeToken(raw), ...prev]);
   }
 
   const TH = ({ children, right }) => (
@@ -573,76 +768,101 @@ function TokeniserPanel() {
   );
 
   return (
-    <div
-      className="rounded-lg"
-      style={{ background: C.surface, border: `1px solid ${C.border}` }}
-    >
-      {/* Header row */}
-      <div
-        className="flex items-center justify-between px-5 py-4 border-b"
-        style={{ borderColor: C.border }}
-      >
-        <div>
-          <p className="text-sm font-semibold text-nuqe-text">Tokeniser Additions</p>
-          <p className="text-xs mt-0.5" style={{ color: C.muted }}>
-            Custom patterns added to the PII tokeniser for this organisation.
-          </p>
-        </div>
-        <button
-          className="text-xs font-medium px-3 py-1.5 rounded-md text-white transition-opacity hover:opacity-90"
-          style={{ background: C.purple }}
-        >
-          + Add pattern
-        </button>
-      </div>
+    <>
+      {showModal && <AddPatternModal onClose={() => setShowModal(false)} onAdded={handleAdded} />}
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr>
-              <TH>Pattern</TH>
-              <TH>Token type</TH>
-              <TH>Label</TH>
-              <TH>Scope</TH>
-              <TH>Status</TH>
-              <TH>Added by</TH>
-              <TH>Date added</TH>
-              <TH right>Active</TH>
-            </tr>
-          </thead>
-          <tbody>
-            {tokens.map((t) => (
-              <tr key={t.id} style={{ opacity: t.active ? 1 : 0.5 }}>
-                <TD mono>
-                  <span
-                    className="px-1.5 py-0.5 rounded text-[11px]"
-                    style={{ background: C.bg, border: `1px solid ${C.border}` }}
-                  >
-                    {t.pattern}
-                  </span>
-                </TD>
-                <TD><TypeBadge type={t.type} /></TD>
-                <TD>
-                  <span className="text-nuqe-text">{t.label}</span>
-                </TD>
-                <TD><ScopeBadge scope={t.scope} /></TD>
-                <TD><StatusBadge status={t.status} /></TD>
-                <TD>{t.addedBy}</TD>
-                <TD>
-                  {new Date(t.addedAt).toLocaleDateString('en-GB', {
-                    day: '2-digit', month: 'short', year: 'numeric',
-                  })}
-                </TD>
-                <TD right>
-                  <SmallToggle on={t.active} onChange={(v) => toggleActive(t.id, v)} />
-                </TD>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="rounded-lg" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: C.border }}>
+          <div>
+            <p className="text-sm font-semibold" style={{ color: C.text }}>Tokeniser Additions</p>
+            <p className="text-xs mt-0.5" style={{ color: C.muted }}>
+              Custom patterns added to the PII tokeniser for this organisation.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowModal(true)}
+            className="text-xs font-medium px-3 py-1.5 rounded-md text-white transition-opacity hover:opacity-90"
+            style={{ background: C.purple }}
+          >
+            + Add pattern
+          </button>
+        </div>
+
+        {/* States */}
+        {loading && (
+          <div className="px-5 py-10 text-center text-xs" style={{ color: C.muted }}>
+            Loading…
+          </div>
+        )}
+        {!loading && error && (
+          <div className="px-5 py-6 text-xs" style={{ color: C.danger }}>
+            {error}
+            <button onClick={fetchTokens} className="ml-3 underline" style={{ color: C.muted }}>
+              Retry
+            </button>
+          </div>
+        )}
+        {!loading && !error && tokens.length === 0 && (
+          <div className="px-5 py-10 text-center text-xs" style={{ color: C.muted }}>
+            No custom tokeniser patterns yet. Add a pattern to get started.
+          </div>
+        )}
+
+        {/* Table */}
+        {!loading && !error && tokens.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr>
+                  <TH>Pattern</TH>
+                  <TH>Token type</TH>
+                  <TH>Label</TH>
+                  <TH>Scope</TH>
+                  <TH>Status</TH>
+                  <TH>Added by</TH>
+                  <TH>Date added</TH>
+                  <TH right>Active</TH>
+                </tr>
+              </thead>
+              <tbody>
+                {tokens.map((t) => (
+                  <tr key={t.id} style={{ opacity: t.active ? 1 : 0.5 }}>
+                    <TD mono>
+                      <span
+                        className="px-1.5 py-0.5 rounded text-[11px]"
+                        style={{ background: C.bg, border: `1px solid ${C.border}` }}
+                      >
+                        {t.pattern}
+                      </span>
+                    </TD>
+                    <TD><TypeBadge type={t.type} /></TD>
+                    <TD><span style={{ color: C.text }}>{t.label}</span></TD>
+                    <TD><ScopeBadge scope={t.scope} /></TD>
+                    <TD><StatusBadge status={t.status} /></TD>
+                    <TD>{t.addedBy}</TD>
+                    <TD>
+                      {t.addedAt
+                        ? new Date(t.addedAt).toLocaleDateString('en-GB', {
+                            day: '2-digit', month: 'short', year: 'numeric',
+                          })
+                        : '—'}
+                    </TD>
+                    <TD right>
+                      <SmallToggle
+                        on={t.active}
+                        onChange={(v) => handleToggle(t.id, v)}
+                        disabled={toggling.has(t.id)}
+                      />
+                    </TD>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
-    </div>
+    </>
   );
 }
 
@@ -653,7 +873,7 @@ function OrgProfilePanel() {
       className="rounded-lg p-8 flex flex-col items-center justify-center text-center gap-2"
       style={{ background: C.surface, border: `1px solid ${C.border}`, minHeight: 240 }}
     >
-      <p className="text-sm font-medium text-nuqe-text">Organisation Profile</p>
+      <p className="text-sm font-medium" style={{ color: C.text }}>Organisation Profile</p>
       <p className="text-xs" style={{ color: C.muted }}>
         Organisation name, contact details, and branding configuration.
       </p>
@@ -707,26 +927,21 @@ export default function SettingsScreen() {
 
   return (
     <div className="p-6 min-h-full">
-
-      {/* Page header */}
       <div className="mb-6">
-        <h1 className="text-lg font-semibold text-nuqe-text">Settings</h1>
+        <h1 className="text-lg font-semibold" style={{ color: C.text }}>Settings</h1>
         <p className="text-xs mt-0.5" style={{ color: C.muted }}>
           Organisation-wide configuration for AI, tokenisation, and compliance.
         </p>
       </div>
 
-      {/* Two-column layout */}
       <div className="flex gap-8 items-start">
         <SettingsNav active={activePanel} onChange={setActivePanel} />
-
         <div className="flex-1 min-w-0">
           {activePanel === 'ai'        && <AiConfigPanel />}
           {activePanel === 'tokeniser' && <TokeniserPanel />}
           {activePanel === 'org'       && <OrgProfilePanel />}
         </div>
       </div>
-
     </div>
   );
 }
