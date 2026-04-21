@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 
@@ -194,6 +195,7 @@ function AiBadge({ state }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function ComplaintsDashboard() {
+  const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState('all');
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 6;
@@ -311,6 +313,7 @@ export default function ComplaintsDashboard() {
               {visible.map((c, i) => (
                 <tr
                   key={c.id}
+                  onClick={() => navigate(`/cases/${c.id}`)}
                   className={[
                     'border-b border-white/5 last:border-0 transition-colors cursor-pointer',
                     'hover:bg-white/[0.03]',

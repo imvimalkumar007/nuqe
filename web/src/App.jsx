@@ -13,6 +13,7 @@ import AuditTrail   from './pages/AuditTrail';
 import RegUpdates        from './pages/RegUpdates';
 import MetricsDashboard        from './pages/MetricsDashboard';
 import RegulatoryMonitoring    from './pages/RegulatoryMonitoring';
+import CaseView                from './components/CaseView';
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
             <Route index element={<Navigate to="/complaints" replace />} />
             <Route path="/complaints"   element={<Complaints />} />
             <Route path="/cases"        element={<AllCases />} />
+            <Route path="/cases/:id"    element={<CaseView />} />
             <Route path="/fos-referrals" element={<FosReferrals />} />
             <Route path="/inbox"        element={<Inbox />} />
             <Route path="/live-chat"    element={<LiveChat />} />
