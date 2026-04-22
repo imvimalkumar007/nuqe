@@ -1,0 +1,299 @@
+# Nuqe Test Registry
+
+> Every test in the system. Updated after every test run.
+> Status: PASS, FAIL, NOT RUN, SKIPPED
+> This file is the ground truth for build status.
+
+Last updated: 22 April 2026
+Total: 142
+PASS: 0
+FAIL: 0
+NOT RUN: 142
+
+---
+
+## 01 Database Schema
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| DB-001 | All required tables exist in public schema | NOT RUN | |
+| DB-002 | customers table has all required columns | NOT RUN | |
+| DB-003 | cases table has all required columns and check constraints | NOT RUN | |
+| DB-004 | audit_log cannot be updated or deleted | NOT RUN | |
+| DB-005 | case_ref auto-generates in NQ-YYYY-NNNN format | NOT RUN | |
+| DB-006 | updated_at triggers fire on all mutable tables | NOT RUN | |
+| DB-007 | ruleset table is seeded with UK, India, and EU rules | NOT RUN | |
+| DB-008 | Foreign key constraints are enforced | NOT RUN | |
+
+---
+
+## 02 Auth System
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| AUTH-001 | POST /auth/login with valid credentials returns 200 and access token | NOT RUN | |
+| AUTH-002 | POST /auth/login with wrong password returns 401 | NOT RUN | |
+| AUTH-003 | POST /auth/login with unknown email returns 401 | NOT RUN | |
+| AUTH-004 | POST /auth/login with missing fields returns 400 | NOT RUN | |
+| AUTH-005 | POST /auth/refresh with valid cookie returns new access token | NOT RUN | |
+| AUTH-006 | POST /auth/refresh with no cookie returns 401 | NOT RUN | |
+| AUTH-007 | POST /auth/logout clears the refresh token cookie | NOT RUN | |
+| AUTH-008 | GET /auth/me with valid token returns user object | NOT RUN | |
+| AUTH-009 | GET /auth/me with no token returns 401 | NOT RUN | |
+| AUTH-010 | Protected route returns 401 when called without token | NOT RUN | |
+
+---
+
+## 03 Cases API
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| CASES-001 | GET /cases returns 200 with cases array and total count | NOT RUN | |
+| CASES-002 | GET /cases?status=open returns only open cases | NOT RUN | |
+| CASES-003 | GET /cases/:id returns case with customer_name joined | NOT RUN | |
+| CASES-004 | GET /cases/:id returns 404 for unknown id | NOT RUN | |
+| CASES-005 | GET /metrics/dashboard-summary returns four numeric values | NOT RUN | Confirmed broken |
+| CASES-006 | dashboard-summary breach_risk_count counts cases within 48h of FINAL_RESPONSE deadline | NOT RUN | Confirmed 0 when should be 2 |
+| CASES-007 | dashboard-summary under_review_count matches cases with status under_review | NOT RUN | |
+| CASES-008 | dashboard-summary open_count matches cases with status open | NOT RUN | |
+| CASES-009 | dashboard-summary fos_referred_count matches cases with status fos_referred | NOT RUN | |
+| CASES-010 | POST /cases creates case and triggers calculateDeadlines | NOT RUN | |
+
+---
+
+## 04 Communications API
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| COMMS-001 | GET /communications?caseId returns communications ordered by sent_at | NOT RUN | |
+| COMMS-002 | GET /communications includes ai_generated and ai_approved_at fields | NOT RUN | |
+| COMMS-003 | GET /communications includes author_type field | NOT RUN | |
+| COMMS-004 | POST /communications creates inbound communication and links to case | NOT RUN | |
+| COMMS-005 | AI draft communication with ai_approved_at null renders as pending | NOT RUN | |
+| COMMS-006 | Approved AI draft has ai_approved_by set | NOT RUN | |
+| COMMS-007 | GET /communications returns empty array for case with no comms | NOT RUN | |
+| COMMS-008 | Communications from all three channels appear in unified timeline | NOT RUN | |
+
+---
+
+## 05 Deadlines API
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| DEAD-001 | GET /deadlines?caseId returns all deadlines for a case | NOT RUN | |
+| DEAD-002 | Deadline rows include due_at, met_at, breached, deadline_type | NOT RUN | |
+| DEAD-003 | UK case has three deadline rows: ACKNOWLEDGE, FINAL_RESPONSE, FOS_REFERRAL | NOT RUN | |
+| DEAD-004 | Breach risk case has FINAL_RESPONSE due_at within 48 hours of now | NOT RUN | |
+| DEAD-005 | FOS referred case has no unmet deadlines | NOT RUN | |
+| DEAD-006 | Closed case deadlines reflect met_at timestamp | NOT RUN | |
+| DEAD-007 | calculateDeadlines does not create duplicate rows if called twice | NOT RUN | |
+
+---
+
+## 06 Deadline Engine
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| DENG-001 | calculateDeadlines creates correct number of rows for UK ruleset | NOT RUN | |
+| DENG-002 | calculateDeadlines sets due_at correctly as opened_at plus threshold_days | NOT RUN | |
+| DENG-003 | checkDeadlines sets alerted_at_48h when deadline is within 48 hours | NOT RUN | |
+| DENG-004 | checkDeadlines sets alerted_at_24h when deadline is within 24 hours | NOT RUN | |
+| DENG-005 | checkDeadlines marks breached=true when due_at has passed with no met_at | NOT RUN | |
+| DENG-006 | checkDeadlines writes to audit_log on every state change | NOT RUN | |
+| DENG-007 | checkDeadlines does not re-alert already-alerted deadlines | NOT RUN | |
+| DENG-008 | calculateDeadlines is idempotent when called twice on same case | NOT RUN | |
+
+---
+
+## 07 Communication Engine
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| CENG-001 | ingestCommunication creates communications row | NOT RUN | |
+| CENG-002 | classifyCommunication writes to ai_actions with status pending | NOT RUN | |
+| CENG-003 | classifyCommunication opens new case if complaint detected | NOT RUN | |
+| CENG-004 | classifyCommunication detects implicit complaint | NOT RUN | |
+| CENG-005 | draftResponse writes draft to ai_actions with status pending | NOT RUN | |
+| CENG-006 | draftResponse does not write to communications table | NOT RUN | |
+| CENG-007 | Approving a response draft writes to communications table | NOT RUN | |
+| CENG-008 | All AI outputs write to audit_log | NOT RUN | |
+
+---
+
+## 08 Compliance Engine
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| COMP-001 | getActiveRuleset returns correct rows for UK jurisdiction | NOT RUN | |
+| COMP-002 | getActiveRuleset returns correct rows for India jurisdiction | NOT RUN | |
+| COMP-003 | getActiveRuleset returns correct rows for EU jurisdiction | NOT RUN | |
+| COMP-004 | getActiveRuleset result is cached in Redis | NOT RUN | |
+| COMP-005 | Cache is invalidated when ruleset is updated | NOT RUN | |
+| COMP-006 | assessRulesetImpact creates pending ai_action for each affected case | NOT RUN | |
+
+---
+
+## 09 Model Router
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| ROUTER-001 | Routes to Claude when provider is claude | NOT RUN | |
+| ROUTER-002 | Routes to custom endpoint when provider is custom | NOT RUN | |
+| ROUTER-003 | Returns standardised response object regardless of provider | NOT RUN | |
+| ROUTER-004 | Calls piiTokeniser.tokenise before sending prompt | NOT RUN | |
+| ROUTER-005 | Calls piiTokeniser.detokenise on response | NOT RUN | |
+| ROUTER-006 | A/B routing sends challenger_percentage of requests to challenger | NOT RUN | |
+| ROUTER-007 | Falls back to ANTHROPIC_API_KEY env var if no org config exists | NOT RUN | |
+
+---
+
+## 10 PII Tokeniser
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| PII-001 | Layer 1 detects and replaces email addresses | NOT RUN | |
+| PII-002 | Layer 1 detects and replaces UK phone numbers | NOT RUN | |
+| PII-003 | Layer 1 detects and replaces loan reference numbers NQ-YYYY-NNNN | NOT RUN | |
+| PII-004 | Layer 2 detects StepChange as DEBTORG token | NOT RUN | |
+| PII-005 | Layer 2 detects mental health as VULNERABILITY token | NOT RUN | |
+| PII-006 | Layer 3 detects person names not caught by Layer 1 | NOT RUN | |
+| PII-007 | detokenise correctly restores all original values | NOT RUN | |
+| PII-008 | Low confidence detections are flagged in audit | NOT RUN | |
+
+---
+
+## 11 Knowledge Layer
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| KNOW-001 | retrieveContext returns chunks filtered by jurisdiction | NOT RUN | |
+| KNOW-002 | retrieveContext filters by as_at_date correctly | NOT RUN | |
+| KNOW-003 | retrieveContext returns maximum topK chunks | NOT RUN | |
+| KNOW-004 | enrichPrompt injects chunks as structured context block | NOT RUN | |
+| KNOW-005 | logRetrieval writes chunk IDs to audit_log | NOT RUN | |
+| KNOW-006 | Verified chunks labelled as verified guidance in prompt | NOT RUN | |
+| KNOW-007 | Auto_ingested chunks labelled as pending review in prompt | NOT RUN | |
+
+---
+
+## 12 Regulatory Monitor
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| RMON-001 | getMonitoringHealth returns health object for each source | NOT RUN | |
+| RMON-002 | Health status is ok when source checked within frequency | NOT RUN | |
+| RMON-003 | Health status is amber when overdue up to 2x frequency | NOT RUN | |
+| RMON-004 | Health status is red when overdue more than 2x frequency | NOT RUN | |
+| RMON-005 | propagateKnowledgeUpdate marks similar chunks as superseded | NOT RUN | |
+| RMON-006 | propagateKnowledgeUpdate creates pending ai_action for affected cases | NOT RUN | |
+
+---
+
+## 13 Metrics API
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| MET-001 | GET /metrics/dashboard-summary returns 200 | NOT RUN | Confirmed broken |
+| MET-002 | breach_risk_count is correct given seed data | NOT RUN | Expected: 2, Actual: 0 |
+| MET-003 | under_review_count is correct given seed data | NOT RUN | Expected: 3, Actual: 0 |
+| MET-004 | open_count is correct given seed data | NOT RUN | Expected: 3, Actual: 0 |
+| MET-005 | fos_referred_count is correct given seed data | NOT RUN | Expected: 1, Actual: 0 |
+| MET-006 | GET /metrics/ai-accuracy returns structured response | NOT RUN | |
+| MET-007 | ai-accuracy approval_rate is a number between 0 and 100 | NOT RUN | |
+| MET-008 | GET /metrics/model-comparison returns per-model breakdown | NOT RUN | |
+
+---
+
+## 14 Settings API
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| SET-001 | GET /settings/ai-config returns 200 with config object | NOT RUN | |
+| SET-002 | GET /settings/ai-config masks API key showing only last 4 chars | NOT RUN | |
+| SET-003 | GET /settings/ai-config returns default empty config if none exists | NOT RUN | |
+| SET-004 | POST /settings/ai-config saves config and encrypts API key | NOT RUN | |
+| SET-005 | POST /settings/ai-config writes to audit_log | NOT RUN | |
+| SET-006 | POST /settings/ai-config/test returns success and response_time_ms | NOT RUN | |
+| SET-007 | POST /settings/ai-config/test returns failure message on bad credentials | NOT RUN | |
+
+---
+
+## 15 Webhooks
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| HOOK-001 | POST /webhooks/quido with valid secret returns 200 | NOT RUN | |
+| HOOK-002 | POST /webhooks/quido with wrong secret returns 401 | NOT RUN | |
+| HOOK-003 | Webhook creates communications row | NOT RUN | |
+| HOOK-004 | Webhook triggers classification for complaint reason | NOT RUN | |
+| HOOK-005 | Webhook opens new case when complaint detected | NOT RUN | |
+| HOOK-006 | Webhook returns case_id when case is opened | NOT RUN | |
+
+---
+
+## 16 Frontend Dashboard
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| FE-DASH-001 | Dashboard loads without console errors | NOT RUN | |
+| FE-DASH-002 | All 8 seed cases visible in table | NOT RUN | Confirmed working from screenshot |
+| FE-DASH-003 | Breach risk metric card shows correct count | NOT RUN | Confirmed broken: shows 0 |
+| FE-DASH-004 | Under review metric card shows correct count | NOT RUN | Confirmed broken: shows 0 |
+| FE-DASH-005 | Open metric card shows correct count | NOT RUN | Confirmed broken: shows 0 |
+| FE-DASH-006 | FOS referred metric card shows correct count | NOT RUN | Confirmed broken: shows 0 |
+| FE-DASH-007 | Knowledge section visible in sidebar | NOT RUN | Confirmed missing |
+| FE-DASH-008 | Settings section visible in sidebar | NOT RUN | Confirmed missing |
+
+---
+
+## 17 Frontend Case View
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| FE-CASE-001 | Clicking case row navigates to /cases/:id | NOT RUN | |
+| FE-CASE-002 | Case header shows case_ref, customer name, status | NOT RUN | |
+| FE-CASE-003 | DISP deadline panel shows three milestones with due dates | NOT RUN | |
+| FE-CASE-004 | Communication timeline shows all seeded communications | NOT RUN | |
+| FE-CASE-005 | Pending AI draft renders in greyed-out state | NOT RUN | |
+| FE-CASE-006 | Approve button calls PATCH /ai-actions/:id/review | NOT RUN | |
+| FE-CASE-007 | Edit and Approve opens inline editor | NOT RUN | |
+| FE-CASE-008 | Reject button dismisses the pending action | NOT RUN | |
+
+---
+
+## 18 Frontend Analytics
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| FE-ANA-001 | Analytics screen loads without console errors | NOT RUN | |
+| FE-ANA-002 | AI Accuracy tab shows four metric cards | NOT RUN | |
+| FE-ANA-003 | Approval rate chart renders with real data | NOT RUN | |
+| FE-ANA-004 | Model Comparison tab shows side-by-side cards | NOT RUN | |
+| FE-ANA-005 | Date range selector triggers re-fetch | NOT RUN | |
+| FE-ANA-006 | Empty state shown gracefully when no AI actions exist | NOT RUN | |
+
+---
+
+## 19 Frontend Monitoring and Settings
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| FE-MON-001 | Regulatory Monitoring screen loads without errors | NOT RUN | |
+| FE-MON-002 | Sources panel shows all five configured sources | NOT RUN | |
+| FE-MON-003 | Pending Review panel shows count badge | NOT RUN | |
+| FE-SET-001 | Settings screen loads without errors | NOT RUN | |
+| FE-SET-002 | AI Configuration panel shows saved config | NOT RUN | |
+| FE-SET-003 | Connection test button shows result | NOT RUN | |
+
+---
+
+## How to Update This File
+
+After every test run, update the Status column for each test:
+- PASS: test ran and passed
+- FAIL: test ran and failed (add notes on what failed)
+- NOT RUN: not yet executed
+- SKIPPED: deliberately skipped with reason in notes
+
+Update the summary counts at the top of the file.
+Update the component index in ARCHITECTURE.md.
