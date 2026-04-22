@@ -166,4 +166,96 @@ router.patch('/:id/review', async (req, res) => {
   }
 });
 
+// ─── PATCH /:id/approve ───────────────────────────────────────────────────────
+
+router.patch('/:id/approve', async (req, res) => {
+  const { id } = req.params;
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const { rows } = await client.query(
+      'SELECT id FROM ai_actions WHERE id = $1 FOR UPDATE',
+      [id]
+    );
+    if (!rows.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'ai_action not found' });
+    }
+
+    const { rows: updated } = await client.query(
+      `UPDATE ai_actions
+       SET status      = 'approved',
+           reviewed_at = NOW(),
+           reviewed_by = NULL
+       WHERE id = $1
+       RETURNING *`,
+      [id]
+    );
+
+    await client.query(
+      `INSERT INTO audit_log (entity_type, entity_id, action, actor_type, actor_id, new_value)
+       VALUES ('ai_action', $1, 'approved', 'staff', NULL, NULL)`,
+      [id]
+    );
+
+    await client.query('COMMIT');
+    return res.json(updated[0]);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('[ai-actions/approve]', err.message);
+    return res.status(500).json({ message: 'Failed to approve action', error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+// ─── PATCH /:id/reject ────────────────────────────────────────────────────────
+
+router.patch('/:id/reject', async (req, res) => {
+  const { id } = req.params;
+  const { reason } = req.body ?? {};
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const { rows } = await client.query(
+      'SELECT id FROM ai_actions WHERE id = $1 FOR UPDATE',
+      [id]
+    );
+    if (!rows.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'ai_action not found' });
+    }
+
+    const { rows: updated } = await client.query(
+      `UPDATE ai_actions
+       SET status      = 'rejected',
+           reviewed_at = NOW(),
+           reviewed_by = NULL,
+           review_note = $2
+       WHERE id = $1
+       RETURNING *`,
+      [id, reason ?? null]
+    );
+
+    await client.query(
+      `INSERT INTO audit_log (entity_type, entity_id, action, actor_type, actor_id, new_value)
+       VALUES ('ai_action', $1, 'rejected', 'staff', NULL, $2)`,
+      [id, reason ? JSON.stringify({ detail: reason }) : null]
+    );
+
+    await client.query('COMMIT');
+    return res.json(updated[0]);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('[ai-actions/reject]', err.message);
+    return res.status(500).json({ message: 'Failed to reject action', error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
 export default router;

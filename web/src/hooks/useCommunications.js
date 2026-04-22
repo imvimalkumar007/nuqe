@@ -11,7 +11,7 @@ export function useCommunications(caseId) {
     if (!caseId) return;
     try {
       const { data } = await client.get('/api/v1/communications', {
-        params: { caseId, order: 'asc' },
+        params: { case_id: caseId },
       });
       setComms(Array.isArray(data) ? data : (data.communications ?? []));
       setError(null);

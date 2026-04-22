@@ -16,15 +16,36 @@ function fmtTime(iso) {
   });
 }
 
+function relativeTime(iso) {
+  if (!iso) return '—';
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1)  return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24)  return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7)  return `${days}d ago`;
+  return fmtTime(iso);
+}
+
 function normalizeMilestone(raw, idx) {
+  const dueSrc   = raw.due_date  ?? raw.due_at;
+  const metSrc   = raw.met_date  ?? raw.met_at;
+  const daysLeft = dueSrc
+    ? Math.ceil((new Date(dueSrc) - new Date()) / 86400000)
+    : (raw.days_left ?? raw.daysLeft ?? null);
+  const status = metSrc ? 'met'
+    : (raw.breached || (daysLeft !== null && daysLeft <= 0)) ? 'breached'
+    : (raw.status ?? 'pending');
   return {
     id:        raw.id        ?? `m${idx}`,
-    label:     raw.label     ?? raw.milestone_type ?? '—',
+    label:     raw.label     ?? raw.milestone_type ?? raw.deadline_type ?? '—',
     rule:      raw.rule      ?? raw.ruleset_ref    ?? '',
-    dueDate:   raw.due_date  ? fmtTime(raw.due_date)  : (raw.dueDate  ?? '—'),
-    status:    raw.status    ?? 'pending',
-    metDate:   raw.met_date  ? fmtTime(raw.met_date)  : (raw.metDate  ?? null),
-    daysLeft:  raw.days_left  ?? raw.daysLeft  ?? null,
+    dueDate:   dueSrc ? fmtTime(dueSrc)  : (raw.dueDate  ?? '—'),
+    status,
+    metDate:   metSrc ? fmtTime(metSrc)  : (raw.metDate  ?? null),
+    daysLeft,
     daysTotal: raw.days_total ?? raw.daysTotal ?? null,
     note:      raw.note      ?? null,
   };
@@ -33,7 +54,8 @@ function normalizeMilestone(raw, idx) {
 function normalizeCase(raw) {
   if (!raw) return null;
   return {
-    id:           raw.id,
+    id:           raw.case_id ?? raw.id,
+    caseRef:      raw.case_ref ?? raw.caseRef,
     customer: {
       name:          raw.customer_name ?? raw.customer?.name ?? '—',
       ref:           raw.customer_ref  ?? raw.account_ref   ?? raw.customer?.ref   ?? '—',
@@ -47,7 +69,7 @@ function normalizeCase(raw) {
     openedAt:        raw.opened_at ? fmtTime(raw.opened_at) : (raw.openedAt ?? '—'),
     channelReceived: raw.channel_received ?? raw.channelReceived ?? '—',
     notes:           raw.notes           ?? '',
-    milestones:      (raw.milestones ?? []).map(normalizeMilestone),
+    milestones:      (raw.deadlines ?? raw.milestones ?? []).map(normalizeMilestone),
   };
 }
 
@@ -85,7 +107,7 @@ function normalizeComm(raw, normalizedActions) {
     direction:   raw.direction,
     channel:     raw.channel,
     sender:      raw.author_name   ?? raw.sender ?? (raw.direction === 'inbound' ? 'Customer' : 'Staff'),
-    time:        raw.sent_at ? fmtTime(raw.sent_at) : (raw.time ?? '—'),
+    time:        raw.sent_at ? relativeTime(raw.sent_at) : raw.created_at ? relativeTime(raw.created_at) : (raw.time ?? '—'),
     subject:     raw.subject       ?? null,
     body:        raw.body_plain    ?? raw.body ?? '',
     state,
@@ -93,10 +115,6 @@ function normalizeComm(raw, normalizedActions) {
     confidence:  raw.confidence    ?? null,
     aiActionId,
   };
-}
-
-function getReviewerId() {
-  return localStorage.getItem('userId') ?? 'reviewer';
 }
 
 // ─── Channel icons ────────────────────────────────────────────────────────────
@@ -457,22 +475,14 @@ export default function CaseView() {
     setExpanded((prev) => ({ ...prev, [commId]: !prev[commId] }));
   }
 
-  async function reviewAction(actionId, status, humanOutput) {
-    await client.patch(`/api/v1/ai-actions/${actionId}/review`, {
-      status,
-      human_output: humanOutput,
-      reviewer_id:  getReviewerId(),
-    });
-    await Promise.all([refetchComms(), refetchActions()]);
-  }
-
   async function handleApprove(comm) {
     const actionId = comm.aiActionId
       ?? aiActions.find((a) => a.type === 'response_draft' && a.status === 'pending')?.id;
     if (!actionId) return;
     setSubmittingId(comm.id + '-approve');
     try {
-      await reviewAction(actionId, 'approved', comm.body);
+      await client.patch(`/api/v1/ai-actions/${actionId}/approve`);
+      await Promise.all([refetchCase(), refetchComms(), refetchActions()]);
     } catch (err) {
       console.error('[approve]', err.message);
     } finally {
@@ -486,8 +496,8 @@ export default function CaseView() {
     if (!actionId) return;
     setSubmittingId(comm.id + '-reject');
     try {
-      // API only requires human_output when approving; send a marker for audit trail
-      await reviewAction(actionId, 'rejected', 'rejected_by_reviewer');
+      await client.patch(`/api/v1/ai-actions/${actionId}/reject`);
+      await Promise.all([refetchCase(), refetchComms(), refetchActions()]);
     } catch (err) {
       console.error('[reject]', err.message);
     } finally {
@@ -496,7 +506,6 @@ export default function CaseView() {
   }
 
   async function handleEditApprove(comm) {
-    // Populate compose area then approve the AI action so audit trail is correct
     setComposeChannel(comm.channel);
     setComposeSubject(comm.subject ?? '');
     setComposeBody(comm.body);
@@ -506,7 +515,8 @@ export default function CaseView() {
     if (!actionId) return;
     setSubmittingId(comm.id + '-approve');
     try {
-      await reviewAction(actionId, 'approved', comm.body);
+      await client.patch(`/api/v1/ai-actions/${actionId}/approve`);
+      await Promise.all([refetchCase(), refetchComms(), refetchActions()]);
     } catch (err) {
       console.error('[edit-approve]', err.message);
     } finally {
@@ -587,7 +597,7 @@ export default function CaseView() {
         </Link>
 
         <span className="text-white/15">|</span>
-        <span className="font-mono text-nuqe-purple font-semibold tracking-tight text-sm">{caseData?.id ?? id}</span>
+        <span className="font-mono text-nuqe-purple font-semibold tracking-tight text-sm">{caseData?.caseRef ?? id}</span>
         <span className="text-white/15">·</span>
         <span className="font-semibold text-nuqe-text text-sm">{caseData?.customer.name}</span>
         <span className="font-mono text-xs text-nuqe-muted">{caseData?.customer.ref}</span>

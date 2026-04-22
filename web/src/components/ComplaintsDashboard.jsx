@@ -69,7 +69,13 @@ function StatusBadge({ status }) {
     breach_risk:  { label: 'Breach risk',  cls: 'bg-nuqe-danger/10 text-nuqe-danger  border border-nuqe-danger/25' },
     under_review: { label: 'Under review', cls: 'bg-nuqe-warn/10   text-nuqe-warn    border border-nuqe-warn/25'   },
     fos_referred: { label: 'FOS referred', cls: 'bg-nuqe-dark/60   text-purple-300   border border-purple-700/40'  },
-    open:         { label: 'Open',         cls: 'bg-nuqe-purple/10 text-nuqe-purple  border border-nuqe-purple/25' },
+    open:              { label: 'Open',                cls: 'bg-nuqe-purple/10 text-nuqe-purple  border border-nuqe-purple/25' },
+    closed_upheld:     { label: 'Closed: Upheld',     cls: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25' },
+    closed_not_upheld: { label: 'Closed: Not Upheld', cls: 'bg-white/5 text-nuqe-muted border border-white/10' },
+    closed_withdrawn:  { label: 'Closed: Withdrawn',  cls: 'bg-white/5 text-nuqe-muted border border-white/10' },
+    ombudsman_referred:{ label: 'Ombudsman',          cls: 'bg-nuqe-dark/60 text-purple-300 border border-purple-700/40' },
+    pending_response:  { label: 'Pending Response',   cls: 'bg-blue-500/10 text-blue-400 border border-blue-500/25' },
+    awaiting_customer: { label: 'Awaiting Customer',  cls: 'bg-white/5 text-nuqe-muted border border-white/10' },
   }[status] ?? { label: status, cls: 'bg-white/5 text-nuqe-muted border border-white/10' };
 
   return (
@@ -126,13 +132,19 @@ export default function ComplaintsDashboard() {
 
   // Metric values: prefer API metrics, fall back to deriving from the current case list
   // (useCases with 'all' returns full list when filter is 'all')
+  const OPEN_STATUSES = ['open', 'under_review', 'pending_response', 'awaiting_customer'];
+
   const derivedCounts = {
-    breach_risk:  cases.filter((c) => c.status === 'breach_risk').length,
+    breach_risk:  cases.filter((c) => {
+      if (!c.disp_deadline) return false;
+      const daysLeft = Math.ceil((new Date(c.disp_deadline) - new Date()) / 86400000);
+      return OPEN_STATUSES.includes(c.status) && daysLeft <= 2;
+    }).length,
     under_review: cases.filter((c) => c.status === 'under_review').length,
-    open:         cases.filter((c) => ['open', 'under_review', 'breach_risk'].includes(c.status)).length,
+    open:         cases.filter((c) => OPEN_STATUSES.includes(c.status)).length,
     fos_referred: cases.filter((c) => c.status === 'fos_referred').length,
   };
-  const counts = (activeFilter === 'all' && metrics) ? metrics : derivedCounts;
+  const counts = derivedCounts;
 
   const pageCount = Math.ceil(cases.length / PAGE_SIZE);
   const visible   = cases.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -246,31 +258,34 @@ export default function ComplaintsDashboard() {
               <tbody>
                 {visible.map((c) => (
                   <tr
-                    key={c.id}
-                    onClick={() => navigate(`/cases/${c.id}`)}
+                    key={c.case_id}
+                    onClick={() => navigate(`/cases/${c.case_id}`)}
                     className={[
                       'border-b border-white/5 last:border-0 transition-colors cursor-pointer',
                       'hover:bg-white/[0.03]',
-                      c.status === 'breach_risk' ? 'bg-nuqe-danger/[0.03]' : '',
+                      (() => { if (!c.disp_deadline) return ''; const d = Math.ceil((new Date(c.disp_deadline) - new Date()) / 86400000); return d <= 2 ? 'bg-nuqe-danger/[0.03]' : ''; })(),
                     ].join(' ')}
                   >
                     <td className="px-4 py-3.5 whitespace-nowrap">
-                      <span className="font-mono text-xs text-nuqe-purple tracking-tight">{c.id}</span>
-                      {c.fosRef && (
-                        <p className="font-mono text-[10px] text-nuqe-muted mt-0.5">{c.fosRef}</p>
+                      <span className="font-mono text-xs text-nuqe-purple tracking-tight">{c.case_ref}</span>
+                      {c.fos_ref && (
+                        <p className="font-mono text-[10px] text-nuqe-muted mt-0.5">{c.fos_ref}</p>
                       )}
                     </td>
                     <td className="px-4 py-3.5">
-                      <p className="font-medium text-nuqe-text text-sm leading-tight">{c.customer?.name ?? c.customerName ?? '—'}</p>
-                      <p className="text-[11px] text-nuqe-muted font-mono mt-0.5">{c.customer?.ref ?? c.accountRef ?? ''}</p>
+                      <p className="font-medium text-nuqe-text text-sm leading-tight">{c.customer_name ?? '—'}</p>
                     </td>
-                    <td className="px-4 py-3.5 text-nuqe-text text-xs max-w-[180px]">{c.issue}</td>
-                    <td className="px-4 py-3.5"><ChannelDot channel={c.channel} /></td>
+                    <td className="px-4 py-3.5 text-nuqe-text text-xs max-w-[180px]">{c.category ? c.category.replace(/_/g, ' ') : '—'}</td>
+                    <td className="px-4 py-3.5"><ChannelDot channel={c.channel_received} /></td>
                     <td className="px-4 py-3.5"><StatusBadge status={c.status} /></td>
                     <td className="px-4 py-3.5">
-                      <DeadlineBar daysLeft={c.daysLeft ?? c.days_left ?? 0} daysTotal={c.daysTotal ?? c.days_total ?? 56} />
+                      {(() => {
+                        if (!c.disp_deadline) return <span className="text-nuqe-muted text-xs">No deadline</span>;
+                        const daysLeft = Math.ceil((new Date(c.disp_deadline) - new Date()) / 86400000);
+                        return <DeadlineBar daysLeft={daysLeft} daysTotal={56} />;
+                      })()}
                     </td>
-                    <td className="px-4 py-3.5"><AiBadge state={c.ai ?? c.aiStatus} /></td>
+                    <td className="px-4 py-3.5"><AiBadge state={c.ai_status} /></td>
                   </tr>
                 ))}
 

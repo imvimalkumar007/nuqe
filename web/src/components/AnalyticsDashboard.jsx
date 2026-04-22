@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, Legend, LineChart, Line,
 } from 'recharts';
 import client from '../api/client';
+import { useMetrics } from '../hooks/useMetrics';
 
 // ─── Brand tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -49,25 +50,27 @@ function fmtCategory(key = '') {
 }
 
 // ─── Data normalisers ─────────────────────────────────────────────────────────
+// API shape: { ai_actions: { total, pending, approved, rejected, approval_rate, rejection_rate },
+//              by_action_type: [{ action_type, total, approved, rejected, approval_rate }],
+//              cases: { open, fos_referred, breach_risk, total_active },
+//              avg_resolution_days }
 function normalizeAccuracy(raw) {
   if (!raw) return null;
+  const ai = raw.ai_actions ?? {};
   return {
-    overall_approval_rate: raw.overall_approval_rate ?? 0,
-    edit_rate:             raw.edit_rate             ?? 0,
-    rejection_rate:        raw.rejection_rate         ?? 0,
-    open_knowledge_gaps:   raw.open_knowledge_gaps   ?? raw.knowledge_gap_count ?? 0,
-    total_reviewed:        raw.total_reviewed         ?? 0,
-    approval_by_action: (raw.approval_rate_by_action_type ?? raw.approval_by_action ?? []).map((r) => ({
+    overall_approval_rate: ai.approval_rate  ?? 0,
+    rejection_rate:        ai.rejection_rate ?? 0,
+    approved:              ai.approved       ?? 0,
+    total_reviewed:        ai.total          ?? 0,
+    approval_by_action: (raw.by_action_type ?? []).map((r) => ({
       label: r.label ?? fmtActionType(r.action_type),
-      rate:  r.approval_rate ?? r.rate ?? 0,
+      rate:  r.approval_rate ?? 0,
     })),
-    classification_accuracy: (raw.classification_accuracy ?? []).map((r) => ({
-      label: r.label ?? fmtCategory(r.category),
-      ai:    r.accuracy_pct ?? r.ai   ?? 0,
-      human: r.human_pct    ?? r.human ?? null,
-    })),
-    tokeniser_additions: raw.tokeniser_additions ?? raw.average_low_confidence_flags ?? 0,
-    daily_volume:        raw.daily_volume        ?? null,
+    classification_accuracy: [],
+    tokeniser_additions: null,
+    daily_volume:        null,
+    cases:               raw.cases               ?? null,
+    avg_resolution_days: raw.avg_resolution_days ?? null,
   };
 }
 
@@ -194,10 +197,10 @@ function AccuracyTab({ accuracy, loading, days }) {
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
         {(!accuracy && loading) ? [0,1,2,3].map((i) => <MetricCardSkeleton key={i} />) : (
           <>
-            <MetricCard label="Overall Approval Rate" value={accuracy?.overall_approval_rate} accent={C.ok}     sub={`${(accuracy?.total_reviewed ?? 0).toLocaleString()} actions reviewed`} />
-            <MetricCard label="Edit Rate"              value={accuracy?.edit_rate}             accent={C.warn}   sub="Approved after human edits" />
-            <MetricCard label="Rejection Rate"         value={accuracy?.rejection_rate}        accent={C.danger} sub="Actions rejected outright" />
-            <MetricCard label="Open Knowledge Gaps"    value={accuracy?.open_knowledge_gaps}   suffix="" accent={C.purple} sub="Pending knowledge base review" />
+            <MetricCard label="Approval Rate"  value={accuracy?.overall_approval_rate} accent={C.ok}     sub={`${(accuracy?.total_reviewed ?? 0).toLocaleString()} actions reviewed`} />
+            <MetricCard label="Approved"       value={accuracy?.approved}              suffix="" accent={C.ok}     sub="Actions approved in period" />
+            <MetricCard label="Rejection Rate" value={accuracy?.rejection_rate}        accent={C.danger} sub="Actions rejected outright" />
+            <MetricCard label="Total Reviewed" value={accuracy?.total_reviewed}        suffix="" accent={C.purple} sub="All reviewed actions" />
           </>
         )}
       </div>
@@ -262,6 +265,29 @@ function AccuracyTab({ accuracy, loading, days }) {
           </ResponsiveContainer>
         </Section>
       </ChartOverlay>
+
+      {/* Case status summary */}
+      {accuracy?.cases && (
+        <Section title="Current Case Status">
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+            <MetricCard label="Open Cases"   value={accuracy.cases.open}         suffix="" accent={C.purple} sub="Active cases" />
+            <MetricCard label="FOS Referred" value={accuracy.cases.fos_referred} suffix="" accent={C.muted}  sub="Escalated to ombudsman" />
+            <MetricCard label="Breach Risk"  value={accuracy.cases.breach_risk}  suffix="" accent={C.danger} sub="Deadline within 48 hours" />
+            <MetricCard label="Total Active" value={accuracy.cases.total_active} suffix="" accent={C.blue}   sub="Non-closed cases" />
+          </div>
+        </Section>
+      )}
+
+      {/* Average resolution time */}
+      <div className="rounded-lg px-5 py-4 flex items-center justify-between" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
+        <div>
+          <p className="text-sm font-medium text-nuqe-text">Average resolution time</p>
+          <p className="text-xs text-nuqe-muted mt-0.5">Cases closed in the selected period</p>
+        </div>
+        <p className="text-3xl font-semibold" style={{ color: C.purple }}>
+          {accuracy?.avg_resolution_days != null ? `${accuracy.avg_resolution_days}d` : '—'}
+        </p>
+      </div>
 
       {/* Tokeniser additions */}
       <div className="rounded-lg px-5 py-4 flex items-center justify-between" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
@@ -401,11 +427,6 @@ export default function AnalyticsDashboard() {
   const [customTo,   setCustomTo]   = useState(() => todayStr());
   const [tab,        setTab]        = useState('accuracy');
 
-  const [accuracy,  setAccuracy]  = useState(null);
-  const [models,    setModels]    = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [error,     setError]     = useState(null);
-
   const dateFrom = preset !== null ? daysAgo(preset) : customFrom;
   const dateTo   = preset !== null ? todayStr()       : customTo;
 
@@ -413,25 +434,15 @@ export default function AnalyticsDashboard() {
     ? preset
     : Math.max(1, Math.round((new Date(dateTo) - new Date(dateFrom)) / 86_400_000) + 1);
 
-  const fetchAll = useCallback(async (from, to) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = { dateFrom: from, dateTo: to };
-      const [accRes, modRes] = await Promise.all([
-        client.get('/api/v1/metrics/ai-accuracy',    { params }),
-        client.get('/api/v1/metrics/model-comparison', { params }),
-      ]);
-      setAccuracy(normalizeAccuracy(accRes.data));
-      setModels(normalizeModels(modRes.data));
-    } catch (err) {
-      setError(err.response?.data?.error ?? err.message ?? 'Failed to load metrics');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const { metrics, loading, error, refetch } = useMetrics(dateFrom, dateTo);
+  const accuracy = useMemo(() => normalizeAccuracy(metrics), [metrics]);
 
-  useEffect(() => { fetchAll(dateFrom, dateTo); }, [fetchAll, dateFrom, dateTo]);
+  const [models, setModels] = useState([]);
+  useEffect(() => {
+    client.get('/api/v1/metrics/model-comparison', { params: { dateFrom, dateTo } })
+      .then(({ data }) => setModels(normalizeModels(data)))
+      .catch(() => {});
+  }, [dateFrom, dateTo]);
 
   // Hide Model Comparison tab when no challenger is configured
   const hasChallenger = models.some((m) => m.role === 'challenger');
@@ -486,7 +497,7 @@ export default function AnalyticsDashboard() {
              style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.25)' }}>
           <span className="text-red-400 text-sm shrink-0">✕</span>
           <p className="text-xs text-red-400 flex-1">{error}</p>
-          <button onClick={() => fetchAll(dateFrom, dateTo)}
+          <button onClick={refetch}
                   className="text-xs font-medium px-3 py-1.5 rounded-md shrink-0"
                   style={{ border: '1px solid rgba(239,68,68,0.35)', color: 'rgb(248,113,113)', background: 'rgba(239,68,68,0.08)' }}>
             Retry

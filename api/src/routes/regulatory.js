@@ -9,31 +9,17 @@ router.get('/sources', async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT
-         rs.*,
-         log_latest.checked_at         AS last_check_at,
-         log_latest.documents_ingested  AS last_check_ingested,
-         log_latest.error               AS last_check_error,
-         COALESCE(monthly.ingested, 0)  AS ingested_this_month
-       FROM regulatory_sources rs
-       LEFT JOIN LATERAL (
-         SELECT checked_at, documents_ingested, error
-         FROM regulatory_monitoring_log
-         WHERE source_id = rs.id
-         ORDER BY checked_at DESC
-         LIMIT 1
-       ) log_latest ON TRUE
-       LEFT JOIN LATERAL (
-         SELECT SUM(documents_ingested) AS ingested
-         FROM regulatory_monitoring_log
-         WHERE source_id = rs.id
-           AND checked_at >= DATE_TRUNC('month', NOW())
-       ) monthly ON TRUE
-       ORDER BY rs.jurisdiction, rs.name`
+         id, name, jurisdiction, source_type, url, is_active,
+         last_checked_at,
+         updated_at AS last_changed_at,
+         created_at
+       FROM regulatory_sources
+       ORDER BY jurisdiction ASC, name ASC`
     );
-    res.json(rows);
+    res.json({ sources: rows });
   } catch (err) {
     console.error('[regulatory/sources GET]', err.message);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ message: 'Failed to fetch sources', error: err.message });
   }
 });
 
@@ -77,6 +63,89 @@ router.get('/recent-changes', async (req, res) => {
   } catch (err) {
     console.error('[regulatory/recent-changes GET]', err.message);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── GET /monitoring-log ─────────────────────────────────────────────────────
+router.get('/monitoring-log', async (req, res) => {
+  const { jurisdiction } = req.query;
+  const limit  = Math.min(Math.max(parseInt(req.query.limit  ?? '50',  10) || 50,  1), 200);
+  const offset = Math.max(parseInt(req.query.offset ?? '0', 10) || 0, 0);
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT
+         l.id,
+         rs.name        AS source_name,
+         rs.jurisdiction,
+         l.error        AS summary,
+         NULL::text     AS status,
+         l.checked_at   AS detected_at,
+         NULL::timestamptz AS reviewed_at,
+         NULL::text     AS reviewed_by,
+         COUNT(*) OVER() AS total_count
+       FROM regulatory_monitoring_log l
+       JOIN regulatory_sources rs ON rs.id = l.source_id
+       WHERE ($1::text IS NULL OR rs.jurisdiction = $1)
+       ORDER BY l.checked_at DESC
+       LIMIT $2 OFFSET $3`,
+      [jurisdiction ?? null, limit, offset]
+    );
+
+    const total = rows.length > 0 ? parseInt(rows[0].total_count, 10) : 0;
+    res.json({
+      log:   rows.map(({ total_count, ...row }) => row),
+      total,
+    });
+  } catch (err) {
+    console.error('[regulatory/monitoring-log GET]', err.message);
+    res.status(500).json({ message: 'Failed to fetch monitoring log', error: err.message });
+  }
+});
+
+// ─── PATCH /monitoring-log/:id/approve ───────────────────────────────────────
+router.patch('/monitoring-log/:id/approve', async (req, res) => {
+  const { id } = req.params;
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const { rows } = await client.query(
+      `SELECT
+         l.id,
+         rs.name        AS source_name,
+         rs.jurisdiction,
+         l.error        AS summary,
+         NULL::text     AS status,
+         l.checked_at   AS detected_at,
+         NULL::timestamptz AS reviewed_at,
+         NULL::text     AS reviewed_by
+       FROM regulatory_monitoring_log l
+       JOIN regulatory_sources rs ON rs.id = l.source_id
+       WHERE l.id = $1`,
+      [id]
+    );
+
+    if (!rows.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Monitoring log entry not found' });
+    }
+
+    await client.query(
+      `INSERT INTO audit_log (entity_type, entity_id, action, actor_type, actor_id, new_value)
+       VALUES ('regulatory_update', $1, 'approved', 'staff', NULL, NULL)`,
+      [id]
+    );
+
+    await client.query('COMMIT');
+    return res.json(rows[0]);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('[regulatory/monitoring-log/approve]', err.message);
+    return res.status(500).json({ message: 'Failed to approve monitoring log entry', error: err.message });
+  } finally {
+    client.release();
   }
 });
 

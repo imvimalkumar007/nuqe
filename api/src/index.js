@@ -16,6 +16,7 @@ import webhooksRouter     from './routes/webhooks.js';
 import knowledgeRouter            from './routes/knowledge.js';
 import knowledgeMonitoringRouter  from './routes/knowledgeMonitoring.js';
 import regulatoryRouter           from './routes/regulatory.js';
+import settingsRouter             from './routes/settings.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -48,6 +49,7 @@ app.use('/api/v1/webhooks',       webhooksRouter);
 app.use('/api/v1/knowledge-chunks', knowledgeRouter);
 app.use('/api/v1/knowledge',        knowledgeMonitoringRouter);
 app.use('/api/v1/regulatory',       regulatoryRouter);
+app.use('/api/v1/settings',         settingsRouter);
 
 app.listen(PORT, async () => {
   console.log(`API listening on port ${PORT}`);
