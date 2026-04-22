@@ -6,9 +6,9 @@
 
 Last updated: 22 April 2026
 Total: 142
-PASS: 0
+PASS: 8
 FAIL: 0
-NOT RUN: 142
+NOT RUN: 134
 
 ---
 
@@ -16,14 +16,14 @@ NOT RUN: 142
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| DB-001 | All required tables exist in public schema | NOT RUN | |
-| DB-002 | customers table has all required columns | NOT RUN | |
-| DB-003 | cases table has all required columns and check constraints | NOT RUN | |
-| DB-004 | audit_log cannot be updated or deleted | NOT RUN | |
-| DB-005 | case_ref auto-generates in NQ-YYYY-NNNN format | NOT RUN | |
-| DB-006 | updated_at triggers fire on all mutable tables | NOT RUN | |
-| DB-007 | ruleset table is seeded with UK, India, and EU rules | NOT RUN | |
-| DB-008 | Foreign key constraints are enforced | NOT RUN | |
+| DB-001 | All required tables exist in public schema | PASS | 22 Apr 2026 |
+| DB-002 | customers table has all required columns | PASS | 22 Apr 2026 |
+| DB-003 | cases table has all required columns and check constraints | PASS | 22 Apr 2026 |
+| DB-004 | audit_log cannot be updated or deleted | PASS | 22 Apr 2026 |
+| DB-005 | case_ref auto-generates in NQ-YYYY-NNNN format | PASS | 22 Apr 2026 |
+| DB-006 | updated_at triggers fire on all mutable tables | PASS | 22 Apr 2026 |
+| DB-007 | ruleset table is seeded with UK, India, and EU rules | PASS | 22 Apr 2026 |
+| DB-008 | Foreign key constraints are enforced | PASS | 22 Apr 2026 |
 
 ---
 

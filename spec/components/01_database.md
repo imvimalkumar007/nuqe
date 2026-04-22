@@ -1,7 +1,7 @@
 # Component 01: Database Schema
 
 ## Status
-PARTIAL — 13 of 15 required tables exist. tokeniser_additions and knowledge_documents missing.
+VERIFIED — all 15 required tables exist. DB-001 through DB-008 passing (22 April 2026).
 
 ## Purpose
 The foundation of the entire system. All other components depend on
@@ -11,12 +11,12 @@ component can be verified.
 
 ## Current Tables (confirmed 22 April 2026)
 _migrations, ai_actions, audit_log, cases, communications, customers,
-deadlines, knowledge_chunks, notifications, organisation_ai_config,
-regulatory_monitoring_log, regulatory_sources, ruleset
+deadlines, knowledge_chunks, knowledge_documents, notifications,
+organisation_ai_config, regulatory_monitoring_log, regulatory_sources,
+ruleset, tokeniser_additions
 
 ## Missing Tables
-- tokeniser_additions (migration 003)
-- knowledge_documents (migration 004)
+None.
 
 ## Required Tables (15 total)
 customers, cases, communications, deadlines, ruleset, ai_actions,
@@ -42,19 +42,17 @@ regulatory_monitoring_log, notifications, users (added by auth migration)
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| DB-001 | All required tables exist in public schema | NOT RUN | |
-| DB-002 | customers table has all required columns | NOT RUN | |
-| DB-003 | cases table has check constraints on status field | NOT RUN | |
-| DB-004 | audit_log cannot be updated or deleted | NOT RUN | |
-| DB-005 | case_ref auto-generates in NQ-YYYY-NNNN format | NOT RUN | |
-| DB-006 | updated_at triggers fire on mutable tables | NOT RUN | |
-| DB-007 | ruleset table is seeded with UK, India, and EU rules | NOT RUN | |
-| DB-008 | Foreign key constraints enforced (e.g. cases.customer_id) | NOT RUN | |
+| DB-001 | All required tables exist in public schema | PASS | 22 Apr 2026 |
+| DB-002 | customers table has all required columns | PASS | 22 Apr 2026 |
+| DB-003 | cases table has check constraints on status field | PASS | 22 Apr 2026 |
+| DB-004 | audit_log cannot be updated or deleted | PASS | 22 Apr 2026 |
+| DB-005 | case_ref auto-generates in NQ-YYYY-NNNN format | PASS | 22 Apr 2026 |
+| DB-006 | updated_at triggers fire on mutable tables | PASS | 22 Apr 2026 |
+| DB-007 | ruleset table is seeded with UK, India, and EU rules | PASS | 22 Apr 2026 |
+| DB-008 | Foreign key constraints enforced (e.g. cases.customer_id) | PASS | 22 Apr 2026 |
 
 ## Known Issues
-- tokeniser_additions table missing. Migration 003 may have been named
-  differently by Claude Code (003_knowledge_base.sql seen in _migrations).
-- knowledge_documents table missing. Migration 004 may not have run.
+None. All tables present and verified.
 
 ## Claude Code Prompt
 ```
