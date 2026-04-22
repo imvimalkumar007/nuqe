@@ -7,21 +7,29 @@
     "dev": "node --watch src/index.js",
     "migrate": "node src/db/migrate.js",
     "seed:knowledge": "node src/db/migrate.js && node src/db/seeds/regulatory_knowledge.js",
-    "seed:demo":      "node src/db/seeds/demo_data.js"
+    "seed:demo": "node src/db/seeds/demo_data.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.cjs",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.cjs --coverage",
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.cjs --watch"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.27.0",
-    "compromise": "^14.14.0",
     "@google/generative-ai": "^0.21.0",
-    "openai": "^4.67.0",
     "bullmq": "^5.0.0",
+    "cheerio": "^1.0.0",
+    "compromise": "^14.14.0",
     "cors": "^2.8.5",
     "dotenv": "^16.0.0",
     "express": "^4.18.0",
     "jsonwebtoken": "^9.0.0",
+    "node-fetch": "^3.3.0",
+    "openai": "^4.67.0",
     "pg": "^8.11.0",
-    "rss-parser": "^3.13.0",
-    "cheerio": "^1.0.0",
-    "node-fetch": "^3.3.0"
+    "rss-parser": "^3.13.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.3.0",
+    "supertest": "^7.2.2"
   }
 }
