@@ -25,8 +25,8 @@
 
 | Phase | Name | Sessions | Goal | Status |
 |---|---|---|---|---|
-| 0 | Foundation | 1 | Spec system committed, test infra working | IN PROGRESS |
-| 1 | Core Data Layer | 3 | Database verified, Auth working, seed data correct | NOT STARTED |
+| 0 | Foundation | 1 | Spec system committed, test infra working | DONE |
+| 1 | Core Data Layer | 3 | Database verified, Auth working, seed data correct | IN PROGRESS |
 | 2 | Core API Layer | 3 | Cases, Communications, Deadlines APIs verified | NOT STARTED |
 | 3 | Business Engines | 4 | Deadline, Compliance, Model Router, PII Tokeniser verified | NOT STARTED |
 | 4 | Intelligence Layer | 2 | Knowledge Layer and Regulatory Monitor verified | NOT STARTED |
@@ -48,15 +48,15 @@ Each session: 1 to 2 hours in Claude Code
 ### Session 0.1: Spec commit and test infrastructure
 **What to do:** Paste the setup prompt (in NUQE_CONTEXT.md Section 8). Let Claude Code commit the spec files, install Jest and Playwright, and run the database diagnostic.
 **Exit criteria:**
-- [ ] spec/ folder committed to GitHub
-- [ ] Jest installed in api/ with jest.config.js
-- [ ] Playwright installed in web/ with playwright.config.js
-- [ ] `npm test` runs in api/ without crashing (zero tests is fine)
-- [ ] Database diagnostic shows which tables exist and which are missing
-- [ ] Commit hash recorded below
+- [x] spec/ folder committed to GitHub
+- [x] Jest installed in api/ with jest.config.cjs
+- [x] Playwright installed in web/ with playwright.config.js
+- [x] `npm test` runs in api/ without crashing (zero tests is fine)
+- [x] Database diagnostic shows which tables exist and which are missing
+- [x] Commit hash recorded below
 
-**Commit hash:** _______________
-**Date completed:** _______________
+**Commit hash:** e801c4f
+**Date completed:** 22 April 2026
 
 ---
 
@@ -68,15 +68,16 @@ Each session: 1 to 2 hours in Claude Code
 **What gets built:** Missing tables created (tokeniser_additions, knowledge_documents). All constraints verified.
 **Tests to pass:** DB-001 through DB-008 (8 tests)
 **Exit criteria:**
-- [ ] All 15 required tables present
-- [ ] audit_log UPDATE/DELETE blocked by rules
-- [ ] case_ref auto-generates correctly
-- [ ] updated_at triggers fire
-- [ ] DB-001 through DB-008 all PASS
-- [ ] Component 01 status updated to VERIFIED
-- [ ] Changes committed
+- [x] All 15 required tables present
+- [x] audit_log UPDATE/DELETE blocked by rules
+- [x] case_ref auto-generates correctly
+- [x] updated_at triggers fire
+- [x] DB-001 through DB-008 all PASS
+- [x] Component 01 status updated to VERIFIED
+- [x] Changes committed
 
-**Date completed:** _______________
+**Commit hash:** 3b397e9
+**Date completed:** 23 April 2026
 
 ### Session 1.2: Component 02 — Auth System
 **Spec file:** spec/components/02_auth.md
@@ -550,3 +551,4 @@ Run the complete Playwright smoke test suite against the deployed Render instanc
 | Date | What changed |
 |---|---|
 | 22 April 2026 | Initial build plan created. 10 phases, 27 sessions, 142 tests. Based on confirmed demo screenshot and full system state assessment. |
+| 23 April 2026 | Phase 0 complete (e801c4f). Session 1.1 complete: migrations 006+007 added, 8 DB tests all PASS (3b397e9). Phase 1 IN PROGRESS. |
