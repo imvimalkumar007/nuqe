@@ -6,7 +6,8 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "migrate": "node src/db/migrate.js",
-    "seed:knowledge": "node src/db/migrate.js && node src/db/seeds/regulatory_knowledge.js"
+    "seed:knowledge": "node src/db/migrate.js && node src/db/seeds/regulatory_knowledge.js",
+    "seed:demo":      "node src/db/seeds/demo_data.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.27.0",
