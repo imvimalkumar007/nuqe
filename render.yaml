@@ -26,6 +26,10 @@ services:
         sync: false
       - key: JWT_SECRET
         generateValue: true
+      - key: QUIDO_WEBHOOK_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false
 
   - type: web
     name: nuqe-web
@@ -35,10 +39,7 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        fromService:
-          name: nuqe-api
-          type: web
-          property: host
+        sync: false
 
   - type: redis
     name: nuqe-redis
