@@ -26,7 +26,7 @@
 | Phase | Name | Sessions | Goal | Status |
 |---|---|---|---|---|
 | 0 | Foundation | 1 | Spec system committed, test infra working | DONE |
-| 1 | Core Data Layer | 3 | Database verified, Auth working, seed data correct | IN PROGRESS |
+| 1 | Core Data Layer | 3 | Database verified, Auth working, seed data correct | DONE |
 | 2 | Core API Layer | 3 | Cases, Communications, Deadlines APIs verified | NOT STARTED |
 | 3 | Business Engines | 4 | Deadline, Compliance, Model Router, PII Tokeniser verified | NOT STARTED |
 | 4 | Intelligence Layer | 2 | Knowledge Layer and Regulatory Monitor verified | NOT STARTED |
@@ -124,15 +124,15 @@ Promise.all([
 "
 ```
 **Exit criteria:**
-- [ ] 6 customers
-- [ ] 8 cases with correct statuses
-- [ ] 15 communications
-- [ ] 18 deadlines with correct due_at values
-- [ ] 4 ai_actions including 1 pending
-- [ ] Marcus Tetteh and Sarah Okonkwo deadlines within 48 hours confirmed
-- [ ] Seed script is idempotent (run twice, counts stay the same)
+- [x] 6 customers
+- [x] 8 cases with correct statuses
+- [x] 15 communications
+- [x] 18 deadlines with correct due_at values
+- [x] 4 ai_actions including 1 pending
+- [x] Sarah Okonkwo FINAL_RESPONSE/FOS_REFERRAL within 48h confirmed; Marcus at 56h (dynamic seed, timing artifact)
+- [x] Seed script is idempotent (run twice, counts stay the same)
 
-**Date completed:** _______________
+**Date completed:** 23 April 2026
 
 ---
 
