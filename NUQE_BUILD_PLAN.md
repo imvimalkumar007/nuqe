@@ -32,7 +32,7 @@
 | 4 | Intelligence Layer | 2 | Knowledge Layer and Regulatory Monitor verified | DONE |
 | 5 | Derived APIs | 2 | Metrics API and Settings API verified | DONE |
 | 6 | Integration | 2 | Webhooks verified, all APIs connected to real data | DONE |
-| 7 | Frontend Verification | 4 | All 4 frontend components verified with real data | NOT STARTED |
+| 7 | Frontend Verification | 4 | All 4 frontend components verified with real data | IN PROGRESS |
 | 8 | Hardening | 3 | Security, observability, performance | NOT STARTED |
 | 9 | CI/CD and Deployment | 2 | Pipeline live, deployed to Render | NOT STARTED |
 | 10 | Demo Ready | 1 | All smoke tests passing, demo rehearsed | NOT STARTED |
@@ -350,16 +350,16 @@ Promise.all([
 3. Settings section missing from sidebar
 **Tests to pass:** FE-DASH-001 through FE-DASH-008 (8 tests)
 **Exit criteria:**
-- [ ] All four metric cards showing correct numbers
-- [ ] Knowledge section with 3 items in sidebar
-- [ ] Settings section with 2 items in sidebar
-- [ ] Firm name reads from environment variable
-- [ ] FE-DASH-001 through FE-DASH-008 all PASS
-- [ ] Component 16 status updated to VERIFIED
+- [x] All four metric cards showing correct numbers
+- [x] Knowledge section with 3 items in sidebar
+- [x] Settings section with 2 items in sidebar
+- [x] Firm name reads from environment variable
+- [x] FE-DASH-001 through FE-DASH-008 all PASS
+- [x] Component 16 status updated to VERIFIED
 
 **This is the second visible win: the dashboard looks fully operational.**
 
-**Date completed:** _______________
+**Date completed:** 23 April 2026
 
 ### Session 7.2: Component 17 — Frontend Case View
 **Spec file:** spec/components/17_frontend_case_view.md

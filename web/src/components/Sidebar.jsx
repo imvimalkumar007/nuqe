@@ -33,6 +33,21 @@ const NAV = [
       { label: 'Performance', to: '/analytics', icon: <IconChart /> },
     ],
   },
+  {
+    group: 'Knowledge',
+    items: [
+      { label: 'Regulatory', to: '/knowledge/regulatory', icon: <IconBook /> },
+      { label: 'Product',    to: '/knowledge/product',    icon: <IconDoc />  },
+      { label: 'Gaps',       to: '/knowledge/gaps',       icon: <IconGap />  },
+    ],
+  },
+  {
+    group: 'Settings',
+    items: [
+      { label: 'AI Configuration', to: '/settings/ai-config', icon: <IconGear /> },
+      { label: 'Tokeniser',        to: '/settings/tokeniser', icon: <IconKey />  },
+    ],
+  },
 ];
 
 // Routes that should show the pending AI actions badge, mapped to the
@@ -186,6 +201,45 @@ function IconRadar() {
       <circle cx="8" cy="8" r="5.5" />
       <circle cx="8" cy="8" r="2.5" />
       <path d="M8 8L11.5 4.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+function IconBook() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M3 2.5A1.5 1.5 0 014.5 1h7A1.5 1.5 0 0113 2.5v11l-4.5-2L4 13.5V2.5z" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function IconDoc() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M4 2h5.5L12 4.5V14H4V2z" strokeLinejoin="round" />
+      <path d="M9 2v3h3M6 7h4M6 9.5h4M6 12h2" strokeLinecap="round" />
+    </svg>
+  );
+}
+function IconGap() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="8" cy="8" r="5.5" />
+      <path d="M8 5v3.5M8 10.5v.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+function IconGear() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="8" cy="8" r="2" />
+      <path d="M8 2v1M8 13v1M2 8h1M13 8h1M3.93 3.93l.71.71M11.36 11.36l.71.71M3.93 12.07l.71-.71M11.36 4.64l.71-.71" strokeLinecap="round" />
+    </svg>
+  );
+}
+function IconKey() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="5.5" cy="7.5" r="3" />
+      <path d="M8 8.5l5.5 3.5M11 10.5l1 1.5" strokeLinecap="round" />
     </svg>
   );
 }

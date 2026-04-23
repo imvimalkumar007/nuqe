@@ -6,9 +6,9 @@
 
 Last updated: 23 April 2026
 Total: 142
-PASS: 114
+PASS: 122
 FAIL: 0
-NOT RUN: 28
+NOT RUN: 20
 
 ---
 
@@ -235,14 +235,14 @@ NOT RUN: 28
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| FE-DASH-001 | Dashboard loads without console errors | NOT RUN | |
-| FE-DASH-002 | All 8 seed cases visible in table | NOT RUN | Confirmed working from screenshot |
-| FE-DASH-003 | Breach risk metric card shows correct count | NOT RUN | Confirmed broken: shows 0 |
-| FE-DASH-004 | Under review metric card shows correct count | NOT RUN | Confirmed broken: shows 0 |
-| FE-DASH-005 | Open metric card shows correct count | NOT RUN | Confirmed broken: shows 0 |
-| FE-DASH-006 | FOS referred metric card shows correct count | NOT RUN | Confirmed broken: shows 0 |
-| FE-DASH-007 | Knowledge section visible in sidebar | NOT RUN | Confirmed missing |
-| FE-DASH-008 | Settings section visible in sidebar | NOT RUN | Confirmed missing |
+| FE-DASH-001 | Dashboard loads without console errors | PASS | 23 Apr 2026 |
+| FE-DASH-002 | All 8 seed cases visible in table | PASS | 23 Apr 2026 |
+| FE-DASH-003 | Breach risk metric card shows correct count (2) | PASS | 23 Apr 2026 |
+| FE-DASH-004 | Under review metric card shows correct count (3) | PASS | 23 Apr 2026 |
+| FE-DASH-005 | Open metric card shows correct count (3) | PASS | 23 Apr 2026 |
+| FE-DASH-006 | FOS referred metric card shows correct count (1) | PASS | 23 Apr 2026 |
+| FE-DASH-007 | Knowledge section with 3 items visible in sidebar | PASS | 23 Apr 2026 |
+| FE-DASH-008 | Settings section with 2 items visible in sidebar | PASS | 23 Apr 2026 |
 
 ---
 

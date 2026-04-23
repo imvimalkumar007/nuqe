@@ -1,9 +1,7 @@
 # Component 16: Frontend Dashboard
 
 ## Status
-PARTIAL — cases table renders correctly, metric cards broken,
-Knowledge and Settings sections missing from sidebar.
-Confirmed from screenshot 22 April 2026.
+VERIFIED — all 8 tests passing (23 April 2026)
 
 ## Purpose
 Main entry screen. Shows all active cases with DISP deadline tracking,
@@ -45,14 +43,14 @@ Each must be a number. Currently all returning 0.
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| FE-DASH-001 | Dashboard loads without console errors | NOT RUN | |
-| FE-DASH-002 | All 8 seed cases visible in table | NOT RUN | Confirmed working |
-| FE-DASH-003 | Breach risk metric card shows correct count (2) | NOT RUN | Confirmed broken |
-| FE-DASH-004 | Under review metric card shows correct count (3) | NOT RUN | Confirmed broken |
-| FE-DASH-005 | Open metric card shows correct count (3) | NOT RUN | Confirmed broken |
-| FE-DASH-006 | FOS referred metric card shows correct count (1) | NOT RUN | Confirmed broken |
-| FE-DASH-007 | Knowledge section with 3 items visible in sidebar | NOT RUN | Confirmed missing |
-| FE-DASH-008 | Settings section with 2 items visible in sidebar | NOT RUN | Confirmed missing |
+| FE-DASH-001 | Dashboard loads without console errors | PASS | 23 Apr 2026 |
+| FE-DASH-002 | All 8 seed cases visible in table | PASS | 23 Apr 2026 |
+| FE-DASH-003 | Breach risk metric card shows correct count (2) | PASS | 23 Apr 2026 |
+| FE-DASH-004 | Under review metric card shows correct count (3) | PASS | 23 Apr 2026 |
+| FE-DASH-005 | Open metric card shows correct count (3) | PASS | 23 Apr 2026 |
+| FE-DASH-006 | FOS referred metric card shows correct count (1) | PASS | 23 Apr 2026 |
+| FE-DASH-007 | Knowledge section with 3 items visible in sidebar | PASS | 23 Apr 2026 |
+| FE-DASH-008 | Settings section with 2 items visible in sidebar | PASS | 23 Apr 2026 |
 
 ## Claude Code Prompt
 ```

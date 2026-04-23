@@ -195,7 +195,7 @@ export default function ComplaintsDashboard() {
           <span className="text-nuqe-muted text-sm">Complaints</span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-nuqe-text font-medium">Meridian Digital Finance Ltd</span>
+          <span className="text-sm text-nuqe-text font-medium">{import.meta.env.VITE_FIRM_NAME ?? 'Nuqe Demo'}</span>
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-semibold tracking-widest uppercase border border-emerald-500/30 bg-emerald-500/8 text-emerald-400">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
             FCA Authorised
@@ -229,7 +229,7 @@ export default function ComplaintsDashboard() {
         <div className="flex items-center gap-2">
           {FILTERS.map((f) => {
             const active = activeFilter === f.key;
-            const cnt = f.key !== 'all' ? (metrics?.[f.key] ?? derivedCounts[f.key]) : null;
+            const cnt = f.key !== 'all' ? counts[f.key] : null;
             return (
               <button
                 key={f.key}

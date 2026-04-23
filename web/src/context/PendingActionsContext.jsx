@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import client from '../api/client';
 
 const PendingActionsContext = createContext({
   pendingCount:        0,   // total: AI actions + pending_review chunks
@@ -14,19 +15,15 @@ export function PendingActionsProvider({ children }) {
   const refresh = useCallback(async () => {
     try {
       const [aiRes, chunkRes] = await Promise.all([
-        fetch('/api/v1/ai-actions?status=pending&limit=200'),
-        fetch('/api/v1/knowledge-chunks?status=pending_review&limit=200'),
+        client.get('/api/v1/ai-actions', { params: { status: 'pending', limit: 200 } }),
+        client.get('/api/v1/knowledge-chunks', { params: { status: 'pending_review', limit: 200 } }),
       ]);
 
-      if (aiRes.ok) {
-        const data = await aiRes.json();
-        setPendingActions(Array.isArray(data) ? data : []);
-      }
+      const aiData = aiRes.data;
+      setPendingActions(Array.isArray(aiData) ? aiData : []);
 
-      if (chunkRes.ok) {
-        const data = await chunkRes.json();
-        setPendingChunksCount(Array.isArray(data) ? data.length : 0);
-      }
+      const chunkData = chunkRes.data;
+      setPendingChunksCount(Array.isArray(chunkData) ? chunkData.length : 0);
     } catch {
       // silently fail — stale counts are better than a broken app
     }

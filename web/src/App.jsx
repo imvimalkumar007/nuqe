@@ -20,6 +20,14 @@ import AnalyticsDashboard            from './components/AnalyticsDashboard';
 import RegulatoryMonitoringScreen    from './components/RegulatoryMonitoringScreen';
 import SettingsScreen                from './components/SettingsScreen';
 
+function PlaceholderPage({ title }) {
+  return (
+    <div className="flex items-center justify-center h-full text-nuqe-muted text-sm">
+      {title} — coming soon
+    </div>
+  );
+}
+
 function AppShell() {
   return (
     <PendingActionsProvider>
@@ -42,6 +50,11 @@ function AppShell() {
             <Route path="/regulatory-monitoring"          element={<RegulatoryMonitoring />} />
             <Route path="/compliance/regulatory-monitoring" element={<RegulatoryMonitoringScreen />} />
             <Route path="/settings"                         element={<SettingsScreen />} />
+            <Route path="/settings/ai-config"               element={<SettingsScreen />} />
+            <Route path="/settings/tokeniser"               element={<SettingsScreen />} />
+            <Route path="/knowledge/regulatory"             element={<PlaceholderPage title="Regulatory Knowledge" />} />
+            <Route path="/knowledge/product"                element={<PlaceholderPage title="Product Knowledge" />} />
+            <Route path="/knowledge/gaps"                   element={<PlaceholderPage title="Knowledge Gaps" />} />
           </Routes>
         </main>
       </div>
