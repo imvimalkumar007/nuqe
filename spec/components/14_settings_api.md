@@ -1,7 +1,8 @@
 # Component 14: Settings API
 
 ## Status
-NOT BUILT — endpoints referenced by frontend do not exist
+VERIFIED — all 7 tests passing (23 April 2026). Settings.js rewritten with
+AES-256-GCM encryption, masked GET responses, audit_log writes, and connection test.
 
 ## Purpose
 Allows organisations to configure their AI provider, model, and API
@@ -59,13 +60,13 @@ NOTE: requires tokeniser_additions table to exist
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| SET-001 | GET /settings/ai-config returns 200 | NOT RUN | |
-| SET-002 | API key shown as ****XXXX (last 4 chars only) | NOT RUN | |
-| SET-003 | Returns default empty config when no row exists | NOT RUN | |
-| SET-004 | POST /settings/ai-config saves and encrypts key | NOT RUN | |
-| SET-005 | POST /settings/ai-config writes to audit_log | NOT RUN | |
-| SET-006 | POST /settings/ai-config/test returns response_time_ms | NOT RUN | Mock provider |
-| SET-007 | POST /settings/ai-config/test returns error on bad key | NOT RUN | Mock provider |
+| SET-001 | GET /settings/ai-config returns 200 | PASS | 23 Apr 2026 |
+| SET-002 | API key shown as ****XXXX (last 4 chars only) | PASS | 23 Apr 2026 |
+| SET-003 | Returns default empty config when no row exists | PASS | 23 Apr 2026 |
+| SET-004 | POST /settings/ai-config saves and encrypts key | PASS | 23 Apr 2026 |
+| SET-005 | POST /settings/ai-config writes to audit_log | PASS | 23 Apr 2026 |
+| SET-006 | POST /settings/ai-config/test returns response_time_ms | PASS | 23 Apr 2026; mocked |
+| SET-007 | POST /settings/ai-config/test returns error on bad key | PASS | 23 Apr 2026; mocked |
 
 ## Claude Code Prompt
 ```

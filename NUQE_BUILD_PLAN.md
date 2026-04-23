@@ -30,7 +30,7 @@
 | 2 | Core API Layer | 3 | Cases, Communications, Deadlines APIs verified | NOT STARTED |
 | 3 | Business Engines | 4 | Deadline, Compliance, Model Router, PII Tokeniser verified | NOT STARTED |
 | 4 | Intelligence Layer | 2 | Knowledge Layer and Regulatory Monitor verified | DONE |
-| 5 | Derived APIs | 2 | Metrics API and Settings API verified | NOT STARTED |
+| 5 | Derived APIs | 2 | Metrics API and Settings API verified | DONE |
 | 6 | Integration | 2 | Webhooks verified, all APIs connected to real data | NOT STARTED |
 | 7 | Frontend Verification | 4 | All 4 frontend components verified with real data | NOT STARTED |
 | 8 | Hardening | 3 | Security, observability, performance | NOT STARTED |
@@ -286,25 +286,25 @@ Promise.all([
 - FOS referred card: 1
 **Tests to pass:** MET-001 through MET-008 (8 tests)
 **Exit criteria:**
-- [ ] All four dashboard summary counts correct
-- [ ] ai-accuracy endpoint returns real data
-- [ ] model-comparison returns correct structure
-- [ ] MET-001 through MET-008 all PASS
-- [ ] Component 13 status updated to VERIFIED
+- [x] All four dashboard summary counts correct
+- [x] ai-accuracy endpoint returns real data
+- [x] model-comparison returns correct structure
+- [x] MET-001 through MET-008 all PASS
+- [x] Component 13 status updated to VERIFIED
 
-**Date completed:** _______________
+**Date completed:** 23 April 2026
 
 ### Session 5.2: Component 14 — Settings API
 **Spec file:** spec/components/14_settings_api.md
 **Tests to pass:** SET-001 through SET-007 (7 tests)
 **Exit criteria:**
-- [ ] GET /settings/ai-config returns masked keys
-- [ ] POST /settings/ai-config encrypts and saves
-- [ ] Connection test returns response_time_ms
-- [ ] SET-001 through SET-007 all PASS
-- [ ] Component 14 status updated to VERIFIED
+- [x] GET /settings/ai-config returns masked keys
+- [x] POST /settings/ai-config encrypts and saves
+- [x] Connection test returns response_time_ms
+- [x] SET-001 through SET-007 all PASS
+- [x] Component 14 status updated to VERIFIED
 
-**Date completed:** _______________
+**Date completed:** 23 April 2026
 
 ---
 

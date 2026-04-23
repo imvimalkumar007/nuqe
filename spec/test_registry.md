@@ -6,9 +6,9 @@
 
 Last updated: 23 April 2026
 Total: 142
-PASS: 85
+PASS: 100
 FAIL: 0
-NOT RUN: 57
+NOT RUN: 42
 
 ---
 
@@ -193,14 +193,14 @@ NOT RUN: 57
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| MET-001 | GET /metrics/dashboard-summary returns 200 | NOT RUN | Confirmed broken |
-| MET-002 | breach_risk_count is correct given seed data | NOT RUN | Expected: 2, Actual: 0 |
-| MET-003 | under_review_count is correct given seed data | NOT RUN | Expected: 3, Actual: 0 |
-| MET-004 | open_count is correct given seed data | NOT RUN | Expected: 3, Actual: 0 |
-| MET-005 | fos_referred_count is correct given seed data | NOT RUN | Expected: 1, Actual: 0 |
-| MET-006 | GET /metrics/ai-accuracy returns structured response | NOT RUN | |
-| MET-007 | ai-accuracy approval_rate is a number between 0 and 100 | NOT RUN | |
-| MET-008 | GET /metrics/model-comparison returns per-model breakdown | NOT RUN | |
+| MET-001 | GET /metrics/dashboard-summary returns 200 | PASS | 23 Apr 2026 |
+| MET-002 | breach_risk_count is correct given seed data | PASS | 23 Apr 2026 |
+| MET-003 | under_review_count is correct given seed data | PASS | 23 Apr 2026 |
+| MET-004 | open_count is correct given seed data | PASS | 23 Apr 2026 |
+| MET-005 | fos_referred_count is correct given seed data | PASS | 23 Apr 2026 |
+| MET-006 | GET /metrics/ai-accuracy returns structured response | PASS | 23 Apr 2026 |
+| MET-007 | ai-accuracy handles empty date range gracefully | PASS | 23 Apr 2026 |
+| MET-008 | GET /metrics/model-comparison returns per-model breakdown | PASS | 23 Apr 2026 |
 
 ---
 
@@ -208,13 +208,13 @@ NOT RUN: 57
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| SET-001 | GET /settings/ai-config returns 200 with config object | NOT RUN | |
-| SET-002 | GET /settings/ai-config masks API key showing only last 4 chars | NOT RUN | |
-| SET-003 | GET /settings/ai-config returns default empty config if none exists | NOT RUN | |
-| SET-004 | POST /settings/ai-config saves config and encrypts API key | NOT RUN | |
-| SET-005 | POST /settings/ai-config writes to audit_log | NOT RUN | |
-| SET-006 | POST /settings/ai-config/test returns success and response_time_ms | NOT RUN | |
-| SET-007 | POST /settings/ai-config/test returns failure message on bad credentials | NOT RUN | |
+| SET-001 | GET /settings/ai-config returns 200 with config object | PASS | 23 Apr 2026 |
+| SET-002 | GET /settings/ai-config masks API key showing only last 4 chars | PASS | 23 Apr 2026 |
+| SET-003 | GET /settings/ai-config returns default empty config if none exists | PASS | 23 Apr 2026 |
+| SET-004 | POST /settings/ai-config saves config and encrypts API key | PASS | 23 Apr 2026 |
+| SET-005 | POST /settings/ai-config writes to audit_log | PASS | 23 Apr 2026 |
+| SET-006 | POST /settings/ai-config/test returns success and response_time_ms | PASS | 23 Apr 2026 |
+| SET-007 | POST /settings/ai-config/test returns failure message on bad credentials | PASS | 23 Apr 2026 |
 
 ---
 

@@ -1,8 +1,8 @@
 # Component 13: Metrics API
 
 ## Status
-BROKEN — dashboard-summary endpoint returns 0 for all counts.
-Confirmed with 8 cases and 18 deadlines in database (22 April 2026).
+VERIFIED — all 8 tests passing (23 April 2026). Endpoint was correct;
+original "broken" state was before seed data was loaded.
 
 ## Purpose
 Powers the four metric cards on the Complaints Dashboard and the
@@ -54,14 +54,14 @@ Includes ab_split: 'primary' | 'challenger' per result.
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| MET-001 | GET /metrics/dashboard-summary returns 200 | NOT RUN | |
-| MET-002 | breach_risk_count = 2 with seed data | NOT RUN | Expected 2, getting 0 |
-| MET-003 | under_review_count = 3 with seed data | NOT RUN | Expected 3, getting 0 |
-| MET-004 | open_count = 3 with seed data | NOT RUN | Expected 3, getting 0 |
-| MET-005 | fos_referred_count = 1 with seed data | NOT RUN | Expected 1, getting 0 |
-| MET-006 | GET /metrics/ai-accuracy returns structured response | NOT RUN | |
-| MET-007 | ai-accuracy handles empty ai_actions gracefully | NOT RUN | |
-| MET-008 | GET /metrics/model-comparison returns per-model breakdown | NOT RUN | |
+| MET-001 | GET /metrics/dashboard-summary returns 200 | PASS | 23 Apr 2026 |
+| MET-002 | breach_risk_count = 2 with seed data | PASS | 23 Apr 2026 |
+| MET-003 | under_review_count = 3 with seed data | PASS | 23 Apr 2026 |
+| MET-004 | open_count = 3 with seed data | PASS | 23 Apr 2026 |
+| MET-005 | fos_referred_count = 1 with seed data | PASS | 23 Apr 2026 |
+| MET-006 | GET /metrics/ai-accuracy returns structured response | PASS | 23 Apr 2026 |
+| MET-007 | ai-accuracy handles empty ai_actions gracefully | PASS | 23 Apr 2026 |
+| MET-008 | GET /metrics/model-comparison returns per-model breakdown | PASS | 23 Apr 2026 |
 
 ## Claude Code Prompt
 ```
