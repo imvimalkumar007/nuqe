@@ -54,7 +54,11 @@ const DEFAULT_CONFIG = {
 // ─── Encryption helpers ───────────────────────────────────────────────────────
 
 function deriveKey() {
-  return crypto.scryptSync(process.env.JWT_SECRET ?? 'dev-secret', 'settings-salt', 32);
+  // ENCRYPTION_SECRET separates API-key encryption from JWT signing.
+  // Falls back to JWT_SECRET so existing encrypted values remain readable
+  // if ENCRYPTION_SECRET is not yet set.
+  const secret = process.env.ENCRYPTION_SECRET ?? process.env.JWT_SECRET ?? 'dev-secret';
+  return crypto.scryptSync(secret, 'settings-salt', 32);
 }
 
 function encryptApiKey(plaintext) {

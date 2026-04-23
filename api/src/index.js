@@ -3,6 +3,7 @@ import logger from './logger.js';
 import { pool } from './db/pool.js';
 import { scheduleDeadlineMonitor }   from './queues/deadlineQueue.js';
 import { scheduleRegulatoryMonitor } from './queues/regulatoryQueue.js';
+import { scheduleRetentionArchiver } from './queues/retentionQueue.js';
 
 const PORT = process.env.PORT || 3001;
 
@@ -10,6 +11,7 @@ const server = app.listen(PORT, async () => {
   logger.info({ port: PORT }, 'API listening');
   await scheduleDeadlineMonitor();
   await scheduleRegulatoryMonitor();
+  await scheduleRetentionArchiver();
 });
 
 async function shutdown(signal) {

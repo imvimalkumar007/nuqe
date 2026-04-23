@@ -10,6 +10,7 @@ import { requireAuth } from './middleware/auth.js';
 import logger from './logger.js';
 
 import authRouter         from './routes/auth.js';
+import customersRouter    from './routes/customers.js';
 import casesRouter        from './routes/cases.js';
 import communicationsRouter from './routes/communications.js';
 import deadlinesRouter    from './routes/deadlines.js';
@@ -61,6 +62,7 @@ app.use('/api/v1/webhooks',   webhookLimiter, webhooksRouter);
 app.use(standardLimiter);
 app.use(requireAuth);
 
+app.use('/api/v1/customers',       customersRouter);
 app.use('/api/v1/cases',          casesRouter);
 app.use('/api/v1/communications', communicationsRouter);
 app.use('/api/v1/deadlines',      deadlinesRouter);

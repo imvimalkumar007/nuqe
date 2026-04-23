@@ -8,21 +8,15 @@
 
 | # | Area | Description | Priority | Added | Notes |
 |---|---|---|---|---|---|
-| 2 | Security | API key encryption uses JWT_SECRET. Should move to dedicated secrets manager in production. | High | Apr 2026 | Acceptable for pilot. Must resolve before onboarding second client. |
-| 8 | Security | GDPR right to erasure not yet implemented | High | Apr 2026 | Build DELETE /api/v1/customers/:id/erasure with cascade and audit log |
-| 9 | Security | Anthropic API key was accidentally exposed in chat on 22 April 2026 | URGENT | 22 Apr 2026 | Delete exposed key at console.anthropic.com/settings/keys and create new one immediately |
+| 9 | Security | Anthropic API key was accidentally exposed in chat on 22 April 2026 | URGENT | 22 Apr 2026 | Delete exposed key at console.anthropic.com/settings/keys and create new one immediately — **manual action required** |
 | 12 | Testing | Seed script not tested for idempotency | Medium | Apr 2026 | Confirm delete order is correct |
 | 15 | Performance | pgvector index may need tuning at scale | Low | Apr 2026 | Revisit when chunks exceed 100,000 rows |
 | 18 | Reliability | No health check monitoring or alerting | Medium | Apr 2026 | Add UptimeRobot free tier |
-| 19 | Reliability | No database backup strategy confirmed | High | Apr 2026 | Confirm Render PostgreSQL backup schedule before going live |
+| 19 | Reliability | No database backup strategy confirmed | High | Apr 2026 | Confirm Render PostgreSQL backup schedule before going live — **manual action required** |
 | 21 | Reliability | BullMQ dead letter queue not configured | Low | Apr 2026 | Configure failed job handler |
 | 22 | Architecture | Multi-tenancy relies on application-level filtering only | Medium | Apr 2026 | Consider PostgreSQL row-level security |
 | 23 | Architecture | Express API is a monolith | Low | Apr 2026 | Plan to extract engines before scaling beyond 10 clients |
 | 24 | Architecture | No API versioning strategy | Low | Apr 2026 | Document before releasing public API |
-| 26 | Compliance | GDPR data retention policy not defined | High | Apr 2026 | Define retention periods and build archival job |
-| 27 | Compliance | No data processing agreement template | High | Apr 2026 | Required before onboarding first paying client |
-| 28 | Compliance | AI provider enterprise zero-retention agreements not in place | High | Apr 2026 | Required before processing real client data via external AI APIs |
-| 29 | Compliance | No terms of service or privacy policy | High | Apr 2026 | Required before any client pilot |
 | 30 | Understanding | pgvector HNSW vs ivfflat trade-offs not fully understood | Low | Apr 2026 | Read docs before knowledge base exceeds 50,000 chunks |
 | 31 | Understanding | BullMQ failure modes under Redis loss not tested | Low | Apr 2026 | Test graceful drain behaviour |
 | 32 | Understanding | Supersession threshold of 0.85 not validated | Medium | Apr 2026 | Test after knowledge base is seeded |
@@ -59,6 +53,12 @@
 | 47 | API | GET /api/v1/regulatory/sources and /monitoring-log not implemented | 23 Apr 2026 | Both fully implemented in regulatory.js: /sources returns all sources ordered by jurisdiction; /monitoring-log paginates regulatory_monitoring_log joined with sources |
 | 48 | API | GET and PATCH /api/v1/settings/ai-config not implemented | 23 Apr 2026 | GET returns masked config; POST upserts with AES-256-GCM encrypted API keys; cache cleared on update |
 | 49 | API | POST /api/v1/settings/tokeniser not implemented | 23 Apr 2026 | POST /settings/tokeniser-additions inserts to tokeniser_additions; /tokeniser redirects to it for backwards compat |
+| 2 | Security | API key encryption uses JWT_SECRET | 23 Apr 2026 | Added ENCRYPTION_SECRET env var; settings.js deriveKey() uses ENCRYPTION_SECRET with fallback to JWT_SECRET for backward compat; .env.example updated |
+| 8 | Security | GDPR right to erasure not implemented | 23 Apr 2026 | DELETE /api/v1/customers/:id/erasure: anonymises customer PII, communication bodies, AI action inputs/outputs, and case notes in a single transaction; writes immutable audit_log entry |
+| 26 | Compliance | GDPR data retention policy not defined | 23 Apr 2026 | Retention periods defined (cases+comms 7yr, AI actions 2yr, audit 10yr); retentionArchiver.js anonymises expired records; BullMQ retentionQueue runs weekly; npm run archive for manual runs |
+| 27 | Compliance | No data processing agreement template | 23 Apr 2026 | docs/compliance/data-processing-agreement-template.md created — covers Art.28 obligations, sub-processors, retention periods, erasure mechanism. Needs legal review before use. |
+| 28 | Compliance | AI provider zero-retention agreements not in place | 23 Apr 2026 | docs/compliance/ai-provider-zero-retention-checklist.md created — step-by-step for Anthropic and OpenAI. Manual sign-off still required. |
+| 29 | Compliance | No terms of service or privacy policy | 23 Apr 2026 | docs/compliance/terms-of-service-template.md and privacy-policy-template.md created. Needs legal review before publishing. |
 
 ---
 
@@ -80,3 +80,4 @@
 | April 2026 | Initial file created with 37 seeded gaps |
 | 22 April 2026 | Added gap 9 (exposed API key, URGENT), gap 25 (Docker networking), gap 40 (wrong postgres image). Added URGENT priority level. |
 | 23 April 2026 | Session 8.1–8.3: resolved gaps 1,3,4,5,6,7 (security), 13,14,16,17 (performance), 20 (observability). Session 9.1: resolved gap 37 (CI/CD). Docker fixes: resolved gaps 25, 40. API audit: resolved gaps 46,47,48,49 (already implemented). Housekeeping: resolved gaps 10,11,33 (tests and auth screen done). |
+| 23 April 2026 | Resolved gaps 2 (ENCRYPTION_SECRET), 8 (GDPR erasure endpoint), 26 (retention archiver + BullMQ job), 27 (DPA template), 28 (AI provider checklist), 29 (ToS + privacy policy templates). Gaps 9 and 19 flagged as manual actions. |

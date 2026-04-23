@@ -11,7 +11,8 @@
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.cjs",
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.cjs --coverage",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.cjs --watch",
-    "lint": "eslint src/"
+    "lint": "eslint src/",
+    "archive": "node -e \"import('./src/jobs/retentionArchiver.js').then(m => m.runRetentionArchiver()).then(r => { console.log('Archived:', r); process.exit(0); }).catch(e => { console.error(e); process.exit(1); })\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.27.0",
