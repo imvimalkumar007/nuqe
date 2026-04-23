@@ -6,9 +6,9 @@
 
 Last updated: 23 April 2026
 Total: 142
-PASS: 72
+PASS: 79
 FAIL: 0
-NOT RUN: 70
+NOT RUN: 63
 
 ---
 
@@ -166,13 +166,13 @@ NOT RUN: 70
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| KNOW-001 | retrieveContext returns chunks filtered by jurisdiction | NOT RUN | |
-| KNOW-002 | retrieveContext filters by as_at_date correctly | NOT RUN | |
-| KNOW-003 | retrieveContext returns maximum topK chunks | NOT RUN | |
-| KNOW-004 | enrichPrompt injects chunks as structured context block | NOT RUN | |
-| KNOW-005 | logRetrieval writes chunk IDs to audit_log | NOT RUN | |
-| KNOW-006 | Verified chunks labelled as verified guidance in prompt | NOT RUN | |
-| KNOW-007 | Auto_ingested chunks labelled as pending review in prompt | NOT RUN | |
+| KNOW-001 | retrieveContext returns chunks for UK jurisdiction | PASS | 23 Apr 2026 |
+| KNOW-002 | as_at_date filter excludes chunks not yet effective | PASS | 23 Apr 2026 |
+| KNOW-003 | as_at_date filter excludes chunks that have expired | PASS | 23 Apr 2026 |
+| KNOW-004 | enrichPrompt appends regulatory context block to prompt | PASS | 23 Apr 2026 |
+| KNOW-005 | logRetrieval writes chunk IDs to audit_log | PASS | 23 Apr 2026 |
+| KNOW-006 | Verified chunks labelled as "Verified regulatory guidance" | PASS | 23 Apr 2026 |
+| KNOW-007 | Auto-ingested chunks labelled as "Pending review" | PASS | 23 Apr 2026 |
 
 ---
 

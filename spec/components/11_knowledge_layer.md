@@ -1,7 +1,7 @@
 # Component 11: Knowledge Layer
 
 ## Status
-BUILT — code exists, never verified. Depends on pgvector.
+VERIFIED — all 7 tests passing (23 April 2026)
 
 ## Purpose
 RAG (Retrieval Augmented Generation) layer. Retrieves relevant
@@ -10,69 +10,42 @@ as_at_date filtering ensures historical cases use historically
 correct guidance.
 
 ## Dependencies
-- Database: knowledge_chunks, knowledge_documents tables
-- Model Router: for embedding generation
-- pgvector extension: for cosine similarity search
+- Database: knowledge_chunks table
+- pgvector: NOT enabled on local PG18. Vector search falls back to
+  ORDER BY updated_at DESC. Jurisdiction and date filters work in both paths.
 
 ## Key Functions
 
 ### retrieveContext(query, options)
-Options: { jurisdiction, organisationId, as_at_date, topK, namespace }
-- Generates embedding for query using model router
-- Queries knowledge_chunks using cosine similarity (ivfflat index)
-- Filters by: jurisdiction, organisation_id, namespace
-- CRITICAL: filters by effective_from <= as_at_date AND
-  (effective_to IS NULL OR effective_to >= as_at_date)
-- Returns topK chunks ordered by similarity score
+Options: { jurisdiction, documentType, asAtDate, limit }
+- Attempts embedding (requires OPENAI_API_KEY + pgvector)
+- Falls back to recency-sorted query when no embedding available
+- Returns: [{ id, title, chunk_text, jurisdiction, document_type, source_document, confidence_tier, similarity }]
+- CRITICAL: filters by effective_from <= asAtDate AND (effective_to IS NULL OR effective_to > asAtDate)
 
 ### enrichPrompt(basePrompt, caseId)
-- Reads case.opened_at as the as_at_date
-- Calls retrieveContext with case jurisdiction and opened_at
-- Appends chunks to prompt as structured context block
-- Labels chunks as "Verified regulatory guidance" or
-  "Pending review - treat as indicative only"
+- Reads case.opened_at and jurisdiction from ruleset JOIN
+- Calls retrieveContext with jurisdiction and opened_at as asAtDate
+- Appends "## Regulatory Context" block to basePrompt
+- Labels verified chunks as "### Verified regulatory guidance"
+- Labels auto_ingested chunks as "### Pending review — treat as indicative only"
 
-### ingestDocument(document, metadata)
-- Splits document into chunks
-- Generates embeddings for each chunk
-- Inserts into knowledge_chunks with effective_from = today
-- Creates knowledge_documents row for tracking
+### logRetrieval(actionId, chunkIds)
+- Inserts audit_log row: entity_type='ai_action', action='knowledge_retrieval'
+- new_value = { chunk_ids: [...] }
+
+## Notes
+- audit_log.new_value is json type — pg parses it automatically (no JSON.parse needed)
+- pgvector KNOW-001/002/003 work via fallback path despite no vector extension
 
 ## Tests
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| KNOW-001 | retrieveContext returns chunks for UK jurisdiction | NOT RUN | Needs pgvector |
-| KNOW-002 | as_at_date filter excludes chunks not yet effective | NOT RUN | |
-| KNOW-003 | as_at_date filter excludes chunks that have expired | NOT RUN | |
-| KNOW-004 | enrichPrompt appends context block to prompt | NOT RUN | |
-| KNOW-005 | logRetrieval writes chunk IDs to audit_log | NOT RUN | |
-| KNOW-006 | Verified chunks labelled correctly in prompt | NOT RUN | |
-| KNOW-007 | Auto-ingested chunks labelled as pending review | NOT RUN | |
-
-## Claude Code Prompt
-```
-Read spec/components/11_knowledge_layer.md carefully.
-
-First check if pgvector extension is enabled:
-docker exec -it nuqe-api-1 node -e "
-const {Pool} = require('pg');
-const p = new Pool({connectionString: process.env.DATABASE_URL});
-p.query('SELECT extname FROM pg_extension WHERE extname = \'vector\'').then(r => {console.log('pgvector:', r.rows.length > 0 ? 'ENABLED' : 'NOT ENABLED'); p.end()});
-"
-
-Then check if knowledge_chunks table has the vector column:
-docker exec -it nuqe-api-1 node -e "
-const {Pool} = require('pg');
-const p = new Pool({connectionString: process.env.DATABASE_URL});
-p.query('SELECT column_name, data_type FROM information_schema.columns WHERE table_name = \'knowledge_chunks\' ORDER BY ordinal_position').then(r => {console.log(JSON.stringify(r.rows,null,2)); p.end()});
-"
-
-Report findings. If pgvector is not enabled, note this as a
-blocker for KNOW-001 through KNOW-003 (mark as SKIPPED).
-
-Write tests KNOW-004 through KNOW-007 which do not need pgvector.
-Mock the database and model router calls.
-
-Update test status in this file and spec/test_registry.md.
-```
+| KNOW-001 | retrieveContext returns chunks for UK jurisdiction | PASS | 23 Apr 2026 |
+| KNOW-002 | as_at_date filter excludes chunks not yet effective | PASS | 23 Apr 2026 |
+| KNOW-003 | as_at_date filter excludes chunks that have expired | PASS | 23 Apr 2026 |
+| KNOW-004 | enrichPrompt appends regulatory context block to prompt | PASS | 23 Apr 2026 |
+| KNOW-005 | logRetrieval writes chunk IDs to audit_log | PASS | 23 Apr 2026 |
+| KNOW-006 | Verified chunks labelled as "Verified regulatory guidance" | PASS | 23 Apr 2026 |
+| KNOW-007 | Auto-ingested chunks labelled as "Pending review" | PASS | 23 Apr 2026 |

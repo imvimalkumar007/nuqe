@@ -209,6 +209,7 @@ export async function retrieveContext(query, {
 
     const { rows } = await pool.query(
       `SELECT id, title, chunk_text, jurisdiction, document_type, source_document,
+              confidence_tier,
               1 - (embedding <=> $${embIdx}::vector) AS similarity
        FROM knowledge_chunks
        WHERE ${where}
@@ -224,7 +225,7 @@ export async function retrieveContext(query, {
   params.push(limit);
   const { rows } = await pool.query(
     `SELECT id, title, chunk_text, jurisdiction, document_type, source_document,
-            NULL::float AS similarity
+            confidence_tier, NULL::float AS similarity
      FROM knowledge_chunks
      WHERE ${where}
      ORDER BY updated_at DESC
@@ -232,4 +233,55 @@ export async function retrieveContext(query, {
     params
   );
   return rows;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// enrichPrompt(basePrompt, caseId)
+// Appends relevant regulatory context chunks to a prompt string.
+// Labels each chunk as verified guidance or pending review based on tier.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function enrichPrompt(basePrompt, caseId) {
+  const { rows: caseRows } = await pool.query(
+    `SELECT c.opened_at, r.jurisdiction
+     FROM cases c
+     JOIN ruleset r ON r.id = c.ruleset_id
+     WHERE c.id = $1`,
+    [caseId]
+  );
+  if (!caseRows.length) return basePrompt;
+
+  const { opened_at, jurisdiction } = caseRows[0];
+
+  const chunks = await retrieveContext('regulatory guidance', {
+    jurisdiction,
+    asAtDate: opened_at,
+    limit: 5,
+  });
+
+  if (!chunks.length) return basePrompt;
+
+  const contextBlock = chunks
+    .map((chunk) => {
+      const label =
+        chunk.confidence_tier === 'verified'
+          ? '### Verified regulatory guidance'
+          : '### Pending review — treat as indicative only';
+      return `${label}\n${chunk.title}\n\n${chunk.chunk_text}`;
+    })
+    .join('\n\n---\n\n');
+
+  return `${basePrompt}\n\n## Regulatory Context\n\n${contextBlock}`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// logRetrieval(actionId, chunkIds)
+// Writes the retrieved chunk IDs to audit_log for traceability.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function logRetrieval(actionId, chunkIds) {
+  await pool.query(
+    `INSERT INTO audit_log
+       (entity_type, entity_id, action, actor_type, new_value)
+     VALUES ('ai_action', $1, 'knowledge_retrieval', 'system', $2)`,
+    [actionId, JSON.stringify({ chunk_ids: chunkIds })]
+  );
 }
