@@ -175,13 +175,13 @@ Promise.all([
 **What gets verified:** Deadlines endpoint returns correct rows with all required fields.
 **Tests to pass:** DEAD-001 through DEAD-007 (7 tests)
 **Exit criteria:**
-- [ ] GET /deadlines?caseId returns 3 rows for UK cases
-- [ ] due_at values are correct based on opened_at dates
-- [ ] DEAD-001 through DEAD-007 all PASS
-- [ ] Component 05 status updated to VERIFIED
-- [ ] Changes committed
+- [x] GET /deadlines?case_id returns 3 rows for UK cases
+- [x] due_at values are correct based on opened_at dates
+- [x] DEAD-001 through DEAD-007 all PASS
+- [x] Component 05 status updated to VERIFIED
+- [x] Changes committed
 
-**Date completed:** _______________
+**Date completed:** 23 April 2026
 
 ---
 

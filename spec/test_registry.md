@@ -6,9 +6,9 @@
 
 Last updated: 23 April 2026
 Total: 142
-PASS: 36
+PASS: 43
 FAIL: 0
-NOT RUN: 106
+NOT RUN: 99
 
 ---
 
@@ -80,13 +80,13 @@ NOT RUN: 106
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| DEAD-001 | GET /deadlines?caseId returns all deadlines for a case | NOT RUN | |
-| DEAD-002 | Deadline rows include due_at, met_at, breached, deadline_type | NOT RUN | |
-| DEAD-003 | UK case has three deadline rows: ACKNOWLEDGE, FINAL_RESPONSE, FOS_REFERRAL | NOT RUN | |
-| DEAD-004 | Breach risk case has FINAL_RESPONSE due_at within 48 hours of now | NOT RUN | |
-| DEAD-005 | FOS referred case has no unmet deadlines | NOT RUN | |
-| DEAD-006 | Closed case deadlines reflect met_at timestamp | NOT RUN | |
-| DEAD-007 | calculateDeadlines does not create duplicate rows if called twice | NOT RUN | |
+| DEAD-001 | GET /deadlines?case_id returns all deadlines for the case | PASS | 23 Apr 2026 |
+| DEAD-002 | Deadline rows include all required fields | PASS | 23 Apr 2026 |
+| DEAD-003 | UK case has three deadline rows: ACKNOWLEDGE, FINAL_RESPONSE, FOS_REFERRAL | PASS | 23 Apr 2026 |
+| DEAD-004 | Breach risk case has FINAL_RESPONSE due_at within 48 hours of now | PASS | 23 Apr 2026 |
+| DEAD-005 | FOS referred case (James Whitfield) has no pending deadlines | PASS | 23 Apr 2026 |
+| DEAD-006 | GET without case_id returns 400 | PASS | 23 Apr 2026 |
+| DEAD-007 | calculateDeadlines does not create duplicate rows if called twice | PASS | 23 Apr 2026 |
 
 ---
 
