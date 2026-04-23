@@ -11,7 +11,7 @@ export function useCases(status) {
     setError(null);
     try {
       const params = {};
-      if (status && status !== 'all') params.status = status;
+      if (status && status !== 'all' && status !== 'breach_risk') params.status = status;
       const { data } = await client.get('/api/v1/cases', { params });
       // API may return an array directly or { cases: [] }
       setCases(Array.isArray(data) ? data : (data.cases ?? []));

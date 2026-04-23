@@ -500,13 +500,13 @@ Run the complete Playwright smoke test suite against the deployed Render instanc
 7. Check settings screen loads AI configuration
 
 **Exit criteria:**
-- [ ] All Playwright smoke tests pass against Render instance
-- [ ] All 142 tests in test_registry.md are either PASS or SKIPPED with reason
-- [ ] Zero HIGH priority gaps remaining in NUQE_TECHNICAL_DEBT.md
-- [ ] NUQE_CONTEXT.md updated with deployed URL and demo credentials
-- [ ] Demo rehearsed end to end without errors
+- [x] All Playwright smoke tests pass against Render instance
+- [x] All 142 tests in test_registry.md are either PASS or SKIPPED with reason
+- [x] Zero HIGH priority gaps remaining in NUQE_TECHNICAL_DEBT.md
+- [x] NUQE_CONTEXT.md updated with deployed URL and demo credentials
+- [x] Demo rehearsed end to end without errors
 
-**Date completed:** _______________
+**Date completed:** 23 April 2026
 
 ---
 

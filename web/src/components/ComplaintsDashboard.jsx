@@ -157,8 +157,15 @@ export default function ComplaintsDashboard() {
         fos_referred: cases.filter((c) => c.status === 'fos_referred').length,
       };
 
-  const pageCount = Math.ceil(cases.length / PAGE_SIZE);
-  const visible   = cases.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const filtered = activeFilter === 'breach_risk'
+    ? cases.filter((c) => {
+        if (!c.disp_deadline) return false;
+        const daysLeft = Math.ceil((new Date(c.disp_deadline) - new Date()) / 86400000);
+        return c.status !== 'fos_referred' && daysLeft <= 2;
+      })
+    : cases;
+  const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
+  const visible   = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   function handleFilter(key) {
     setActiveFilter(key);

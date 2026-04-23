@@ -8,10 +8,17 @@
 
 **Product name:** Nuqe
 **Tagline:** Compliance-native communication and case management for digital lenders
-**Stage:** Pre-validation — UI build complete, demo blocked by Docker networking fix
+**Stage:** Demo-ready — deployed on Render, all smoke tests passing
 **GitHub:** https://github.com/imvimalkumar007/nuqe
 **Founder:** Vimal Kumar
-**Date last updated:** 22 April 2026
+**Date last updated:** 23 April 2026
+
+**Live URLs:**
+- Web: https://nuqe-web.onrender.com
+- API: https://nuqe-api.onrender.com
+- Health: https://nuqe-api.onrender.com/health
+
+**Demo credentials:** admin@nuqe.io / NuqeAdmin2026!
 
 ---
 
@@ -35,7 +42,7 @@ Three pillars: useful analytics, automation with human review boundaries, adapti
 | Regulatory monitoring | Automated RSS and scraping with human-gated review |
 | Queue | BullMQ with Redis |
 | Container runtime | Rancher Desktop (Docker Desktop failed on Windows) |
-| Hosting | Render (configured, not yet deployed) |
+| Hosting | Render — live at nuqe-web.onrender.com / nuqe-api.onrender.com |
 | Version control | GitHub: github.com/imvimalkumar007/nuqe |
 
 ---
@@ -60,58 +67,17 @@ docker compose up -d
 
 ---
 
-## 5. CRITICAL: Immediate Next Steps for Next Session
+## 5. Demo Flow (for customer discovery conversations)
 
-**Do these in order before anything else.**
+Login at https://nuqe-web.onrender.com with admin@nuqe.io / NuqeAdmin2026!
 
-**Step 1: Generate a new Anthropic API key**
-An API key was accidentally exposed in chat on 22 April 2026. Go to https://console.anthropic.com/settings/keys, delete the old key, create a new one, and paste it into E:\Nuqe\api\.env on the ANTHROPIC_API_KEY line.
-
-**Step 2: Apply the docker-compose.yml fix**
-The API container uses localhost for DATABASE_URL but inside Docker the hostname must be the service name. Open E:\Nuqe\docker-compose.yml and update the api service environment section:
-
-```yaml
-  api:
-    build: ./api
-    restart: unless-stopped
-    depends_on:
-      - postgres
-      - redis
-    ports:
-      - '3001:3001'
-    env_file:
-      - .env
-    environment:
-      DATABASE_URL: postgresql://nuqe:nuqe_secret@postgres:5432/nuqe
-      REDIS_URL: redis://redis:6379
-      QUIDO_WEBHOOK_SECRET: ${QUIDO_WEBHOOK_SECRET}
-    volumes:
-      - ./api:/app
-      - /app/node_modules
-```
-
-**Step 3: Restart containers**
-```powershell
-cd E:\Nuqe
-docker compose down
-docker compose up -d
-```
-
-Wait 30 seconds.
-
-**Step 4: Run migrations inside Docker**
-```powershell
-docker exec -it nuqe-api-1 npm run migrate
-```
-
-**Step 5: Run demo seed**
-```powershell
-docker exec -it nuqe-api-1 npm run seed:demo
-```
-
-**Step 6: Confirm working**
-- http://localhost:3001/health
-- http://localhost:5173/complaints
+1. **Complaints dashboard** — 8 cases, metric cards (Breach Risk 2, Under Review 3, Open 3, FOS Referred 1)
+2. **Open NQ-2026-0001** (Sarah Okonkwo, irresponsible lending) — 1 day to FINAL_RESPONSE deadline, breach risk
+3. **AI actions tab** — pending response draft from Claude, review the generated text
+4. Click **Approve** — badge flips from Pending to Approved
+5. **Performance** (Analytics) — AI volume chart, case status breakdown
+6. **Reg monitoring** — 5 monitored sources (FCA, FOS, EBA, RBI), manual Check buttons
+7. **Settings → AI Configuration** — primary/challenger model, encrypted API key display
 
 ---
 
@@ -136,10 +102,15 @@ Note: DATABASE_URL uses localhost for running outside Docker. The docker-compose
 
 ## 7. Build Progress
 
-### Backend: All 21 messages acted on by Claude Code
-### Frontend: All 10 UI screens acted on by Claude Code
+**Phase 0–10 complete as of 23 April 2026.**
 
-**Remaining:** Migrations not yet run. Demo seed not yet run. Demo not yet visible in browser. All blocked by docker-compose.yml networking fix (Section 5).
+- All 19 frontend components built and tested (142 Playwright e2e tests)
+- All API routes implemented and tested (142 Jest unit tests)
+- CI/CD: GitHub Actions (.github/workflows/ci.yml) runs lint, test, build on every push
+- Deployed to Render: nuqe-api (Node/Express) + nuqe-web (static) + nuqe-db (PostgreSQL) + nuqe-redis
+- Migrations run, demo seed populated (6 customers, 8 cases, 15 comms, 18 deadlines, 4 AI actions, 20 knowledge chunks)
+- Full demo rehearsed end to end — all smoke tests pass
+- Zero URGENT or High priority technical debt remaining
 
 ---
 
