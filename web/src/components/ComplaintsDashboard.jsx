@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCases }   from '../hooks/useCases';
 import { useMetrics } from '../hooks/useMetrics';
+import client from '../api/client';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import ErrorBanner     from './shared/ErrorBanner';
 
@@ -130,21 +131,31 @@ export default function ComplaintsDashboard() {
   const { cases, loading: casesLoading, error: casesError, refetch: refetchCases } = useCases(activeFilter);
   const { metrics, loading: metricsLoading, refetch: refetchMetrics } = useMetrics();
 
-  // Metric values: prefer API metrics, fall back to deriving from the current case list
-  // (useCases with 'all' returns full list when filter is 'all')
-  const OPEN_STATUSES = ['open', 'under_review', 'pending_response', 'awaiting_customer'];
+  const [summary, setSummary] = useState(null);
 
-  const derivedCounts = {
-    breach_risk:  cases.filter((c) => {
-      if (!c.disp_deadline) return false;
-      const daysLeft = Math.ceil((new Date(c.disp_deadline) - new Date()) / 86400000);
-      return OPEN_STATUSES.includes(c.status) && daysLeft <= 2;
-    }).length,
-    under_review: cases.filter((c) => c.status === 'under_review').length,
-    open:         cases.filter((c) => OPEN_STATUSES.includes(c.status)).length,
-    fos_referred: cases.filter((c) => c.status === 'fos_referred').length,
-  };
-  const counts = derivedCounts;
+  useEffect(() => {
+    client.get('/api/v1/metrics/dashboard-summary')
+      .then((r) => setSummary(r.data))
+      .catch(() => setSummary(null));
+  }, []);
+
+  const counts = summary
+    ? {
+        breach_risk:  summary.breach_risk_count,
+        under_review: summary.under_review_count,
+        open:         summary.open_count,
+        fos_referred: summary.fos_referred_count,
+      }
+    : {
+        breach_risk:  cases.filter((c) => {
+          if (!c.disp_deadline) return false;
+          const daysLeft = Math.ceil((new Date(c.disp_deadline) - new Date()) / 86400000);
+          return c.status !== 'fos_referred' && daysLeft <= 2;
+        }).length,
+        under_review: cases.filter((c) => c.status === 'under_review').length,
+        open:         cases.filter((c) => c.status === 'open').length,
+        fos_referred: cases.filter((c) => c.status === 'fos_referred').length,
+      };
 
   const pageCount = Math.ceil(cases.length / PAGE_SIZE);
   const visible   = cases.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);

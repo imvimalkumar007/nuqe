@@ -130,6 +130,35 @@ router.get('/ai-accuracy', async (req, res) => {
   }
 });
 
+// GET /api/v1/metrics/dashboard-summary
+router.get('/dashboard-summary', async (_req, res) => {
+  try {
+    const [breach, underReview, open, fos] = await Promise.all([
+      pool.query(`
+        SELECT COUNT(*)::int AS count FROM cases c
+        JOIN deadlines d ON d.case_id = c.id
+        WHERE c.status IN ('open', 'under_review')
+          AND d.deadline_type = 'FINAL_RESPONSE'
+          AND d.due_at <= NOW() + INTERVAL '48 hours'
+          AND d.breached = false
+          AND d.met_at IS NULL
+      `),
+      pool.query(`SELECT COUNT(*)::int AS count FROM cases WHERE status = 'under_review'`),
+      pool.query(`SELECT COUNT(*)::int AS count FROM cases WHERE status = 'open'`),
+      pool.query(`SELECT COUNT(*)::int AS count FROM cases WHERE status = 'fos_referred'`),
+    ]);
+    res.json({
+      breach_risk_count:  breach.rows[0].count,
+      under_review_count: underReview.rows[0].count,
+      open_count:         open.rows[0].count,
+      fos_referred_count: fos.rows[0].count,
+    });
+  } catch (err) {
+    console.error('[metrics/dashboard-summary]', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // GET /api/v1/metrics/model-comparison?organisationId=&dateFrom=&dateTo=
 router.get('/model-comparison', async (req, res) => {
   const { organisationId, dateFrom, dateTo } = req.query;

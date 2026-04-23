@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { pool } from '../db/pool.js';
+import { calculateDeadlines } from '../engines/deadlineEngine.js';
 
 const router = Router();
 
@@ -22,21 +23,26 @@ router.get('/', async (req, res) => {
 
     const query = `
       SELECT
+        c.id,
         c.id AS case_id,
         c.case_ref,
+        c.customer_id,
         cu.full_name AS customer_name,
         c.category,
         c.channel_received,
         c.status,
         c.opened_at,
         c.created_at,
-        MIN(d.due_at) AS disp_deadline
+        r.jurisdiction,
+        MIN(d.due_at) AS disp_deadline,
+        COUNT(*) OVER ()::int AS total_count
       FROM cases c
       LEFT JOIN customers cu ON cu.id = c.customer_id
+      LEFT JOIN ruleset r ON r.id = c.ruleset_id
       LEFT JOIN deadlines d ON d.case_id = c.id AND d.met_at IS NULL
       ${where}
-      GROUP BY c.id, c.case_ref, cu.full_name, c.category, c.channel_received, c.status, c.opened_at, c.created_at
-      ORDER BY c.created_at DESC
+      GROUP BY c.id, cu.full_name, r.jurisdiction
+      ORDER BY c.opened_at DESC
       LIMIT $${values.length - 1}
       OFFSET $${values.length}
     `;
@@ -45,7 +51,7 @@ router.get('/', async (req, res) => {
 
     res.json({
       cases: result.rows,
-      total: result.rows.length,
+      total: result.rows[0]?.total_count ?? 0,
       limit: parseInt(limit),
       offset: parseInt(offset),
     });
@@ -111,6 +117,31 @@ router.get('/:id', async (req, res) => {
   } catch (err) {
     console.error('GET /cases/:id error:', err);
     res.status(500).json({ message: 'Failed to fetch case', error: err.message });
+  }
+});
+
+router.post('/', async (req, res) => {
+  const { customer_id, category, channel_received, ruleset_id, notes } = req.body ?? {};
+
+  if (!customer_id || !category || !channel_received) {
+    return res.status(400).json({ error: 'customer_id, category, and channel_received are required' });
+  }
+
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO cases (customer_id, category, channel_received, ruleset_id, notes)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [customer_id, category, channel_received, ruleset_id ?? null, notes ?? null]
+    );
+
+    const newCase = rows[0];
+    await calculateDeadlines(newCase.id);
+
+    return res.status(201).json(newCase);
+  } catch (err) {
+    console.error('[cases/POST]', err.message);
+    res.status(500).json({ error: 'Failed to create case' });
   }
 });
 

@@ -58,10 +58,10 @@ export async function calculateDeadlines(caseId) {
 
       const { rowCount } = await client.query(
         `INSERT INTO deadlines (case_id, ruleset_id, deadline_type, due_at)
-         SELECT $1, $2, $3, $4
+         SELECT $1::uuid, $2::uuid, $3::text, $4::timestamptz
          WHERE NOT EXISTS (
            SELECT 1 FROM deadlines
-           WHERE case_id = $1 AND deadline_type = $3
+           WHERE case_id = $1::uuid AND deadline_type = $3::text
          )`,
         [caseId, rule.id, rule.rule_type, dueAt]
       );

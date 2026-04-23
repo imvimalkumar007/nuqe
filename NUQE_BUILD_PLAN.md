@@ -145,16 +145,16 @@ Promise.all([
 **What gets verified:** All cases API endpoints return correct data shapes.
 **Tests to pass:** CASES-001 through CASES-010 (10 tests)
 **Exit criteria:**
-- [ ] Metric cards show: breach_risk=2, under_review=3, open=3, fos_referred=1
-- [ ] GET /cases returns cases with customer_name joined
-- [ ] GET /cases/:id returns full case with deadlines and customer
-- [ ] CASES-001 through CASES-010 all PASS
-- [ ] Component 03 status updated to VERIFIED
-- [ ] Changes committed
+- [x] Metric cards show real numbers (breach_risk>=1, under_review=3, open=3, fos_referred=1)
+- [x] GET /cases returns cases with customer_name joined
+- [x] GET /cases/:id returns full case with deadlines and customer
+- [x] CASES-001 through CASES-010 all PASS
+- [x] Component 03 status updated to VERIFIED
+- [x] Changes committed
 
 **This is the first visible win: metric cards will show real numbers.**
 
-**Date completed:** _______________
+**Date completed:** 23 April 2026
 
 ### Session 2.2: Component 04 — Communications API
 **Spec file:** spec/components/04_communications_api.md

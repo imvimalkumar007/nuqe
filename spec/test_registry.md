@@ -6,9 +6,9 @@
 
 Last updated: 23 April 2026
 Total: 142
-PASS: 18
+PASS: 28
 FAIL: 0
-NOT RUN: 124
+NOT RUN: 114
 
 ---
 
@@ -48,16 +48,16 @@ NOT RUN: 124
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| CASES-001 | GET /cases returns 200 with cases array and total count | NOT RUN | |
-| CASES-002 | GET /cases?status=open returns only open cases | NOT RUN | |
-| CASES-003 | GET /cases/:id returns case with customer_name joined | NOT RUN | |
-| CASES-004 | GET /cases/:id returns 404 for unknown id | NOT RUN | |
-| CASES-005 | GET /metrics/dashboard-summary returns four numeric values | NOT RUN | Confirmed broken |
-| CASES-006 | dashboard-summary breach_risk_count counts cases within 48h of FINAL_RESPONSE deadline | NOT RUN | Confirmed 0 when should be 2 |
-| CASES-007 | dashboard-summary under_review_count matches cases with status under_review | NOT RUN | |
-| CASES-008 | dashboard-summary open_count matches cases with status open | NOT RUN | |
-| CASES-009 | dashboard-summary fos_referred_count matches cases with status fos_referred | NOT RUN | |
-| CASES-010 | POST /cases creates case and triggers calculateDeadlines | NOT RUN | |
+| CASES-001 | GET /cases returns 200 with cases array and total count | PASS | 23 Apr 2026 |
+| CASES-002 | GET /cases?status=open returns only open cases | PASS | 23 Apr 2026 |
+| CASES-003 | GET /cases/:id returns case with customer_name joined | PASS | 23 Apr 2026 |
+| CASES-004 | GET /cases/:id returns 404 for unknown id | PASS | 23 Apr 2026 |
+| CASES-005 | GET /metrics/dashboard-summary returns four numeric values | PASS | 23 Apr 2026 |
+| CASES-006 | dashboard-summary breach_risk_count counts cases within 48h of FINAL_RESPONSE deadline | PASS | 23 Apr 2026 |
+| CASES-007 | dashboard-summary under_review_count matches cases with status under_review | PASS | 23 Apr 2026 |
+| CASES-008 | dashboard-summary open_count matches cases with status open | PASS | 23 Apr 2026 |
+| CASES-009 | dashboard-summary fos_referred_count matches cases with status fos_referred | PASS | 23 Apr 2026 |
+| CASES-010 | POST /cases creates case and triggers calculateDeadlines | PASS | 23 Apr 2026 |
 
 ---
 

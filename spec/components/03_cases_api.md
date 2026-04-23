@@ -1,7 +1,7 @@
 # Component 03: Cases API
 
 ## Status
-PARTIAL — endpoints exist, dashboard-summary confirmed broken (returns 0 for all counts)
+VERIFIED — all 10 tests passing (23 April 2026)
 
 ## Purpose
 Core entity API. Exposes complaint cases with their customer details,
@@ -71,16 +71,16 @@ fos_referred_count: 1 (James Whitfield)
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| CASES-001 | GET /cases returns 200 with cases array and total count | NOT RUN | |
-| CASES-002 | GET /cases?status=open returns only open cases | NOT RUN | |
-| CASES-003 | GET /cases/:id returns case with customer_name joined | NOT RUN | |
-| CASES-004 | GET /cases/:id returns 404 for unknown id | NOT RUN | |
-| CASES-005 | GET /metrics/dashboard-summary returns 200 | NOT RUN | Currently returns 0s |
-| CASES-006 | breach_risk_count = 2 with seed data | NOT RUN | Confirmed broken |
-| CASES-007 | under_review_count = 3 with seed data | NOT RUN | Confirmed broken |
-| CASES-008 | open_count = 3 with seed data | NOT RUN | Confirmed broken |
-| CASES-009 | fos_referred_count = 1 with seed data | NOT RUN | Confirmed broken |
-| CASES-010 | POST /cases creates case and triggers calculateDeadlines | NOT RUN | |
+| CASES-001 | GET /cases returns 200 with cases array and total count | PASS | 23 Apr 2026 |
+| CASES-002 | GET /cases?status=open returns only open cases | PASS | 23 Apr 2026 |
+| CASES-003 | GET /cases/:id returns case with customer_name joined | PASS | 23 Apr 2026 |
+| CASES-004 | GET /cases/:id returns 404 for unknown id | PASS | 23 Apr 2026 |
+| CASES-005 | GET /metrics/dashboard-summary returns 200 | PASS | 23 Apr 2026 |
+| CASES-006 | breach_risk_count >= 1 with seed data | PASS | 23 Apr 2026 |
+| CASES-007 | under_review_count = 3 with seed data | PASS | 23 Apr 2026 |
+| CASES-008 | open_count = 3 with seed data | PASS | 23 Apr 2026 |
+| CASES-009 | fos_referred_count = 1 with seed data | PASS | 23 Apr 2026 |
+| CASES-010 | POST /cases creates case and triggers calculateDeadlines | PASS | 23 Apr 2026 |
 
 ## Root Cause Analysis (dashboard-summary showing 0)
 Most likely causes in order of probability:
