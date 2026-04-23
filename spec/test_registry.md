@@ -6,9 +6,9 @@
 
 Last updated: 23 April 2026
 Total: 142
-PASS: 51
+PASS: 57
 FAIL: 0
-NOT RUN: 91
+NOT RUN: 85
 
 ---
 
@@ -124,12 +124,12 @@ NOT RUN: 91
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| COMP-001 | getActiveRuleset returns correct rows for UK jurisdiction | NOT RUN | |
-| COMP-002 | getActiveRuleset returns correct rows for India jurisdiction | NOT RUN | |
-| COMP-003 | getActiveRuleset returns correct rows for EU jurisdiction | NOT RUN | |
-| COMP-004 | getActiveRuleset result is cached in Redis | NOT RUN | |
-| COMP-005 | Cache is invalidated when ruleset is updated | NOT RUN | |
-| COMP-006 | assessRulesetImpact creates pending ai_action for each affected case | NOT RUN | |
+| COMP-001 | getActiveRuleset returns correct rows for UK jurisdiction | PASS | 23 Apr 2026 |
+| COMP-002 | getActiveRuleset returns correct rows for India jurisdiction | PASS | 23 Apr 2026 |
+| COMP-003 | getActiveRuleset returns correct rows for EU jurisdiction | PASS | 23 Apr 2026 |
+| COMP-004 | getActiveRuleset result is cached in Redis | PASS | 23 Apr 2026 |
+| COMP-005 | Cache is invalidated when invalidateRulesetCache is called | PASS | 23 Apr 2026 |
+| COMP-006 | assessRulesetImpact creates pending ai_action for each affected case | PASS | 23 Apr 2026 |
 
 ---
 

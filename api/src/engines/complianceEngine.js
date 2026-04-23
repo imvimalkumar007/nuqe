@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { pool } from '../db/pool.js';
+import { getRedisClient } from '../db/redis.js';
 import { retrieveContext } from './knowledgeLayer.js';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -95,18 +96,46 @@ function diffRulesets(currentRules, newRules) {
   return changes;
 }
 
+const CACHE_TTL = 600;
+const rulesetCacheKey = (j) => `ruleset:active:${j}`;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // getActiveRuleset(jurisdiction)
 // Returns all active ruleset rows for a jurisdiction, ordered by rule_type.
+// Result is cached in Redis for CACHE_TTL seconds.
 // ─────────────────────────────────────────────────────────────────────────────
 export async function getActiveRuleset(jurisdiction) {
+  const redis = getRedisClient();
+
+  try {
+    const cached = await redis.get(rulesetCacheKey(jurisdiction));
+    if (cached) return JSON.parse(cached);
+  } catch { /* Redis unavailable — fall through to DB */ }
+
   const { rows } = await pool.query(
     `SELECT * FROM ruleset
      WHERE jurisdiction = $1 AND is_active = TRUE
      ORDER BY rule_type`,
     [jurisdiction]
   );
+
+  try {
+    await redis.setex(rulesetCacheKey(jurisdiction), CACHE_TTL, JSON.stringify(rows));
+  } catch { /* best-effort */ }
+
   return rows;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// invalidateRulesetCache(jurisdiction)
+// Removes the cached ruleset for a jurisdiction, forcing next call to re-query.
+// Call this whenever a ruleset row is updated or activated.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function invalidateRulesetCache(jurisdiction) {
+  const redis = getRedisClient();
+  try {
+    await redis.del(rulesetCacheKey(jurisdiction));
+  } catch { /* best-effort */ }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -196,7 +225,7 @@ export async function assessRulesetImpact(newRulesetVersion, jurisdiction) {
     const client = await pool.connect();
     try {
       const { rows } = await client.query(
-        `SELECT DISTINCT
+        `SELECT
            c.id, c.case_ref, c.status, c.category, c.opened_at, c.channel_received,
            c.is_implicit, cu.jurisdiction, cu.vulnerable_flag,
            json_agg(

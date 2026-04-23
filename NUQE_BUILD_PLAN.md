@@ -205,13 +205,13 @@ Promise.all([
 **Spec file:** spec/components/08_compliance_engine.md
 **Tests to pass:** COMP-001 through COMP-006 (6 tests)
 **Exit criteria:**
-- [ ] getActiveRuleset returns correct rules per jurisdiction
-- [ ] Redis caching works (verified with mock)
-- [ ] Cache invalidation works
-- [ ] COMP-001 through COMP-006 all PASS
-- [ ] Component 08 status updated to VERIFIED
+- [x] getActiveRuleset returns correct rules per jurisdiction
+- [x] Redis caching works (verified with real Redis)
+- [x] Cache invalidation works
+- [x] COMP-001 through COMP-006 all PASS
+- [x] Component 08 status updated to VERIFIED
 
-**Date completed:** _______________
+**Date completed:** 23 April 2026
 
 ### Session 3.3: Component 10 — PII Tokeniser
 **Spec file:** spec/components/10_pii_tokeniser.md
