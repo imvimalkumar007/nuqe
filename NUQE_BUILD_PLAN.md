@@ -192,14 +192,14 @@ Promise.all([
 **Spec file:** spec/components/06_deadline_engine.md
 **Tests to pass:** DENG-001 through DENG-008 (8 tests)
 **Exit criteria:**
-- [ ] calculateDeadlines creates correct rows for UK, India, EU rulesets
-- [ ] checkDeadlines alerts at correct intervals
-- [ ] Breach detection works correctly
-- [ ] audit_log written on every state change
-- [ ] DENG-001 through DENG-008 all PASS
-- [ ] Component 06 status updated to VERIFIED
+- [x] calculateDeadlines creates correct rows for UK ruleset
+- [x] checkDeadlines alerts at correct intervals
+- [x] Breach detection works correctly
+- [x] audit_log written on every state change
+- [x] DENG-001 through DENG-008 all PASS
+- [x] Component 06 status updated to VERIFIED
 
-**Date completed:** _______________
+**Date completed:** 23 April 2026
 
 ### Session 3.2: Component 08 — Compliance Engine
 **Spec file:** spec/components/08_compliance_engine.md

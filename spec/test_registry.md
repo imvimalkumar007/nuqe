@@ -6,9 +6,9 @@
 
 Last updated: 23 April 2026
 Total: 142
-PASS: 43
+PASS: 51
 FAIL: 0
-NOT RUN: 99
+NOT RUN: 91
 
 ---
 
@@ -94,14 +94,14 @@ NOT RUN: 99
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| DENG-001 | calculateDeadlines creates correct number of rows for UK ruleset | NOT RUN | |
-| DENG-002 | calculateDeadlines sets due_at correctly as opened_at plus threshold_days | NOT RUN | |
-| DENG-003 | checkDeadlines sets alerted_at_48h when deadline is within 48 hours | NOT RUN | |
-| DENG-004 | checkDeadlines sets alerted_at_24h when deadline is within 24 hours | NOT RUN | |
-| DENG-005 | checkDeadlines marks breached=true when due_at has passed with no met_at | NOT RUN | |
-| DENG-006 | checkDeadlines writes to audit_log on every state change | NOT RUN | |
-| DENG-007 | checkDeadlines does not re-alert already-alerted deadlines | NOT RUN | |
-| DENG-008 | calculateDeadlines is idempotent when called twice on same case | NOT RUN | |
+| DENG-001 | calculateDeadlines creates 3 rows for a UK case | PASS | 23 Apr 2026 |
+| DENG-002 | calculateDeadlines sets due_at correctly as opened_at plus threshold_days | PASS | 23 Apr 2026 |
+| DENG-003 | checkDeadlines sets alerted_at_48h when deadline is within 48 hours | PASS | 23 Apr 2026 |
+| DENG-004 | checkDeadlines sets alerted_at_24h when deadline is within 24 hours | PASS | 23 Apr 2026 |
+| DENG-005 | checkDeadlines marks breached=true when due_at has passed with no met_at | PASS | 23 Apr 2026 |
+| DENG-006 | checkDeadlines writes to audit_log on every state change | PASS | 23 Apr 2026 |
+| DENG-007 | checkDeadlines does not re-alert already-alerted deadlines | PASS | 23 Apr 2026 |
+| DENG-008 | calculateDeadlines is idempotent when called twice on same case | PASS | 23 Apr 2026 |
 
 ---
 

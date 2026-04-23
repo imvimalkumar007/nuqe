@@ -1,7 +1,7 @@
 # Component 06: Deadline Engine
 
 ## Status
-BUILT — code exists, never verified with tests
+VERIFIED — all 8 tests passing (23 April 2026)
 
 ## Purpose
 Calculates regulatory deadlines for each case based on the active
@@ -30,35 +30,21 @@ as breached when due_at passes with no met_at value.
 - If due_at < NOW(): set breached = true, breached_at = NOW()
 - Every state change writes to audit_log
 
+## Notes
+- audit_log timestamp column is `ts` (not `created_at`)
+- UK: 3 rules (ACKNOWLEDGE 3d, FINAL_RESPONSE 56d, FOS_REFERRAL 56d) — calendar days
+- India: 3 rules (ACKNOWLEDGE 5bd, FINAL_RESPONSE 30d, OMBUDSMAN_REFERRAL 30d)
+- EU: 4 rules (ACKNOWLEDGE 5bd, FINAL_RESPONSE 15bd, FINAL_RESPONSE_EXT 35bd, ADR_REFERRAL 35bd)
+
 ## Tests
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| DENG-001 | calculateDeadlines creates 3 rows for a UK case | NOT RUN | |
-| DENG-002 | due_at = opened_at + threshold_days for each rule | NOT RUN | |
-| DENG-003 | checkDeadlines sets alerted_at_48h when within 48 hours | NOT RUN | |
-| DENG-004 | checkDeadlines sets alerted_at_24h when within 24 hours | NOT RUN | |
-| DENG-005 | checkDeadlines sets breached=true when due_at passed | NOT RUN | |
-| DENG-006 | checkDeadlines writes to audit_log on state change | NOT RUN | |
-| DENG-007 | checkDeadlines does not re-alert already-alerted deadlines | NOT RUN | |
-| DENG-008 | calculateDeadlines is idempotent when called twice | NOT RUN | |
-
-## Claude Code Prompt
-```
-Read spec/components/06_deadline_engine.md carefully.
-Read spec/components/05_deadlines_api.md for context on data shape.
-
-Open api/src/engines/deadlineEngine.js and read the current
-implementation. Do not change anything yet.
-
-Check: does calculateDeadlines correctly query the ruleset table
-using the case's ruleset_id? Does it handle the case where deadline
-rows already exist? Does every state change in checkDeadlines write
-to audit_log?
-
-Fix any issues found. Then write tests DENG-001 through DENG-008
-in api/src/engines/deadlineEngine.test.js.
-
-Run the tests and fix any failures before finishing.
-Update test status in this file and spec/test_registry.md.
-```
+| DENG-001 | calculateDeadlines creates 3 rows for a UK case | PASS | 23 Apr 2026 |
+| DENG-002 | due_at = opened_at + threshold_days for each rule | PASS | 23 Apr 2026 |
+| DENG-003 | checkDeadlines sets alerted_at_48h when within 48 hours | PASS | 23 Apr 2026 |
+| DENG-004 | checkDeadlines sets alerted_at_24h when within 24 hours | PASS | 23 Apr 2026 |
+| DENG-005 | checkDeadlines sets breached=true when due_at has passed | PASS | 23 Apr 2026 |
+| DENG-006 | checkDeadlines writes to audit_log on state change | PASS | 23 Apr 2026 |
+| DENG-007 | checkDeadlines does not re-alert already-alerted deadlines | PASS | 23 Apr 2026 |
+| DENG-008 | calculateDeadlines is idempotent when called twice | PASS | 23 Apr 2026 |
