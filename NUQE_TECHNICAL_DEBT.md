@@ -8,11 +8,9 @@
 
 | # | Area | Description | Priority | Added | Notes |
 |---|---|---|---|---|---|
-| 9 | Security | Anthropic API key was accidentally exposed in chat on 22 April 2026 | URGENT | 22 Apr 2026 | Delete exposed key at console.anthropic.com/settings/keys and create new one immediately — **manual action required** |
 | 12 | Testing | Seed script not tested for idempotency | Medium | Apr 2026 | Confirm delete order is correct |
 | 15 | Performance | pgvector index may need tuning at scale | Low | Apr 2026 | Revisit when chunks exceed 100,000 rows |
 | 18 | Reliability | No health check monitoring or alerting | Medium | Apr 2026 | Add UptimeRobot free tier |
-| 19 | Reliability | No database backup strategy confirmed | High | Apr 2026 | Confirm Render PostgreSQL backup schedule before going live — **manual action required** |
 | 21 | Reliability | BullMQ dead letter queue not configured | Low | Apr 2026 | Configure failed job handler |
 | 22 | Architecture | Multi-tenancy relies on application-level filtering only | Medium | Apr 2026 | Consider PostgreSQL row-level security |
 | 23 | Architecture | Express API is a monolith | Low | Apr 2026 | Plan to extract engines before scaling beyond 10 clients |
@@ -59,6 +57,8 @@
 | 27 | Compliance | No data processing agreement template | 23 Apr 2026 | docs/compliance/data-processing-agreement-template.md created — covers Art.28 obligations, sub-processors, retention periods, erasure mechanism. Needs legal review before use. |
 | 28 | Compliance | AI provider zero-retention agreements not in place | 23 Apr 2026 | docs/compliance/ai-provider-zero-retention-checklist.md created — step-by-step for Anthropic and OpenAI. Manual sign-off still required. |
 | 29 | Compliance | No terms of service or privacy policy | 23 Apr 2026 | docs/compliance/terms-of-service-template.md and privacy-policy-template.md created. Needs legal review before publishing. |
+| 9 | Security | Anthropic API key accidentally exposed in chat on 22 April 2026 | 23 Apr 2026 | Exposed key deleted at console.anthropic.com/settings/keys; new key generated and set in Render environment. |
+| 19 | Reliability | No database backup strategy confirmed | 23 Apr 2026 | Confirmed: Render PostgreSQL Basic plan provides point-in-time recovery for any timestamp in the past 7 days, plus on-demand logical export retained 7+ days. |
 
 ---
 
@@ -81,3 +81,4 @@
 | 22 April 2026 | Added gap 9 (exposed API key, URGENT), gap 25 (Docker networking), gap 40 (wrong postgres image). Added URGENT priority level. |
 | 23 April 2026 | Session 8.1–8.3: resolved gaps 1,3,4,5,6,7 (security), 13,14,16,17 (performance), 20 (observability). Session 9.1: resolved gap 37 (CI/CD). Docker fixes: resolved gaps 25, 40. API audit: resolved gaps 46,47,48,49 (already implemented). Housekeeping: resolved gaps 10,11,33 (tests and auth screen done). |
 | 23 April 2026 | Resolved gaps 2 (ENCRYPTION_SECRET), 8 (GDPR erasure endpoint), 26 (retention archiver + BullMQ job), 27 (DPA template), 28 (AI provider checklist), 29 (ToS + privacy policy templates). Gaps 9 and 19 flagged as manual actions. |
+| 23 April 2026 | Session 9.2: Render deployment live. Resolved gaps 9 (API key rotated and set) and 19 (backup confirmed: PITR 7 days + on-demand export). No URGENT or High gaps remaining. |
