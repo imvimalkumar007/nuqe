@@ -6,9 +6,9 @@
 
 Last updated: 23 April 2026
 Total: 142
-PASS: 28
+PASS: 36
 FAIL: 0
-NOT RUN: 114
+NOT RUN: 106
 
 ---
 
@@ -65,14 +65,14 @@ NOT RUN: 114
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| COMMS-001 | GET /communications?caseId returns communications ordered by sent_at | NOT RUN | |
-| COMMS-002 | GET /communications includes ai_generated and ai_approved_at fields | NOT RUN | |
-| COMMS-003 | GET /communications includes author_type field | NOT RUN | |
-| COMMS-004 | POST /communications creates inbound communication and links to case | NOT RUN | |
-| COMMS-005 | AI draft communication with ai_approved_at null renders as pending | NOT RUN | |
-| COMMS-006 | Approved AI draft has ai_approved_by set | NOT RUN | |
-| COMMS-007 | GET /communications returns empty array for case with no comms | NOT RUN | |
-| COMMS-008 | Communications from all three channels appear in unified timeline | NOT RUN | |
+| COMMS-001 | GET /communications?case_id returns communications ordered by sent_at | PASS | 23 Apr 2026 |
+| COMMS-002 | GET /communications includes ai_generated and ai_approved_at fields | PASS | 23 Apr 2026 |
+| COMMS-003 | GET /communications includes author_type field | PASS | 23 Apr 2026 |
+| COMMS-004 | POST /communications creates inbound communication and links to case | PASS | 23 Apr 2026 |
+| COMMS-005 | AI draft communication with ai_approved_at null renders as pending | PASS | 23 Apr 2026 |
+| COMMS-006 | Approved AI draft has ai_approved_by set | PASS | 23 Apr 2026 |
+| COMMS-007 | GET /communications returns empty array for case with no comms | PASS | 23 Apr 2026 |
+| COMMS-008 | Communications from all three channels appear in unified timeline | PASS | 23 Apr 2026 |
 
 ---
 

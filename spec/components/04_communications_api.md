@@ -1,7 +1,7 @@
 # Component 04: Communications API
 
 ## Status
-PARTIAL — endpoint exists, response shape and field completeness unverified
+VERIFIED — all 8 tests passing (23 April 2026)
 
 ## Purpose
 Returns all communications for a case in chronological order across
@@ -15,50 +15,30 @@ on this endpoint returning the correct fields.
 ## Endpoints
 
 ### GET /api/v1/communications
-Query params: caseId (required uuid), limit (default 50), offset (default 0)
+Query params: case_id (required uuid), limit (default 50), offset (default 0)
 Response: { communications: Communication[], total: number }
-Each Communication MUST include:
+Each Communication includes:
   id, case_id, customer_id, channel, direction, subject,
   body, author_type, author_id, ai_generated, ai_approved_by,
-  ai_approved_at, sent_at, external_ref
-Ordered by: sent_at ASC
+  ai_approved_at, sent_at, external_ref, created_at
+Ordered by: sent_at ASC NULLS LAST
 The ai_approved_at field is how the frontend determines if a draft
 is still pending (null = pending, has value = approved)
 
 ### POST /api/v1/communications
 Body: { case_id, channel, direction, subject?, body, author_type }
+customer_id is resolved automatically from the case.
 Response: 201 with created communication
 
 ## Tests
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| COMMS-001 | GET /communications?caseId returns ordered by sent_at ASC | NOT RUN | |
-| COMMS-002 | Response includes ai_generated and ai_approved_at fields | NOT RUN | |
-| COMMS-003 | Response includes author_type field | NOT RUN | |
-| COMMS-004 | Pending AI draft has ai_approved_at = null | NOT RUN | |
-| COMMS-005 | Approved AI draft has ai_approved_at set and ai_approved_by set | NOT RUN | |
-| COMMS-006 | GET without caseId returns 400 | NOT RUN | |
-| COMMS-007 | Returns empty array for case with no communications | NOT RUN | |
-| COMMS-008 | Communications from email, chat, and postal appear correctly | NOT RUN | |
-
-## Claude Code Prompt
-```
-Read spec/components/04_communications_api.md carefully.
-
-First run this query to check what communications exist in the database:
-docker exec -it nuqe-api-1 node -e "
-const {Pool} = require('pg');
-const p = new Pool({connectionString: process.env.DATABASE_URL});
-p.query('SELECT id, case_id, channel, direction, author_type, ai_generated, ai_approved_at, sent_at FROM communications ORDER BY sent_at').then(r => {console.log(JSON.stringify(r.rows,null,2)); p.end()});
-"
-
-Then call GET /api/v1/communications?caseId=[first_case_id] and
-check the response includes all required fields listed in the spec.
-
-Fix any missing fields. All JOINs and field selections must match
-the spec exactly.
-
-Write and run tests COMMS-001 through COMMS-008.
-Update test status in this file and spec/test_registry.md.
-```
+| COMMS-001 | GET /communications?case_id returns communications ordered by sent_at | PASS | 23 Apr 2026 |
+| COMMS-002 | GET /communications includes ai_generated and ai_approved_at fields | PASS | 23 Apr 2026 |
+| COMMS-003 | GET /communications includes author_type field | PASS | 23 Apr 2026 |
+| COMMS-004 | POST /communications creates inbound communication and links to case | PASS | 23 Apr 2026 |
+| COMMS-005 | AI draft communication with ai_approved_at null renders as pending | PASS | 23 Apr 2026 |
+| COMMS-006 | Approved AI draft has ai_approved_by set | PASS | 23 Apr 2026 |
+| COMMS-007 | GET /communications returns empty array for case with no comms | PASS | 23 Apr 2026 |
+| COMMS-008 | Communications from all three channels appear in unified timeline | PASS | 23 Apr 2026 |

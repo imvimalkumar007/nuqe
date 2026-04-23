@@ -161,14 +161,14 @@ Promise.all([
 **What gets verified:** Communications endpoint returns correct fields including ai_generated and ai_approved_at.
 **Tests to pass:** COMMS-001 through COMMS-008 (8 tests)
 **Exit criteria:**
-- [ ] GET /communications?caseId returns ordered timeline
-- [ ] All required fields present in response
-- [ ] Pending draft has ai_approved_at = null
-- [ ] COMMS-001 through COMMS-008 all PASS
-- [ ] Component 04 status updated to VERIFIED
-- [ ] Changes committed
+- [x] GET /communications?case_id returns ordered timeline
+- [x] All required fields present in response
+- [x] Pending draft has ai_approved_at = null
+- [x] COMMS-001 through COMMS-008 all PASS
+- [x] Component 04 status updated to VERIFIED
+- [x] Changes committed
 
-**Date completed:** _______________
+**Date completed:** 23 April 2026
 
 ### Session 2.3: Component 05 — Deadlines API
 **Spec file:** spec/components/05_deadlines_api.md
