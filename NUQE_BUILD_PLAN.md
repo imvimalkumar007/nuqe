@@ -475,13 +475,13 @@ Promise.all([
 - After deploy: run migrations and seed via Render shell
 - Verify health endpoint responds at Render URL
 **Exit criteria:**
-- [ ] All four Render services running
-- [ ] https://nuqe-api.onrender.com/health returns status ok
-- [ ] https://nuqe-web.onrender.com loads the login page
-- [ ] Migrations run successfully on Render database
-- [ ] Demo seed populated on Render
+- [x] All four Render services running
+- [x] https://nuqe-api.onrender.com/health returns status ok
+- [x] https://nuqe-web.onrender.com loads the login page
+- [x] Migrations run successfully on Render database
+- [x] Demo seed populated on Render
 
-**Date completed:** _______________
+**Date completed:** 23 April 2026
 
 ---
 
