@@ -31,7 +31,7 @@
 | 3 | Business Engines | 4 | Deadline, Compliance, Model Router, PII Tokeniser verified | NOT STARTED |
 | 4 | Intelligence Layer | 2 | Knowledge Layer and Regulatory Monitor verified | DONE |
 | 5 | Derived APIs | 2 | Metrics API and Settings API verified | DONE |
-| 6 | Integration | 2 | Webhooks verified, all APIs connected to real data | NOT STARTED |
+| 6 | Integration | 2 | Webhooks verified, all APIs connected to real data | DONE |
 | 7 | Frontend Verification | 4 | All 4 frontend components verified with real data | NOT STARTED |
 | 8 | Hardening | 3 | Security, observability, performance | NOT STARTED |
 | 9 | CI/CD and Deployment | 2 | Pipeline live, deployed to Render | NOT STARTED |
@@ -315,27 +315,27 @@ Promise.all([
 **Spec file:** spec/components/15_webhooks.md
 **Tests to pass:** HOOK-001 through HOOK-006 (6 tests)
 **Exit criteria:**
-- [ ] Webhook secret validation works
-- [ ] Communication created on valid webhook
-- [ ] Classification triggered on complaint
-- [ ] HOOK-001 through HOOK-006 all PASS
-- [ ] Component 15 status updated to VERIFIED
+- [x] Webhook secret validation works
+- [x] Communication created on valid webhook
+- [x] Classification triggered on complaint
+- [x] HOOK-001 through HOOK-006 all PASS
+- [x] Component 15 status updated to VERIFIED
 
-**Date completed:** _______________
+**Date completed:** 23 April 2026
 
 ### Session 6.2: Component 07 — Communication Engine
 **Spec file:** spec/components/07_communication_engine.md
 **Tests to pass:** CENG-001 through CENG-008 (8 tests)
 **Note:** All AI calls mocked. Human review gate must be enforced.
 **Exit criteria:**
-- [ ] ingestCommunication creates communications row
-- [ ] classifyCommunication writes pending ai_action
-- [ ] draftResponse writes pending ai_action (NOT communications row)
-- [ ] Approving response_draft creates communications row
-- [ ] CENG-001 through CENG-008 all PASS
-- [ ] Component 07 status updated to VERIFIED
+- [x] ingestCommunication creates communications row
+- [x] classifyCommunication writes pending ai_action
+- [x] draftResponse writes pending ai_action (NOT communications row)
+- [x] Approving response_draft creates communications row
+- [x] CENG-001 through CENG-008 all PASS
+- [x] Component 07 status updated to VERIFIED
 
-**Date completed:** _______________
+**Date completed:** 23 April 2026
 
 ---
 

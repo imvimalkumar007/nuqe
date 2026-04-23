@@ -1,7 +1,7 @@
 # Component 07: Communication Engine
 
 ## Status
-BUILT — code exists, never verified with tests
+VERIFIED — all 8 tests passing (23 April 2026)
 
 ## Purpose
 Ingests inbound communications, classifies them (complaint vs query
@@ -49,14 +49,14 @@ Only on approval does the communication row get created.
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| CENG-001 | ingestCommunication creates communications row | NOT RUN | |
-| CENG-002 | classifyCommunication writes pending ai_action | NOT RUN | |
-| CENG-003 | classifyCommunication opens new case when complaint detected | NOT RUN | |
-| CENG-004 | classifyCommunication detects implicit complaint | NOT RUN | |
-| CENG-005 | draftResponse writes pending ai_action | NOT RUN | |
-| CENG-006 | draftResponse does NOT write to communications table | NOT RUN | |
-| CENG-007 | Approving response_draft creates communications row | NOT RUN | |
-| CENG-008 | All AI outputs write to audit_log | NOT RUN | |
+| CENG-001 | ingestCommunication creates communications row | PASS | 23 Apr 2026 |
+| CENG-002 | classifyCommunication writes pending ai_action | PASS | 23 Apr 2026 |
+| CENG-003 | classifyCommunication opens new case when complaint detected | PASS | 23 Apr 2026 |
+| CENG-004 | classifyCommunication detects implicit complaint | PASS | 23 Apr 2026 |
+| CENG-005 | draftResponse writes pending ai_action | PASS | 23 Apr 2026 |
+| CENG-006 | draftResponse does NOT write to communications table | PASS | 23 Apr 2026 |
+| CENG-007 | Approving response_draft creates communications row | PASS | 23 Apr 2026 |
+| CENG-008 | All AI outputs write to audit_log | PASS | 23 Apr 2026 |
 
 ## Claude Code Prompt
 ```

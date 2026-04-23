@@ -6,9 +6,9 @@
 
 Last updated: 23 April 2026
 Total: 142
-PASS: 100
+PASS: 114
 FAIL: 0
-NOT RUN: 42
+NOT RUN: 28
 
 ---
 
@@ -109,14 +109,14 @@ NOT RUN: 42
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| CENG-001 | ingestCommunication creates communications row | NOT RUN | |
-| CENG-002 | classifyCommunication writes to ai_actions with status pending | NOT RUN | |
-| CENG-003 | classifyCommunication opens new case if complaint detected | NOT RUN | |
-| CENG-004 | classifyCommunication detects implicit complaint | NOT RUN | |
-| CENG-005 | draftResponse writes draft to ai_actions with status pending | NOT RUN | |
-| CENG-006 | draftResponse does not write to communications table | NOT RUN | |
-| CENG-007 | Approving a response draft writes to communications table | NOT RUN | |
-| CENG-008 | All AI outputs write to audit_log | NOT RUN | |
+| CENG-001 | ingestCommunication creates communications row | PASS | 23 Apr 2026 |
+| CENG-002 | classifyCommunication writes to ai_actions with status pending | PASS | 23 Apr 2026 |
+| CENG-003 | classifyCommunication opens new case if complaint detected | PASS | 23 Apr 2026 |
+| CENG-004 | classifyCommunication detects implicit complaint | PASS | 23 Apr 2026 |
+| CENG-005 | draftResponse writes draft to ai_actions with status pending | PASS | 23 Apr 2026 |
+| CENG-006 | draftResponse does not write to communications table | PASS | 23 Apr 2026 |
+| CENG-007 | Approving a response draft writes to communications table | PASS | 23 Apr 2026 |
+| CENG-008 | All AI outputs write to audit_log | PASS | 23 Apr 2026 |
 
 ---
 
@@ -222,12 +222,12 @@ NOT RUN: 42
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| HOOK-001 | POST /webhooks/quido with valid secret returns 200 | NOT RUN | |
-| HOOK-002 | POST /webhooks/quido with wrong secret returns 401 | NOT RUN | |
-| HOOK-003 | Webhook creates communications row | NOT RUN | |
-| HOOK-004 | Webhook triggers classification for complaint reason | NOT RUN | |
-| HOOK-005 | Webhook opens new case when complaint detected | NOT RUN | |
-| HOOK-006 | Webhook returns case_id when case is opened | NOT RUN | |
+| HOOK-001 | POST /webhooks/quido with valid secret returns 200 | PASS | 23 Apr 2026 |
+| HOOK-002 | POST /webhooks/quido with wrong secret returns 401 | PASS | 23 Apr 2026 |
+| HOOK-003 | Webhook creates communications row | PASS | 23 Apr 2026 |
+| HOOK-004 | Webhook triggers classification for complaint reason | PASS | 23 Apr 2026 |
+| HOOK-005 | Webhook opens new case when complaint detected | PASS | 23 Apr 2026 |
+| HOOK-006 | Webhook returns case_id when case is opened | PASS | 23 Apr 2026 |
 
 ---
 

@@ -1,7 +1,7 @@
 # Component 15: Webhooks
 
 ## Status
-BUILT — code exists, never verified with tests
+VERIFIED — all 6 tests passing (23 April 2026)
 
 ## Purpose
 Receives inbound communications from Quido (the first pilot client).
@@ -33,12 +33,12 @@ On invalid body: return 400
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| HOOK-001 | POST /webhooks/quido with valid secret returns 200 | NOT RUN | |
-| HOOK-002 | POST /webhooks/quido with wrong secret returns 401 | NOT RUN | |
-| HOOK-003 | Valid webhook creates communications row | NOT RUN | |
-| HOOK-004 | Valid webhook triggers classification ai_action | NOT RUN | |
-| HOOK-005 | Valid complaint webhook opens new case | NOT RUN | |
-| HOOK-006 | Response includes case_id when case is opened | NOT RUN | |
+| HOOK-001 | POST /webhooks/quido with valid secret returns 200 | PASS | 23 Apr 2026 |
+| HOOK-002 | POST /webhooks/quido with wrong secret returns 401 | PASS | 23 Apr 2026 |
+| HOOK-003 | Valid webhook creates communications row | PASS | 23 Apr 2026 |
+| HOOK-004 | Valid webhook triggers classification ai_action | PASS | 23 Apr 2026 |
+| HOOK-005 | Valid complaint webhook opens new case | PASS | 23 Apr 2026 |
+| HOOK-006 | Response includes case_id when case is opened | PASS | 23 Apr 2026 |
 
 ## Claude Code Prompt
 ```
