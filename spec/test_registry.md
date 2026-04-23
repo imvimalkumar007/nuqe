@@ -6,9 +6,9 @@
 
 Last updated: 23 April 2026
 Total: 142
-PASS: 130
+PASS: 136
 FAIL: 0
-NOT RUN: 12
+NOT RUN: 6
 
 ---
 
@@ -265,12 +265,12 @@ NOT RUN: 12
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| FE-ANA-001 | Analytics screen loads without console errors | NOT RUN | |
-| FE-ANA-002 | AI Accuracy tab shows four metric cards | NOT RUN | |
-| FE-ANA-003 | Approval rate chart renders with real data | NOT RUN | |
-| FE-ANA-004 | Model Comparison tab shows side-by-side cards | NOT RUN | |
-| FE-ANA-005 | Date range selector triggers re-fetch | NOT RUN | |
-| FE-ANA-006 | Empty state shown gracefully when no AI actions exist | NOT RUN | |
+| FE-ANA-001 | Analytics screen loads without console errors | PASS | 23 Apr 2026 |
+| FE-ANA-002 | AI Accuracy tab visible and active by default | PASS | 23 Apr 2026 |
+| FE-ANA-003 | Approval rate shown as a percentage | PASS | 23 Apr 2026 |
+| FE-ANA-004 | Empty state shown when AI accuracy API returns no data | PASS | 23 Apr 2026 |
+| FE-ANA-005 | Date range selector triggers re-fetch | PASS | 23 Apr 2026 |
+| FE-ANA-006 | Model Comparison tab hidden when no challenger configured | PASS | 23 Apr 2026 |
 
 ---
 

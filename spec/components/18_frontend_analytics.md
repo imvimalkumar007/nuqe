@@ -1,7 +1,7 @@
 # Component 18: Frontend Analytics
 
 ## Status
-PARTIAL — screen built with mock data, not wired to real endpoints
+VERIFIED — all 6 tests passing (23 April 2026)
 
 ## Purpose
 Shows AI accuracy metrics and model comparison charts.
@@ -30,12 +30,12 @@ If no challenger: show message "Configure a challenger model in Settings"
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| FE-ANA-001 | Analytics screen loads without console errors | NOT RUN | |
-| FE-ANA-002 | AI Accuracy tab visible and active by default | NOT RUN | |
-| FE-ANA-003 | Approval rate shown as a percentage | NOT RUN | |
-| FE-ANA-004 | Empty state shown when no AI actions exist | NOT RUN | |
-| FE-ANA-005 | Date range selector triggers re-fetch | NOT RUN | |
-| FE-ANA-006 | Model Comparison tab hidden when no challenger configured | NOT RUN | |
+| FE-ANA-001 | Analytics screen loads without console errors | PASS | 23 Apr 2026 |
+| FE-ANA-002 | AI Accuracy tab visible and active by default | PASS | 23 Apr 2026 |
+| FE-ANA-003 | Approval rate shown as a percentage | PASS | 23 Apr 2026 |
+| FE-ANA-004 | Empty state shown when AI accuracy API returns no data | PASS | 23 Apr 2026 |
+| FE-ANA-005 | Date range selector triggers re-fetch | PASS | 23 Apr 2026 |
+| FE-ANA-006 | Model Comparison tab hidden when no challenger configured | PASS | 23 Apr 2026 |
 
 ## Claude Code Prompt
 ```
