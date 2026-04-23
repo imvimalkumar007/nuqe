@@ -1,6 +1,14 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { pool } from '../db/pool.js';
 import { propagateKnowledgeUpdate } from '../engines/regulatoryMonitor.js';
+import { validate } from '../middleware/validate.js';
+
+const reviewSchema = z.object({
+  status:      z.enum(['active', 'archived']),
+  reviewer_id: z.string().min(1),
+  note:        z.string().optional().nullable(),
+});
 
 const router = Router();
 
@@ -65,16 +73,9 @@ router.get('/', async (req, res) => {
 // ─── PATCH /:id/review ────────────────────────────────────────────────────────
 // Approve (status → active) or reject (status → archived) a pending_review chunk.
 // Approving triggers propagateKnowledgeUpdate to find and supersede stale content.
-router.patch('/:id/review', async (req, res) => {
+router.patch('/:id/review', validate(reviewSchema), async (req, res) => {
   const { id } = req.params;
   const { status, reviewer_id, note } = req.body;
-
-  if (!['active', 'archived'].includes(status)) {
-    return res.status(400).json({ error: "status must be 'active' or 'archived'" });
-  }
-  if (!reviewer_id) {
-    return res.status(400).json({ error: 'reviewer_id is required' });
-  }
 
   const client = await pool.connect();
   try {

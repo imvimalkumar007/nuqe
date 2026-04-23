@@ -1,5 +1,17 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { pool } from '../db/pool.js';
+import { validate } from '../middleware/validate.js';
+
+const reviewAiSchema = z.object({
+  status:       z.enum(['approved', 'rejected']),
+  human_output: z.string().optional().nullable(),
+  reviewer_id:  z.string().min(1),
+});
+
+const rejectAiSchema = z.object({
+  reason: z.string().optional().nullable(),
+});
 
 const router = Router();
 
@@ -38,19 +50,12 @@ const CLASSIFICATION_TYPES = new Set([
   'implicit_complaint_detection',
 ]);
 
-router.patch('/:id/review', async (req, res) => {
+router.patch('/:id/review', validate(reviewAiSchema), async (req, res) => {
   const { id } = req.params;
   const { status, human_output, reviewer_id } = req.body;
 
-  // ── Input validation ────────────────────────────────────────────────────
-  if (!['approved', 'rejected'].includes(status)) {
-    return res.status(400).json({ error: "status must be 'approved' or 'rejected'" });
-  }
   if (status === 'approved' && (human_output == null || human_output === '')) {
     return res.status(400).json({ error: 'human_output is required when approving' });
-  }
-  if (!reviewer_id) {
-    return res.status(400).json({ error: 'reviewer_id is required' });
   }
 
   const client = await pool.connect();
@@ -216,9 +221,9 @@ router.patch('/:id/approve', async (req, res) => {
 
 // ─── PATCH /:id/reject ────────────────────────────────────────────────────────
 
-router.patch('/:id/reject', async (req, res) => {
+router.patch('/:id/reject', validate(rejectAiSchema), async (req, res) => {
   const { id } = req.params;
-  const { reason } = req.body ?? {};
+  const { reason } = req.body;
 
   const client = await pool.connect();
   try {

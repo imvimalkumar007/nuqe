@@ -1,8 +1,15 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import { z } from 'zod';
 import { pool } from '../db/pool.js';
 import { requireAuth } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
+
+const loginSchema = z.object({
+  email:    z.string().email(),
+  password: z.string().min(1),
+});
 
 const router = Router();
 
@@ -34,12 +41,8 @@ function makeRefreshToken(userId) {
 
 // ─── POST /api/v1/auth/login ──────────────────────────────────────────────────
 
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body ?? {};
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password are required' });
-  }
-
+router.post('/login', validate(loginSchema), async (req, res) => {
+  const { email, password } = req.body;
   try {
     const { rows } = await pool.query(
       `SELECT id, email, password_hash, full_name, role, organisation_id, is_active

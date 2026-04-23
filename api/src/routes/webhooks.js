@@ -1,8 +1,20 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { pool } from '../db/pool.js';
-import {
-  classifyCommunication,
-} from '../engines/communicationEngine.js';
+import { classifyCommunication } from '../engines/communicationEngine.js';
+import { validate } from '../middleware/validate.js';
+
+const quidoSchema = z.object({
+  event_type:     z.string().min(1),
+  customer_email: z.string().email(),
+  channel:        z.enum(['email', 'chat', 'postal']),
+  message_body:   z.string().min(1),
+  customer_name:  z.string().optional().nullable(),
+  loan_id:        z.string().optional().nullable(),
+  reason:         z.string().optional().nullable(),
+  external_ref:   z.string().optional().nullable(),
+  metadata:       z.record(z.unknown()).optional().nullable(),
+});
 
 const router = Router();
 
@@ -48,7 +60,7 @@ function isComplaintReason(reason) {
 
 // ─── POST /api/v1/webhooks/quido ──────────────────────────────────────────────
 
-router.post('/quido', requireQuidoSecret, async (req, res) => {
+router.post('/quido', requireQuidoSecret, validate(quidoSchema), async (req, res) => {
   const {
     event_type,
     customer_email,
@@ -60,18 +72,6 @@ router.post('/quido', requireQuidoSecret, async (req, res) => {
     external_ref,
     metadata,
   } = req.body;
-
-  // Basic validation
-  if (!customer_email || !channel || !message_body || !event_type) {
-    return res.status(400).json({
-      error: 'Missing required fields: event_type, customer_email, channel, message_body',
-    });
-  }
-
-  const validChannels = ['email', 'chat', 'postal'];
-  if (!validChannels.includes(channel)) {
-    return res.status(400).json({ error: `Invalid channel: must be one of ${validChannels.join(', ')}` });
-  }
 
   const client = await pool.connect();
   let comm;

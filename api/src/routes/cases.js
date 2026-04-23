@@ -1,6 +1,16 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { pool } from '../db/pool.js';
 import { calculateDeadlines } from '../engines/deadlineEngine.js';
+import { validate } from '../middleware/validate.js';
+
+const createCaseSchema = z.object({
+  customer_id:      z.string().uuid(),
+  category:         z.string().min(1),
+  channel_received: z.string().min(1),
+  ruleset_id:       z.string().uuid().optional().nullable(),
+  notes:            z.string().optional().nullable(),
+});
 
 const router = Router();
 
@@ -120,13 +130,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
-  const { customer_id, category, channel_received, ruleset_id, notes } = req.body ?? {};
-
-  if (!customer_id || !category || !channel_received) {
-    return res.status(400).json({ error: 'customer_id, category, and channel_received are required' });
-  }
-
+router.post('/', validate(createCaseSchema), async (req, res) => {
+  const { customer_id, category, channel_received, ruleset_id, notes } = req.body;
   try {
     const { rows } = await pool.query(
       `INSERT INTO cases (customer_id, category, channel_received, ruleset_id, notes)

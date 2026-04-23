@@ -5,7 +5,14 @@
  * mock success response without error).
  */
 import { Router } from 'express';
+import { z } from 'zod';
 import { pool } from '../db/pool.js';
+import { validate } from '../middleware/validate.js';
+
+const patchChunkSchema = z.object({
+  status:      z.enum(['active', 'rejected']),
+  reviewer_id: z.string().optional().nullable(),
+});
 
 const router = Router();
 
@@ -335,13 +342,9 @@ router.get('/chunks', async (req, res) => {
 
 // ─── PATCH /chunks/:id ────────────────────────────────────────────────────────
 // status: 'active' (approve) | 'rejected' (reject / dismiss)
-router.patch('/chunks/:id', async (req, res) => {
+router.patch('/chunks/:id', validate(patchChunkSchema), async (req, res) => {
   const { id } = req.params;
   const { status, reviewer_id } = req.body;
-
-  if (!['active', 'rejected'].includes(status)) {
-    return res.status(400).json({ error: "status must be 'active' or 'rejected'" });
-  }
 
   const dbStatus = status === 'rejected' ? 'archived' : 'active';
 

@@ -60,7 +60,12 @@
 
 | # | Area | Description | Resolved | How |
 |---|---|---|---|---|
-| — | — | No resolved gaps yet | — | — |
+| 1 | Security | JWT token expiry and refresh logic | 23 Apr 2026 | Already implemented: 1h access token, 7d refresh token, refresh endpoint in auth.js |
+| 3 | Security | No rate limiting on public endpoints | 23 Apr 2026 | express-rate-limit: 10/min on auth, 60/min on webhooks, 200/min on all other routes; skipped in test env |
+| 4 | Security | CORS too permissive | 23 Apr 2026 | Restricted to CORS_ORIGIN env var (default localhost:5173) |
+| 5 | Security | No input validation middleware | 23 Apr 2026 | Zod schemas + validate() middleware on all POST and PATCH routes |
+| 6 | Security | Helmet.js not added | 23 Apr 2026 | Added helmet() to app.js as first middleware |
+| 7 | Security | SQL injection audit | 23 Apr 2026 | All queries use parameterized $1/$2 style; only dynamic element in regulatory.js PATCH /sources/:id uses hardcoded column names from known `if` checks (safe) |
 
 ---
 

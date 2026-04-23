@@ -415,10 +415,10 @@ Promise.all([
 - SQL injection audit across entire codebase
 - JWT expiry confirmed (1hr access, 7d refresh)
 **Exit criteria:**
-- [ ] All 6 security-related High gaps in NUQE_TECHNICAL_DEBT.md resolved
-- [ ] Security gaps marked resolved with date
+- [x] All 6 security-related High gaps in NUQE_TECHNICAL_DEBT.md resolved
+- [x] Security gaps marked resolved with date
 
-**Date completed:** _______________
+**Date completed:** 23 April 2026
 
 ### Session 8.2: Observability
 **What to build:**

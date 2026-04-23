@@ -1,6 +1,13 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { pool } from '../db/pool.js';
 import { checkSources, getMonitoringHealth } from '../engines/regulatoryMonitor.js';
+import { validate } from '../middleware/validate.js';
+
+const patchSourceSchema = z.object({
+  is_active:             z.boolean().optional(),
+  check_frequency_hours: z.number().int().min(1).optional(),
+});
 
 const router = Router();
 
@@ -150,7 +157,7 @@ router.patch('/monitoring-log/:id/approve', async (req, res) => {
 });
 
 // ─── PATCH /sources/:id ───────────────────────────────────────────────────────
-router.patch('/sources/:id', async (req, res) => {
+router.patch('/sources/:id', validate(patchSourceSchema), async (req, res) => {
   const { id } = req.params;
   const { is_active, check_frequency_hours } = req.body;
 

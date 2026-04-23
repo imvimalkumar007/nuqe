@@ -1,8 +1,35 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import Anthropic from '@anthropic-ai/sdk';
+import { z } from 'zod';
 import { pool } from '../db/pool.js';
 import { clearOrgConfigCache } from '../engines/modelRouter.js';
+import { validate } from '../middleware/validate.js';
+
+const aiConfigSchema = z.object({
+  primary_provider:        z.string().optional().nullable(),
+  primary_model:           z.string().optional().nullable(),
+  primary_api_key:         z.string().optional().nullable(),
+  primary_endpoint_url:    z.string().url().optional().nullable(),
+  challenger_provider:     z.string().optional().nullable(),
+  challenger_model:        z.string().optional().nullable(),
+  challenger_api_key:      z.string().optional().nullable(),
+  challenger_endpoint_url: z.string().url().optional().nullable(),
+  challenger_percentage:   z.number().min(0).max(100).optional(),
+  tokenisation_enabled:    z.boolean().optional(),
+  data_agreement_tier:     z.enum(['standard', 'enhanced', 'enterprise']).optional(),
+}).passthrough();
+
+const aiConfigTestSchema = z.object({
+  provider: z.string().optional().nullable(),
+  model:    z.string().optional().nullable(),
+  api_key:  z.string().optional().nullable(),
+});
+
+const tokeniserAdditionSchema = z.object({
+  pattern: z.string().optional().nullable(),
+  label:   z.string().optional().nullable(),
+});
 
 const router = Router();
 
@@ -79,7 +106,7 @@ router.get('/ai-config', async (_req, res) => {
 
 // ─── POST /api/v1/settings/ai-config ─────────────────────────────────────────
 
-router.post('/ai-config', async (req, res) => {
+router.post('/ai-config', validate(aiConfigSchema), async (req, res) => {
   const {
     primary_provider    = null,
     primary_model       = null,
@@ -191,7 +218,7 @@ router.post('/ai-config', async (req, res) => {
 
 // ─── POST /api/v1/settings/ai-config/test ────────────────────────────────────
 
-router.post('/ai-config/test', async (req, res) => {
+router.post('/ai-config/test', validate(aiConfigTestSchema), async (req, res) => {
   const { provider, model, api_key } = req.body ?? {};
   const start = Date.now();
   try {
@@ -234,7 +261,7 @@ router.get('/tokeniser-additions', async (_req, res) => {
 
 // ─── POST /api/v1/settings/tokeniser-additions ───────────────────────────────
 
-router.post('/tokeniser-additions', async (req, res) => {
+router.post('/tokeniser-additions', validate(tokeniserAdditionSchema), async (req, res) => {
   const { pattern, label } = req.body ?? {};
   try {
     const { rows } = await pool.query(

@@ -1,5 +1,16 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { pool } from '../db/pool.js';
+import { validate } from '../middleware/validate.js';
+
+const createCommSchema = z.object({
+  case_id:     z.string().uuid(),
+  channel:     z.enum(['email', 'chat', 'postal', 'phone', 'portal']),
+  direction:   z.enum(['inbound', 'outbound']),
+  body:        z.string().min(1),
+  author_type: z.enum(['customer', 'staff', 'ai_draft', 'system']),
+  subject:     z.string().optional().nullable(),
+});
 
 const router = Router();
 
@@ -35,13 +46,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
-  const { case_id, channel, direction, subject, body, author_type } = req.body ?? {};
-
-  if (!case_id || !channel || !direction || !body || !author_type) {
-    return res.status(400).json({ error: 'case_id, channel, direction, body, and author_type are required' });
-  }
-
+router.post('/', validate(createCommSchema), async (req, res) => {
+  const { case_id, channel, direction, subject, body, author_type } = req.body;
   try {
     const { rows: caseRows } = await pool.query(
       'SELECT customer_id FROM cases WHERE id = $1',

@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import { pool } from './db/pool.js';
 import { requireAuth } from './middleware/auth.js';
@@ -21,7 +23,15 @@ import settingsRouter            from './routes/settings.js';
 
 const app = express();
 
-app.use(cors({ origin: true, credentials: true }));
+const ALLOWED_ORIGIN = process.env.CORS_ORIGIN ?? 'http://localhost:5173';
+
+const skipInTest = () => process.env.NODE_ENV === 'test';
+const standardLimiter = rateLimit({ windowMs: 60_000, max: 200, standardHeaders: true, legacyHeaders: false, skip: skipInTest });
+const authLimiter     = rateLimit({ windowMs: 60_000, max: 10,  standardHeaders: true, legacyHeaders: false, skip: skipInTest });
+const webhookLimiter  = rateLimit({ windowMs: 60_000, max: 60,  standardHeaders: true, legacyHeaders: false, skip: skipInTest });
+
+app.use(helmet());
+app.use(cors({ origin: ALLOWED_ORIGIN, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
@@ -42,11 +52,12 @@ app.get('/health', async (_req, res) => {
 });
 
 // auth router handles login/refresh/logout/me — /me adds requireAuth inline in auth.js
-app.use('/api/v1/auth',       authRouter);
-app.use('/api/v1/webhooks',   webhooksRouter);
+app.use('/api/v1/auth',       authLimiter,    authRouter);
+app.use('/api/v1/webhooks',   webhookLimiter, webhooksRouter);
 
 // ── Auth middleware — everything below requires a valid Bearer token ───────────
 
+app.use(standardLimiter);
 app.use(requireAuth);
 
 app.use('/api/v1/cases',          casesRouter);
