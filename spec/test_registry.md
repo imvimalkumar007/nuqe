@@ -6,9 +6,9 @@
 
 Last updated: 23 April 2026
 Total: 142
-PASS: 57
+PASS: 65
 FAIL: 0
-NOT RUN: 85
+NOT RUN: 77
 
 ---
 
@@ -151,14 +151,14 @@ NOT RUN: 85
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| PII-001 | Layer 1 detects and replaces email addresses | NOT RUN | |
-| PII-002 | Layer 1 detects and replaces UK phone numbers | NOT RUN | |
-| PII-003 | Layer 1 detects and replaces loan reference numbers NQ-YYYY-NNNN | NOT RUN | |
-| PII-004 | Layer 2 detects StepChange as DEBTORG token | NOT RUN | |
-| PII-005 | Layer 2 detects mental health as VULNERABILITY token | NOT RUN | |
-| PII-006 | Layer 3 detects person names not caught by Layer 1 | NOT RUN | |
-| PII-007 | detokenise correctly restores all original values | NOT RUN | |
-| PII-008 | Low confidence detections are flagged in audit | NOT RUN | |
+| PII-001 | Layer 1 detects and replaces email addresses | PASS | 23 Apr 2026 |
+| PII-002 | Layer 1 detects and replaces UK phone numbers | PASS | 23 Apr 2026 |
+| PII-003 | Layer 1 detects and replaces loan reference numbers NQ-YYYY-NNNN | PASS | 23 Apr 2026 |
+| PII-004 | Layer 2 detects StepChange as DEBTORG token | PASS | 23 Apr 2026 |
+| PII-005 | Layer 2 detects mental health as VULNERABILITY token | PASS | 23 Apr 2026 |
+| PII-006 | Layer 3 detects person names not caught by Layer 1 | PASS | 23 Apr 2026 |
+| PII-007 | detokenise correctly restores all original values | PASS | 23 Apr 2026 |
+| PII-008 | Low confidence detections are flagged in return value | PASS | 23 Apr 2026 |
 
 ---
 

@@ -218,13 +218,13 @@ Promise.all([
 **Tests to pass:** PII-001 through PII-008 (8 tests)
 **Note:** Layer 4 tests skipped until tokeniser_additions table exists (completed in Phase 1)
 **Exit criteria:**
-- [ ] All four layers detect correctly
-- [ ] detokenise restores original values
-- [ ] Low confidence flags returned correctly
-- [ ] PII-001 through PII-007 all PASS (PII-008 if table exists)
-- [ ] Component 10 status updated to VERIFIED
+- [x] All four layers detect correctly (L1–L3 + L4 fallback; tokeniser_additions skipped)
+- [x] detokenise restores original values
+- [x] Low confidence flags returned correctly
+- [x] PII-001 through PII-008 all PASS
+- [x] Component 10 status updated to VERIFIED
 
-**Date completed:** _______________
+**Date completed:** 23 April 2026
 
 ### Session 3.4: Component 09 — Model Router
 **Spec file:** spec/components/09_model_router.md
