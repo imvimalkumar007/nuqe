@@ -6,9 +6,9 @@
 
 Last updated: 23 April 2026
 Total: 142
-PASS: 136
+PASS: 142
 FAIL: 0
-NOT RUN: 6
+NOT RUN: 0
 
 ---
 
@@ -278,12 +278,12 @@ NOT RUN: 6
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| FE-MON-001 | Regulatory Monitoring screen loads without errors | NOT RUN | |
-| FE-MON-002 | Sources panel shows all five configured sources | NOT RUN | |
-| FE-MON-003 | Pending Review panel shows count badge | NOT RUN | |
-| FE-SET-001 | Settings screen loads without errors | NOT RUN | |
-| FE-SET-002 | AI Configuration panel shows saved config | NOT RUN | |
-| FE-SET-003 | Connection test button shows result | NOT RUN | |
+| FE-MON-001 | Regulatory Monitoring screen loads without errors | PASS | 23 Apr 2026 |
+| FE-MON-002 | Sources panel shows all five configured sources | PASS | 23 Apr 2026 |
+| FE-MON-003 | Pending Review count badge updates after approval | PASS | 23 Apr 2026 |
+| FE-SET-001 | Settings screen loads without errors | PASS | 23 Apr 2026 |
+| FE-SET-002 | AI Configuration panel loads saved config | PASS | 23 Apr 2026 |
+| FE-SET-003 | Connection Test button shows result message | PASS | 23 Apr 2026 |
 
 ---
 

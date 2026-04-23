@@ -243,20 +243,20 @@ function AiConfigPanel() {
       .then(({ data }) => {
         const d = data ?? {};
         setPrimary({
-          provider: d.ai_provider   ?? d.primary?.provider ?? 'Claude',
-          model:    d.ai_model      ?? d.primary?.model    ?? '',
-          apiKey:   d.primary_key   ?? d.primary?.api_key  ?? '',
-          endpoint: d.endpoint      ?? d.primary?.endpoint ?? '',
+          provider: d.primary_provider            ?? d.ai_provider   ?? d.primary?.provider ?? 'Claude',
+          model:    d.primary_model               ?? d.ai_model      ?? d.primary?.model    ?? '',
+          apiKey:   d.primary_api_key_encrypted   ?? d.primary_key   ?? d.primary?.api_key  ?? '',
+          endpoint: d.primary_endpoint_url        ?? d.endpoint      ?? d.primary?.endpoint ?? '',
         });
         setChallenger({
-          provider: d.challenger_provider ?? d.challenger?.provider ?? 'Claude',
-          model:    d.challenger_model    ?? d.challenger?.model    ?? '',
-          apiKey:   d.challenger_key      ?? d.challenger?.api_key  ?? '',
-          endpoint: d.challenger_endpoint ?? d.challenger?.endpoint ?? '',
+          provider: d.challenger_provider             ?? d.challenger?.provider ?? 'Claude',
+          model:    d.challenger_model                ?? d.challenger?.model    ?? '',
+          apiKey:   d.challenger_api_key_encrypted    ?? d.challenger_key       ?? d.challenger?.api_key  ?? '',
+          endpoint: d.challenger_endpoint_url         ?? d.challenger_endpoint  ?? d.challenger?.endpoint ?? '',
         });
-        setRouting(d.routing_pct   ?? d.ab_split   ?? 0);
-        setDataTier(d.data_tier ?? 'standard');
-        setPiiOn(d.pii_tokenisation ?? d.pii_enabled ?? true);
+        setRouting(d.challenger_percentage ?? d.routing_pct  ?? d.ab_split  ?? 0);
+        setDataTier(d.data_agreement_tier  ?? d.data_tier    ?? 'standard');
+        setPiiOn(d.tokenisation_enabled    ?? d.pii_tokenisation ?? d.pii_enabled ?? true);
       })
       .catch((err) => {
         setConfigError(err.response?.data?.error ?? err.message ?? 'Failed to load config');

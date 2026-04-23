@@ -1,7 +1,7 @@
 # Component 19: Frontend Monitoring and Settings
 
 ## Status
-PARTIAL — screens built, not wired to real endpoints
+VERIFIED — all 6 tests passing (23 April 2026)
 
 ## Purpose
 Regulatory Monitoring: shows health of automated source monitoring,
@@ -47,12 +47,12 @@ API calls:
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| FE-MON-001 | Regulatory Monitoring screen loads without errors | NOT RUN | |
-| FE-MON-002 | Sources panel shows all five configured sources | NOT RUN | |
-| FE-MON-003 | Pending Review count badge updates after approval | NOT RUN | |
-| FE-SET-001 | Settings screen loads without errors | NOT RUN | |
-| FE-SET-002 | AI Configuration panel loads saved config | NOT RUN | |
-| FE-SET-003 | Connection Test button shows result message | NOT RUN | |
+| FE-MON-001 | Regulatory Monitoring screen loads without errors | PASS | 23 Apr 2026 |
+| FE-MON-002 | Sources panel shows all five configured sources | PASS | 23 Apr 2026 |
+| FE-MON-003 | Pending Review count badge updates after approval | PASS | 23 Apr 2026 |
+| FE-SET-001 | Settings screen loads without errors | PASS | 23 Apr 2026 |
+| FE-SET-002 | AI Configuration panel loads saved config | PASS | 23 Apr 2026 |
+| FE-SET-003 | Connection Test button shows result message | PASS | 23 Apr 2026 |
 
 ## Claude Code Prompt
 ```

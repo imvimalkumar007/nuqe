@@ -45,7 +45,7 @@ router.get('/recent-changes', async (req, res) => {
          al.entity_id,
          al.action,
          al.new_value,
-         al.created_at,
+         al.ts          AS created_at,
          kc.title       AS chunk_title,
          kc.jurisdiction,
          kc.document_type,
@@ -54,8 +54,8 @@ router.get('/recent-changes', async (req, res) => {
        LEFT JOIN knowledge_chunks kc ON kc.id = al.entity_id
        WHERE al.entity_type = 'knowledge_chunk'
          AND al.action IN ('auto_ingested', 'approved', 'rejected', 'superseded')
-         AND al.created_at >= NOW() - INTERVAL '30 days'
-       ORDER BY al.created_at DESC
+         AND al.ts >= NOW() - INTERVAL '30 days'
+       ORDER BY al.ts DESC
        LIMIT $1`,
       [limit]
     );

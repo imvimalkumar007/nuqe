@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePendingActions } from '../context/PendingActionsContext';
+import client from '../api/client';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -50,10 +51,9 @@ function ReviewModal({ chunk, onClose, onDone }) {
   async function handleDecision(decision) {
     setSubmitting(true);
     try {
-      await fetch(`/api/v1/knowledge-chunks/${chunk.id}/review`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: decision === 'approve' ? 'active' : 'archived' }),
+      await client.patch(`/api/v1/knowledge-chunks/${chunk.id}/review`, {
+        status:      decision === 'approve' ? 'active' : 'archived',
+        reviewer_id: localStorage.getItem('userId') ?? 'reviewer',
       });
       onDone();
     } finally {
@@ -135,17 +135,29 @@ export default function RegulatoryMonitoring() {
 
   const load = useCallback(async () => {
     try {
-      const [sRes, cRes, rRes, hRes] = await Promise.all([
-        fetch('/api/v1/regulatory/sources'),
-        fetch('/api/v1/knowledge-chunks?status=pending_review&limit=100'),
-        fetch('/api/v1/regulatory/recent-changes?limit=50'),
-        fetch('/api/v1/regulatory/health'),
+      const [sRes, cRes, rRes, hRes] = await Promise.allSettled([
+        client.get('/api/v1/regulatory/sources'),
+        client.get('/api/v1/knowledge-chunks', { params: { status: 'pending_review', limit: 100 } }),
+        client.get('/api/v1/regulatory/recent-changes', { params: { limit: 50 } }),
+        client.get('/api/v1/regulatory/health'),
       ]);
       if (!mountedRef.current) return;
-      if (sRes.ok) setSources(await sRes.json());
-      if (cRes.ok) setPendingChunks(await cRes.json());
-      if (rRes.ok) setRecentChanges(await rRes.json());
-      if (hRes.ok) setHealth(await hRes.json());
+      if (sRes.status === 'fulfilled') {
+        const d = sRes.value.data;
+        setSources(Array.isArray(d) ? d : (d.sources ?? []));
+      }
+      if (cRes.status === 'fulfilled') {
+        const d = cRes.value.data;
+        setPendingChunks(Array.isArray(d) ? d : []);
+      }
+      if (rRes.status === 'fulfilled') {
+        const d = rRes.value.data;
+        setRecentChanges(Array.isArray(d) ? d : []);
+      }
+      if (hRes.status === 'fulfilled') {
+        const d = hRes.value.data;
+        setHealth(Array.isArray(d) ? d : []);
+      }
     } catch {
       // silently handle
     } finally {
@@ -178,7 +190,7 @@ export default function RegulatoryMonitoring() {
   }
 
   async function triggerCheck(sourceId) {
-    await fetch(`/api/v1/regulatory/sources/${sourceId}/check`, { method: 'POST' });
+    await client.post(`/api/v1/regulatory/sources/${sourceId}/check`);
   }
 
   if (loading) {
