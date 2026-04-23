@@ -4,11 +4,11 @@
 > Status: PASS, FAIL, NOT RUN, SKIPPED
 > This file is the ground truth for build status.
 
-Last updated: 22 April 2026
+Last updated: 23 April 2026
 Total: 142
-PASS: 8
+PASS: 18
 FAIL: 0
-NOT RUN: 134
+NOT RUN: 124
 
 ---
 
@@ -31,16 +31,16 @@ NOT RUN: 134
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| AUTH-001 | POST /auth/login with valid credentials returns 200 and access token | NOT RUN | |
-| AUTH-002 | POST /auth/login with wrong password returns 401 | NOT RUN | |
-| AUTH-003 | POST /auth/login with unknown email returns 401 | NOT RUN | |
-| AUTH-004 | POST /auth/login with missing fields returns 400 | NOT RUN | |
-| AUTH-005 | POST /auth/refresh with valid cookie returns new access token | NOT RUN | |
-| AUTH-006 | POST /auth/refresh with no cookie returns 401 | NOT RUN | |
-| AUTH-007 | POST /auth/logout clears the refresh token cookie | NOT RUN | |
-| AUTH-008 | GET /auth/me with valid token returns user object | NOT RUN | |
-| AUTH-009 | GET /auth/me with no token returns 401 | NOT RUN | |
-| AUTH-010 | Protected route returns 401 when called without token | NOT RUN | |
+| AUTH-001 | POST /auth/login with valid credentials returns 200 and access token | PASS | 23 Apr 2026 |
+| AUTH-002 | POST /auth/login with wrong password returns 401 | PASS | 23 Apr 2026 |
+| AUTH-003 | POST /auth/login with unknown email returns 401 | PASS | 23 Apr 2026 |
+| AUTH-004 | POST /auth/login with missing fields returns 400 | PASS | 23 Apr 2026 |
+| AUTH-005 | POST /auth/refresh with valid cookie returns new access token | PASS | 23 Apr 2026 |
+| AUTH-006 | POST /auth/refresh with no cookie returns 401 | PASS | 23 Apr 2026 |
+| AUTH-007 | POST /auth/logout clears the refresh token cookie | PASS | 23 Apr 2026 |
+| AUTH-008 | GET /auth/me with valid token returns user object | PASS | 23 Apr 2026 |
+| AUTH-009 | GET /auth/me with no token returns 401 | PASS | 23 Apr 2026 |
+| AUTH-010 | Protected route returns 401 when called without token | PASS | 23 Apr 2026 |
 
 ---
 

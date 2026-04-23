@@ -1,7 +1,7 @@
 # Component 02: Auth System
 
 ## Status
-NOT BUILT — no login screen, no JWT middleware, no route protection
+VERIFIED — all 10 tests passing (23 April 2026)
 
 ## Purpose
 Protects all API endpoints except /health and /webhooks/quido.
@@ -10,7 +10,7 @@ cookies (7 days). Enables the frontend to maintain sessions
 across page refreshes via silent token refresh.
 
 ## Dependencies
-- Database: users table (migration 006_users.sql — not yet created)
+- Database: users table (migration 008_users.sql — applied)
 - All other components depend on this being correct
 
 ## Endpoints
@@ -81,16 +81,16 @@ hashed with bcrypt cost factor 12
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| AUTH-001 | POST /auth/login with valid credentials returns 200 and access token | NOT RUN | |
-| AUTH-002 | POST /auth/login with wrong password returns 401 | NOT RUN | |
-| AUTH-003 | POST /auth/login with unknown email returns 401 | NOT RUN | |
-| AUTH-004 | POST /auth/login with missing fields returns 400 | NOT RUN | |
-| AUTH-005 | POST /auth/refresh with valid cookie returns new access token | NOT RUN | |
-| AUTH-006 | POST /auth/refresh with no cookie returns 401 | NOT RUN | |
-| AUTH-007 | POST /auth/logout clears the refresh_token cookie | NOT RUN | |
-| AUTH-008 | GET /auth/me with valid token returns user object | NOT RUN | |
-| AUTH-009 | GET /auth/me with no token returns 401 | NOT RUN | |
-| AUTH-010 | Protected route returns 401 when called without token | NOT RUN | |
+| AUTH-001 | POST /auth/login with valid credentials returns 200 and access token | PASS | 23 Apr 2026 |
+| AUTH-002 | POST /auth/login with wrong password returns 401 | PASS | 23 Apr 2026 |
+| AUTH-003 | POST /auth/login with unknown email returns 401 | PASS | 23 Apr 2026 |
+| AUTH-004 | POST /auth/login with missing fields returns 400 | PASS | 23 Apr 2026 |
+| AUTH-005 | POST /auth/refresh with valid cookie returns new access token | PASS | 23 Apr 2026 |
+| AUTH-006 | POST /auth/refresh with no cookie returns 401 | PASS | 23 Apr 2026 |
+| AUTH-007 | POST /auth/logout clears the refresh_token cookie | PASS | 23 Apr 2026 |
+| AUTH-008 | GET /auth/me with valid token returns user object | PASS | 23 Apr 2026 |
+| AUTH-009 | GET /auth/me with no token returns 401 | PASS | 23 Apr 2026 |
+| AUTH-010 | Protected route returns 401 when called without token | PASS | 23 Apr 2026 |
 
 ## Claude Code Prompt
 ```

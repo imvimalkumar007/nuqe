@@ -1,6 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
+import { AuthProvider } from './context/AuthContext';
 import { PendingActionsProvider } from './context/PendingActionsContext';
+import PrivateRoute from './components/shared/PrivateRoute';
+import LoginPage from './pages/LoginPage';
 
 import Complaints   from './pages/Complaints';
 import AllCases     from './pages/AllCases';
@@ -17,13 +20,11 @@ import AnalyticsDashboard            from './components/AnalyticsDashboard';
 import RegulatoryMonitoringScreen    from './components/RegulatoryMonitoringScreen';
 import SettingsScreen                from './components/SettingsScreen';
 
-export default function App() {
+function AppShell() {
   return (
-    <BrowserRouter>
-      <PendingActionsProvider>
+    <PendingActionsProvider>
       <div className="flex h-screen overflow-hidden bg-nuqe-bg text-nuqe-text">
         <Sidebar />
-
         <main className="flex-1 overflow-y-auto">
           <Routes>
             <Route index element={<Navigate to="/complaints" replace />} />
@@ -44,7 +45,23 @@ export default function App() {
           </Routes>
         </main>
       </div>
-      </PendingActionsProvider>
+    </PendingActionsProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/*" element={
+            <PrivateRoute>
+              <AppShell />
+            </PrivateRoute>
+          } />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

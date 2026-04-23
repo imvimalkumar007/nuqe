@@ -84,16 +84,16 @@ Each session: 1 to 2 hours in Claude Code
 **What gets built:** users table migration, login/refresh/logout/me endpoints, JWT middleware, LoginPage, AuthContext, PrivateRoute.
 **Tests to pass:** AUTH-001 through AUTH-010 (10 tests)
 **Exit criteria:**
-- [ ] POST /auth/login returns access token and sets cookie
-- [ ] Refresh token rotation works
-- [ ] All protected routes return 401 without token
-- [ ] LoginPage renders and redirects on success
-- [ ] AuthContext stores token in memory, never localStorage
-- [ ] AUTH-001 through AUTH-010 all PASS
-- [ ] Component 02 status updated to VERIFIED
-- [ ] Changes committed
+- [x] POST /auth/login returns access token and sets cookie
+- [x] Refresh token rotation works
+- [x] All protected routes return 401 without token
+- [x] LoginPage renders and redirects on success
+- [x] AuthContext stores token in memory, never localStorage
+- [x] AUTH-001 through AUTH-010 all PASS
+- [x] Component 02 status updated to VERIFIED
+- [x] Changes committed
 
-**Date completed:** _______________
+**Date completed:** 23 April 2026
 
 ### Session 1.3: Seed data verification
 **What to do:** Verify the demo seed data is complete and correct. Run the seed, check every table has the right rows, confirm deadline rows are calculated correctly.
