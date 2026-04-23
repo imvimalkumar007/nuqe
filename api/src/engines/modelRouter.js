@@ -15,14 +15,28 @@ const FALLBACK = {
   isChallenger: false,
 };
 
-// ─── Step 1: Load org config ─────────────────────────────────────────────────
+// ─── Step 1: Load org config (in-memory cache with 5-minute TTL) ─────────────
+const _orgConfigCache = new Map(); // orgId → { config, expiresAt }
+const ORG_CONFIG_TTL  = 5 * 60 * 1000;
+
+export function clearOrgConfigCache(organisationId) {
+  if (organisationId) _orgConfigCache.delete(organisationId);
+  else _orgConfigCache.clear();
+}
+
 async function loadOrgConfig(organisationId) {
   if (!organisationId) return null;
+
+  const cached = _orgConfigCache.get(organisationId);
+  if (cached && Date.now() < cached.expiresAt) return cached.config;
+
   const { rows } = await pool.query(
     'SELECT * FROM organisation_ai_config WHERE organisation_id = $1 LIMIT 1',
     [organisationId]
   );
-  return rows[0] ?? null;
+  const config = rows[0] ?? null;
+  _orgConfigCache.set(organisationId, { config, expiresAt: Date.now() + ORG_CONFIG_TTL });
+  return config;
 }
 
 // ─── Step 2: Select provider (primary vs challenger) ─────────────────────────

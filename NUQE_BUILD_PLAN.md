@@ -231,14 +231,14 @@ Promise.all([
 **Tests to pass:** ROUTER-001 through ROUTER-007 (7 tests)
 **Note:** All external AI calls are mocked in tests
 **Exit criteria:**
-- [ ] Standardised response shape returned regardless of provider
-- [ ] PII tokeniser called before and after
-- [ ] A/B routing logic verified
-- [ ] Fallback to env var works
-- [ ] ROUTER-001 through ROUTER-007 all PASS
-- [ ] Component 09 status updated to VERIFIED
+- [x] Standardised response shape returned regardless of provider
+- [x] PII tokeniser called before and after
+- [x] A/B routing logic verified
+- [x] Fallback to env var works
+- [x] ROUTER-001 through ROUTER-007 all PASS
+- [x] Component 09 status updated to VERIFIED
 
-**Date completed:** _______________
+**Date completed:** 23 April 2026
 
 ---
 

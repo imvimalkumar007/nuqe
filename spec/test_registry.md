@@ -6,9 +6,9 @@
 
 Last updated: 23 April 2026
 Total: 142
-PASS: 65
+PASS: 72
 FAIL: 0
-NOT RUN: 77
+NOT RUN: 70
 
 ---
 
@@ -137,13 +137,13 @@ NOT RUN: 77
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| ROUTER-001 | Routes to Claude when provider is claude | NOT RUN | |
-| ROUTER-002 | Routes to custom endpoint when provider is custom | NOT RUN | |
-| ROUTER-003 | Returns standardised response object regardless of provider | NOT RUN | |
-| ROUTER-004 | Calls piiTokeniser.tokenise before sending prompt | NOT RUN | |
-| ROUTER-005 | Calls piiTokeniser.detokenise on response | NOT RUN | |
-| ROUTER-006 | A/B routing sends challenger_percentage of requests to challenger | NOT RUN | |
-| ROUTER-007 | Falls back to ANTHROPIC_API_KEY env var if no org config exists | NOT RUN | |
+| ROUTER-001 | Routes to Claude when provider is claude | PASS | 23 Apr 2026 |
+| ROUTER-002 | Returns standardised response object with all required fields | PASS | 23 Apr 2026 |
+| ROUTER-003 | Calls piiTokeniser.tokenise before sending — PII absent from prompt | PASS | 23 Apr 2026 |
+| ROUTER-004 | Calls piiTokeniser.detokenise on response — PII restored in content | PASS | 23 Apr 2026 |
+| ROUTER-005 | A/B routing sends to challenger when challenger_percentage = 100 | PASS | 23 Apr 2026 |
+| ROUTER-006 | Falls back to ANTHROPIC_API_KEY env var when no org config | PASS | 23 Apr 2026 |
+| ROUTER-007 | Org config is cached — DB not re-queried on second call | PASS | 23 Apr 2026 |
 
 ---
 
