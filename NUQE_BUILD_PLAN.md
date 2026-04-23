@@ -461,12 +461,12 @@ Promise.all([
 - ESLint config for api/ and web/
 - TEST_DATABASE_URL added to .env.example
 **Exit criteria:**
-- [ ] CI pipeline runs green on a test push
-- [ ] Coverage report uploaded as artifact
-- [ ] Build artifact confirmed
-- [ ] README.md has CI status badge
+- [x] CI pipeline runs green on a test push
+- [x] Coverage report uploaded as artifact
+- [x] Build artifact confirmed
+- [x] README.md has CI status badge
 
-**Date completed:** _______________
+**Date completed:** 23 April 2026
 
 ### Session 9.2: Render Deployment
 **What to do:**

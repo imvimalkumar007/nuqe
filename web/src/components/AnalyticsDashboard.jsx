@@ -174,7 +174,6 @@ function ChartOverlay({ loading, children }) {
 function AccuracyTab({ accuracy, loading, days }) {
   const rawDaily = useMemo(
     () => makeDailyVolume(days, accuracy?.daily_volume),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [days, accuracy],
   );
   const dailyData = days > 60

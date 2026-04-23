@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-escape */
 import nlp from 'compromise';
 import { pool } from '../db/pool.js';
 import logger from '../logger.js';

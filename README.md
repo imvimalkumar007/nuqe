@@ -1,5 +1,7 @@
 # nuqe
 
+[![CI](https://github.com/vimalkumarvelayudhan/nuqe/actions/workflows/ci.yml/badge.svg)](https://github.com/vimalkumarvelayudhan/nuqe/actions/workflows/ci.yml)
+
 **Compliance-native communication and case management for digital lenders.**
 
 Nuqe is a full-stack platform that unifies all written customer communication — email, chat, and postal — in a single compliance-governed environment. Every regulatory deadline is calculated automatically, every AI action requires human approval, and every event is logged immutably for audit.
