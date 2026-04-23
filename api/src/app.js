@@ -3,9 +3,11 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import pinoHttp from 'pino-http';
 import cookieParser from 'cookie-parser';
 import { pool } from './db/pool.js';
 import { requireAuth } from './middleware/auth.js';
+import logger from './logger.js';
 
 import authRouter         from './routes/auth.js';
 import casesRouter        from './routes/cases.js';
@@ -34,20 +36,19 @@ app.use(helmet());
 app.use(cors({ origin: ALLOWED_ORIGIN, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
-
-app.use((req, _res, next) => {
-  console.log(`${new Date().toISOString()}  ${req.method}  ${req.url}`);
-  next();
-});
+app.use(pinoHttp({ logger, autoLogging: { ignore: (req) => req.url === '/health' } }));
 
 // ── Unprotected routes ────────────────────────────────────────────────────────
 
 app.get('/health', async (_req, res) => {
+  const ts = new Date().toISOString();
   try {
+    const dbStart = Date.now();
     await pool.query('SELECT 1');
-    res.json({ status: 'ok', db: 'connected', ts: new Date().toISOString() });
+    const db_response_ms = Date.now() - dbStart;
+    res.json({ status: 'ok', db_status: 'connected', db_response_ms, ts });
   } catch {
-    res.status(503).json({ status: 'degraded', db: 'unreachable', ts: new Date().toISOString() });
+    res.status(503).json({ status: 'degraded', db_status: 'unreachable', ts });
   }
 });
 

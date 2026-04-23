@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { pool } from '../db/pool.js';
 import { checkSources, getMonitoringHealth } from '../engines/regulatoryMonitor.js';
 import { validate } from '../middleware/validate.js';
+import logger from '../logger.js';
 
 const patchSourceSchema = z.object({
   is_active:             z.boolean().optional(),
@@ -25,7 +26,7 @@ router.get('/sources', async (req, res) => {
     );
     res.json({ sources: rows });
   } catch (err) {
-    console.error('[regulatory/sources GET]', err.message);
+    logger.error({ err }, 'GET /regulatory/sources failed');
     res.status(500).json({ message: 'Failed to fetch sources', error: err.message });
   }
 });
@@ -36,7 +37,7 @@ router.get('/health', async (req, res) => {
     const health = await getMonitoringHealth();
     res.json(health);
   } catch (err) {
-    console.error('[regulatory/health GET]', err.message);
+    logger.error({ err }, 'GET /regulatory/health failed');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -68,7 +69,7 @@ router.get('/recent-changes', async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    console.error('[regulatory/recent-changes GET]', err.message);
+    logger.error({ err }, 'GET /regulatory/recent-changes failed');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -105,7 +106,7 @@ router.get('/monitoring-log', async (req, res) => {
       total,
     });
   } catch (err) {
-    console.error('[regulatory/monitoring-log GET]', err.message);
+    logger.error({ err }, 'GET /regulatory/monitoring-log failed');
     res.status(500).json({ message: 'Failed to fetch monitoring log', error: err.message });
   }
 });
@@ -149,7 +150,7 @@ router.patch('/monitoring-log/:id/approve', async (req, res) => {
     return res.json(rows[0]);
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('[regulatory/monitoring-log/approve]', err.message);
+    logger.error({ err }, 'PATCH /regulatory/monitoring-log/:id/approve failed');
     return res.status(500).json({ message: 'Failed to approve monitoring log entry', error: err.message });
   } finally {
     client.release();
@@ -188,7 +189,7 @@ router.patch('/sources/:id', validate(patchSourceSchema), async (req, res) => {
     if (!rows.length) return res.status(404).json({ error: 'Source not found' });
     res.json(rows[0]);
   } catch (err) {
-    console.error('[regulatory/sources PATCH]', err.message);
+    logger.error({ err }, 'PATCH /regulatory/sources/:id failed');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -205,13 +206,13 @@ router.post('/sources/:id/check', async (req, res) => {
 
     setImmediate(() => {
       checkSources([rows[0].jurisdiction]).catch((err) =>
-        console.error('[regulatory/sources/check]', err.message)
+        logger.error({ err }, 'POST /regulatory/sources/:id/check background failed')
       );
     });
 
     res.json({ queued: true });
   } catch (err) {
-    console.error('[regulatory/sources/check POST]', err.message);
+    logger.error({ err }, 'POST /regulatory/sources/:id/check failed');
     res.status(500).json({ error: 'Internal server error' });
   }
 });

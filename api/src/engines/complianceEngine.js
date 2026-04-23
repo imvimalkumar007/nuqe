@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { pool } from '../db/pool.js';
 import { getRedisClient } from '../db/redis.js';
 import { retrieveContext } from './knowledgeLayer.js';
+import logger from '../logger.js';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MODEL = 'claude-sonnet-4-6';
@@ -336,10 +337,7 @@ export async function assessRulesetImpact(newRulesetVersion, jurisdiction) {
       });
       rawOutput = response.content[0]?.text ?? '';
     } catch (err) {
-      console.error(
-        `[complianceEngine] Claude call failed for case ${kase.case_ref}:`,
-        err.message
-      );
+      logger.error({ caseRef: kase.case_ref, err }, 'complianceEngine Claude call failed');
       assessments.push({ case_ref: kase.case_ref, error: err.message });
       continue;
     }
@@ -348,10 +346,7 @@ export async function assessRulesetImpact(newRulesetVersion, jurisdiction) {
     try {
       parsed = JSON.parse(rawOutput);
     } catch {
-      console.error(
-        `[complianceEngine] Non-JSON output for case ${kase.case_ref}:`,
-        rawOutput
-      );
+      logger.error({ caseRef: kase.case_ref, rawOutput }, 'complianceEngine non-JSON Claude output');
       assessments.push({ case_ref: kase.case_ref, error: 'non-JSON Claude output' });
       continue;
     }
@@ -401,10 +396,7 @@ export async function assessRulesetImpact(newRulesetVersion, jurisdiction) {
     {}
   );
 
-  console.log(
-    `[complianceEngine] assessRulesetImpact: ${assessments.length} assessments written`,
-    riskCounts
-  );
+  logger.info({ count: assessments.length, riskCounts }, 'complianceEngine assessRulesetImpact complete');
 
   return {
     currentVersion,

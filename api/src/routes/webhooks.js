@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { pool } from '../db/pool.js';
 import { classifyCommunication } from '../engines/communicationEngine.js';
 import { validate } from '../middleware/validate.js';
+import logger from '../logger.js';
 
 const quidoSchema = z.object({
   event_type:     z.string().min(1),
@@ -23,7 +24,7 @@ const router = Router();
 function requireQuidoSecret(req, res, next) {
   const secret = process.env.QUIDO_WEBHOOK_SECRET;
   if (!secret) {
-    console.error('[webhooks] QUIDO_WEBHOOK_SECRET is not set');
+    logger.error('webhooks QUIDO_WEBHOOK_SECRET is not set');
     return res.status(500).json({ error: 'Webhook secret not configured' });
   }
   if (req.headers['x-quido-secret'] !== secret) {
@@ -155,7 +156,7 @@ router.post('/quido', requireQuidoSecret, validate(quidoSchema), async (req, res
   } catch (err) {
     await client.query('ROLLBACK');
     client.release();
-    console.error('[webhooks/quido] DB error:', err.message);
+    logger.error({ err }, 'webhooks/quido DB error');
     return res.status(500).json({ error: 'Internal server error' });
   }
   client.release();
@@ -190,7 +191,7 @@ router.post('/quido', requireQuidoSecret, validate(quidoSchema), async (req, res
     } catch (err) {
       // Classification failure must not prevent a 200 — the communication was
       // persisted successfully; a staff member can manually review it.
-      console.error('[webhooks/quido] classification error:', err.message);
+      logger.error({ err }, 'webhooks/quido classification error');
     }
   }
 

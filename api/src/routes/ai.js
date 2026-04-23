@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { pool } from '../db/pool.js';
 import { validate } from '../middleware/validate.js';
+import logger from '../logger.js';
 
 const reviewAiSchema = z.object({
   status:       z.enum(['approved', 'rejected']),
@@ -35,7 +36,7 @@ router.get('/', async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    console.error('[ai-actions GET]', err.message);
+    logger.error({ err }, 'ai-actions GET failed');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -167,7 +168,7 @@ router.patch('/:id/review', validate(reviewAiSchema), async (req, res) => {
     return res.json(reviewedAction);
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('[ai-actions/review]', err.message);
+    logger.error({ err }, 'ai-actions review failed');
     return res.status(500).json({ error: 'Internal server error' });
   } finally {
     client.release();
@@ -212,7 +213,7 @@ router.patch('/:id/approve', async (req, res) => {
     return res.json(updated[0]);
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('[ai-actions/approve]', err.message);
+    logger.error({ err }, 'ai-actions approve failed');
     return res.status(500).json({ message: 'Failed to approve action', error: err.message });
   } finally {
     client.release();
@@ -259,7 +260,7 @@ router.patch('/:id/reject', validate(rejectAiSchema), async (req, res) => {
     return res.json(updated[0]);
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('[ai-actions/reject]', err.message);
+    logger.error({ err }, 'ai-actions reject failed');
     return res.status(500).json({ message: 'Failed to reject action', error: err.message });
   } finally {
     client.release();

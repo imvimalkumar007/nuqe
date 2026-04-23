@@ -1,5 +1,6 @@
 import { Queue, Worker } from 'bullmq';
 import { checkSources } from '../engines/regulatoryMonitor.js';
+import logger from '../logger.js';
 
 function parseRedisUrl(url) {
   const { hostname, port, password } = new URL(url);
@@ -25,8 +26,8 @@ function makeWorker(name, jurisdictions) {
     async () => { await checkSources(jurisdictions); },
     { connection }
   );
-  worker.on('completed', (job) => console.log(`[regulatoryQueue] ${name}/${job.name} completed`));
-  worker.on('failed', (job, err) => console.error(`[regulatoryQueue] ${name}/${job?.name} failed:`, err.message));
+  worker.on('completed', (job) => logger.info({ queue: name, job: job.name }, 'regulatoryQueue job completed'));
+  worker.on('failed', (job, err) => logger.error({ queue: name, job: job?.name, err }, 'regulatoryQueue job failed'));
   return worker;
 }
 
@@ -56,5 +57,5 @@ export async function scheduleRegulatoryMonitor() {
     { repeat: { every: 24 * 60 * 60 * 1000 }, jobId: 'regulatory-monitor-in-repeat' }
   );
 
-  console.log('[regulatoryQueue] scheduled: UK every 12 h, EU every 12 h, IN every 24 h (separate queues)');
+  logger.info('regulatoryQueue scheduled: UK/EU every 12h, IN every 24h');
 }

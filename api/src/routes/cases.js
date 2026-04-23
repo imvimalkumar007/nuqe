@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { pool } from '../db/pool.js';
 import { calculateDeadlines } from '../engines/deadlineEngine.js';
 import { validate } from '../middleware/validate.js';
+import logger from '../logger.js';
 
 const createCaseSchema = z.object({
   customer_id:      z.string().uuid(),
@@ -66,7 +67,7 @@ router.get('/', async (req, res) => {
       offset: parseInt(offset),
     });
   } catch (err) {
-    console.error('GET /cases error:', err);
+    logger.error({ err }, 'GET /cases failed');
     res.status(500).json({ message: 'Failed to fetch cases', error: err.message });
   }
 });
@@ -125,7 +126,7 @@ router.get('/:id', async (req, res) => {
       communication_count: commResult.rows[0].communication_count,
     });
   } catch (err) {
-    console.error('GET /cases/:id error:', err);
+    logger.error({ err }, 'GET /cases/:id failed');
     res.status(500).json({ message: 'Failed to fetch case', error: err.message });
   }
 });
@@ -145,7 +146,7 @@ router.post('/', validate(createCaseSchema), async (req, res) => {
 
     return res.status(201).json(newCase);
   } catch (err) {
-    console.error('[cases/POST]', err.message);
+    logger.error({ err }, 'POST /cases failed');
     res.status(500).json({ error: 'Failed to create case' });
   }
 });

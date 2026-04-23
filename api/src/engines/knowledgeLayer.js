@@ -6,6 +6,7 @@ import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import OpenAI from 'openai';
 import { pool } from '../db/pool.js';
+import logger from '../logger.js';
 
 // ─── OpenAI embeddings ────────────────────────────────────────────────────────
 
@@ -27,7 +28,7 @@ export async function embedText(text) {
     });
     return res.data[0].embedding;
   } catch (err) {
-    console.warn('[knowledgeLayer] embedText failed:', err.message);
+    logger.warn({ err }, 'knowledgeLayer embedText failed');
     return null;
   }
 }

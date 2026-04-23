@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { pool } from '../db/pool.js';
 import { validate } from '../middleware/validate.js';
+import logger from '../logger.js';
 
 const createCommSchema = z.object({
   case_id:     z.string().uuid(),
@@ -41,7 +42,7 @@ router.get('/', async (req, res) => {
       total: result.rows[0]?.total_count ?? 0,
     });
   } catch (err) {
-    console.error('[communications/GET]', err.message);
+    logger.error({ err }, 'GET /communications failed');
     res.status(500).json({ error: 'Failed to fetch communications' });
   }
 });
@@ -66,7 +67,7 @@ router.post('/', validate(createCommSchema), async (req, res) => {
     );
     return res.status(201).json(rows[0]);
   } catch (err) {
-    console.error('[communications/POST]', err.message);
+    logger.error({ err }, 'POST /communications failed');
     res.status(500).json({ error: 'Failed to create communication' });
   }
 });

@@ -1,5 +1,6 @@
 import nlp from 'compromise';
 import { pool } from '../db/pool.js';
+import logger from '../logger.js';
 
 // ─── Layer 1: Regex-based PII detection ──────────────────────────────────────
 // Ordered most-specific-first so that precise patterns consume character ranges
@@ -331,6 +332,6 @@ export async function auditTokenisation(actionId, tokenMap, lowConfidenceFlags) 
       [actionId, JSON.stringify(summary)]
     );
   } catch (err) {
-    console.error('[piiTokeniser] auditTokenisation failed:', err.message);
+    logger.error({ err }, 'piiTokeniser auditTokenisation failed');
   }
 }

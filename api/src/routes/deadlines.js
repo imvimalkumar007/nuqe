@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { pool } from '../db/pool.js';
+import logger from '../logger.js';
 
 const router = Router();
 
@@ -25,7 +26,7 @@ router.get('/', async (req, res) => {
 
     res.json({ deadlines: result.rows });
   } catch (err) {
-    console.error('[deadlines/GET]', err.message);
+    logger.error({ err }, 'GET /deadlines failed');
     res.status(500).json({ error: 'Failed to fetch deadlines' });
   }
 });

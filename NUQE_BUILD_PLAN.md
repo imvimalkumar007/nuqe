@@ -428,12 +428,12 @@ Promise.all([
 - Enhanced /health endpoint with db and redis response times
 - Sentry error tracking (optional, requires SENTRY_DSN)
 **Exit criteria:**
-- [ ] All console.log calls replaced with pino logger
-- [ ] Graceful shutdown tested: docker stop triggers clean exit
-- [ ] /health returns db_status and redis_status with response times
-- [ ] Observability gaps in NUQE_TECHNICAL_DEBT.md resolved
+- [x] All console.log calls replaced with pino logger
+- [x] Graceful shutdown tested: docker stop triggers clean exit
+- [x] /health returns db_status and redis_status with response times
+- [x] Observability gaps in NUQE_TECHNICAL_DEBT.md resolved
 
-**Date completed:** _______________
+**Date completed:** 23 April 2026
 
 ### Session 8.3: Performance
 **What to build:**

@@ -14,6 +14,7 @@ import fetch from 'node-fetch';
 import Anthropic from '@anthropic-ai/sdk';
 import { pool } from '../db/pool.js';
 import { ingestDocument, embedText } from './knowledgeLayer.js';
+import logger from '../logger.js';
 
 const rssParser = new Parser({ timeout: 30_000 });
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -145,7 +146,7 @@ export async function checkSources(jurisdictions = null) {
     params
   );
 
-  console.log(`[regulatoryMonitor] checking ${sources.length} sources (jurisdictions: ${jurisdictions ?? 'all'})`);
+  logger.info({ count: sources.length, jurisdictions: jurisdictions ?? 'all' }, 'regulatoryMonitor checking sources');
 
   for (const source of sources) {
     const checkedAt = new Date();
@@ -175,7 +176,7 @@ export async function checkSources(jurisdictions = null) {
           );
           documentsIngested++;
         } catch (docErr) {
-          console.error(`[regulatoryMonitor] processNewDocument failed for ${item.url}:`, docErr.message);
+          logger.error({ url: item.url, err: docErr }, 'regulatoryMonitor processNewDocument failed');
         }
       }
 
@@ -187,7 +188,7 @@ export async function checkSources(jurisdictions = null) {
       );
     } catch (err) {
       errorMsg = err.message;
-      console.error(`[regulatoryMonitor] source "${source.name}" failed:`, err.message);
+      logger.error({ source: source.name, err }, 'regulatoryMonitor source check failed');
       await pool.query(
         `UPDATE regulatory_sources SET last_checked_at = $1, updated_at = NOW() WHERE id = $2`,
         [checkedAt, source.id]
@@ -257,7 +258,7 @@ export async function processNewDocument(
     client.release();
   }
 
-  console.log(`[regulatoryMonitor] ingested ${chunkIds.length} chunk(s) from "${documentTitle}"`);
+  logger.info({ chunks: chunkIds.length, documentTitle }, 'regulatoryMonitor ingested document');
   return chunkIds;
 }
 
@@ -341,7 +342,7 @@ export async function propagateKnowledgeUpdate(chunkId) {
     }
 
     if (candidates.length === 0) {
-      console.log(`[regulatoryMonitor] propagate: no superseded candidates for chunk ${chunkId}`);
+      logger.info({ chunkId }, 'regulatoryMonitor propagate: no superseded candidates');
       return { superseded: [], affectedCases: [] };
     }
 
@@ -425,7 +426,7 @@ export async function propagateKnowledgeUpdate(chunkId) {
         });
         rawOutput = response.content[0]?.text ?? '';
       } catch (err) {
-        console.error(`[regulatoryMonitor] Claude call failed for case ${cas.case_ref}:`, err.message);
+        logger.error({ caseRef: cas.case_ref, err }, 'regulatoryMonitor Claude call failed for case');
       }
 
       await client.query(
@@ -454,10 +455,7 @@ export async function propagateKnowledgeUpdate(chunkId) {
       });
     }
 
-    console.log(
-      `[regulatoryMonitor] propagate: ${supersededIds.length} chunks superseded, ` +
-      `${affectedCases.length} open cases flagged for review`
-    );
+    logger.info({ superseded: supersededIds.length, affectedCases: affectedCases.length }, 'regulatoryMonitor propagate complete');
 
     return { superseded: supersededIds, affectedCases: affectedCases.map((c) => c.id) };
   } finally {

@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { pool } from '../db/pool.js';
 import { requireAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
+import logger from '../logger.js';
 
 const loginSchema = z.object({
   email:    z.string().email(),
@@ -80,7 +81,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
       user: { id: user.id, email: user.email, fullName: user.full_name, role: user.role },
     });
   } catch (err) {
-    console.error('[auth/login]', err.message);
+    logger.error({ err }, 'auth login failed');
     res.status(500).json({ error: 'Login failed' });
   }
 });

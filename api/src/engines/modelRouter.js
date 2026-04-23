@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { pool } from '../db/pool.js';
 import { decrypt } from '../lib/encryption.js';
 import { tokenise, detokenise, auditTokenisation } from './piiTokeniser.js';
+import logger from '../logger.js';
 
 // ─── Fallback config when no organisation record exists ───────────────────────
 // Uses the ambient ANTHROPIC_API_KEY. Tokenisation is disabled in fallback
@@ -42,7 +43,7 @@ async function loadOrgConfig(organisationId) {
 // ─── Step 2: Select provider (primary vs challenger) ─────────────────────────
 function selectProvider(config) {
   if (!config) {
-    console.log('[modelRouter] no org config — using fallback (claude / claude-sonnet-4-6)');
+    logger.info('modelRouter no org config — using fallback (claude / claude-sonnet-4-6)');
     return FALLBACK;
   }
 
@@ -69,10 +70,7 @@ function selectProvider(config) {
         isChallenger: false,
       };
 
-  console.log(
-    `[modelRouter] routing to ${chosen.isChallenger ? 'challenger' : 'primary'}: ` +
-      `${chosen.provider} / ${chosen.model}`
-  );
+  logger.info({ role: chosen.isChallenger ? 'challenger' : 'primary', provider: chosen.provider, model: chosen.model }, 'modelRouter routing');
   return chosen;
 }
 
@@ -166,7 +164,7 @@ async function updateAiAction(aiActionId, { provider, model, tokenisationApplied
     );
   } catch (err) {
     // Non-fatal: audit update failure should not surface as a user-facing error
-    console.error(`[modelRouter] failed to update ai_action ${aiActionId}:`, err.message);
+    logger.error({ aiActionId, err }, 'modelRouter failed to update ai_action');
   }
 }
 
@@ -209,14 +207,10 @@ export async function complete(prompt, organisationId) {
     tokenMap = result.tokenMap;
     lowConfidenceFlags = result.lowConfidenceFlags;
     tokenisationApplied = true;
-    console.log(
-      `[modelRouter] tokenisation applied — ${Object.keys(tokenMap).length} tokens, ` +
-        `${lowConfidenceFlags} low-confidence flags`
-    );
-    // Audit non-blocking — write token-type summary (not PII values) to audit_log
+    logger.info({ tokens: Object.keys(tokenMap).length, lowConfidenceFlags }, 'modelRouter tokenisation applied');
     if (aiActionId) {
       auditTokenisation(aiActionId, tokenMap, lowConfidenceFlags).catch((err) =>
-        console.error('[modelRouter] auditTokenisation failed:', err.message)
+        logger.error({ aiActionId, err }, 'modelRouter auditTokenisation failed')
       );
     }
   }

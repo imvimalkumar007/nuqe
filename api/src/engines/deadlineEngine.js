@@ -1,4 +1,5 @@
 import { pool } from '../db/pool.js';
+import logger from '../logger.js';
 
 // Adds N calendar or business days to a Date, returning a new Date.
 // Business-day mode skips Saturday (6) and Sunday (0) only — public
@@ -76,7 +77,7 @@ export async function calculateDeadlines(caseId) {
       }
     }
 
-    console.log(`[deadlineEngine] calculateDeadlines: ${inserted} created for case ${caseId}`);
+    logger.info({ caseId, inserted }, 'deadlineEngine calculateDeadlines complete');
     return inserted;
   } finally {
     client.release();
@@ -176,7 +177,7 @@ export async function checkDeadlines() {
       alerted_24h: alerted24h.length,
       breached: breached.length,
     };
-    console.log('[deadlineEngine] checkDeadlines:', summary);
+    logger.info(summary, 'deadlineEngine checkDeadlines complete');
     return summary;
   } finally {
     client.release();

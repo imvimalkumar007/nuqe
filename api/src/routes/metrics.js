@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { pool } from '../db/pool.js';
 import { getModelComparisonMetrics } from '../engines/metricsEngine.js';
+import logger from '../logger.js';
 
 const router = Router();
 
@@ -125,7 +126,7 @@ router.get('/ai-accuracy', async (req, res) => {
         : null,
     });
   } catch (err) {
-    console.error('[metrics/ai-accuracy]', err.message);
+    logger.error({ err }, 'GET /metrics/ai-accuracy failed');
     res.status(500).json({ message: 'Failed to fetch metrics', error: err.message });
   }
 });
@@ -154,7 +155,7 @@ router.get('/dashboard-summary', async (_req, res) => {
       fos_referred_count: fos.rows[0].count,
     });
   } catch (err) {
-    console.error('[metrics/dashboard-summary]', err.message);
+    logger.error({ err }, 'GET /metrics/dashboard-summary failed');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -166,7 +167,7 @@ router.get('/model-comparison', async (req, res) => {
     const data = await getModelComparisonMetrics(organisationId, dateFrom, dateTo);
     res.json(data);
   } catch (err) {
-    console.error('[metrics/model-comparison]', err.message);
+    logger.error({ err }, 'GET /metrics/model-comparison failed');
     res.status(500).json({ error: 'Internal server error' });
   }
 });

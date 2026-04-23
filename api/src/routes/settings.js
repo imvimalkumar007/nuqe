@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { pool } from '../db/pool.js';
 import { clearOrgConfigCache } from '../engines/modelRouter.js';
 import { validate } from '../middleware/validate.js';
+import logger from '../logger.js';
 
 const aiConfigSchema = z.object({
   primary_provider:        z.string().optional().nullable(),
@@ -99,7 +100,7 @@ router.get('/ai-config', async (_req, res) => {
     if (!rows.length) return res.json(DEFAULT_CONFIG);
     res.json(applyMasks(rows[0]));
   } catch (err) {
-    console.error('[settings/ai-config GET]', err.message);
+    logger.error({ err }, 'GET /settings/ai-config failed');
     res.status(500).json({ error: err.message });
   }
 });
@@ -211,7 +212,7 @@ router.post('/ai-config', validate(aiConfigSchema), async (req, res) => {
 
     res.json(applyMasks(saved));
   } catch (err) {
-    console.error('[settings/ai-config POST]', err.message);
+    logger.error({ err }, 'POST /settings/ai-config failed');
     res.status(500).json({ error: err.message });
   }
 });

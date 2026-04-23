@@ -66,6 +66,7 @@
 | 5 | Security | No input validation middleware | 23 Apr 2026 | Zod schemas + validate() middleware on all POST and PATCH routes |
 | 6 | Security | Helmet.js not added | 23 Apr 2026 | Added helmet() to app.js as first middleware |
 | 7 | Security | SQL injection audit | 23 Apr 2026 | All queries use parameterized $1/$2 style; only dynamic element in regulatory.js PATCH /sources/:id uses hardcoded column names from known `if` checks (safe) |
+| 20 | Reliability | No error tracking / structured logging | 23 Apr 2026 | Pino logger added (src/logger.js); pino-http request logging in app.js; all console.log/error/warn replaced in runtime code; graceful SIGTERM/SIGINT shutdown in index.js; /health returns db_response_ms |
 
 ---
 

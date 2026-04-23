@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { pool } from '../db/pool.js';
 import { propagateKnowledgeUpdate } from '../engines/regulatoryMonitor.js';
 import { validate } from '../middleware/validate.js';
+import logger from '../logger.js';
 
 const reviewSchema = z.object({
   status:      z.enum(['active', 'archived']),
@@ -65,7 +66,7 @@ router.get('/', async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    console.error('[knowledge GET]', err.message);
+    logger.error({ err }, 'GET /knowledge-chunks failed');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -116,7 +117,7 @@ router.patch('/:id/review', validate(reviewSchema), async (req, res) => {
     if (status === 'active') {
       setImmediate(() => {
         propagateKnowledgeUpdate(id).catch((err) =>
-          console.error('[knowledge/review] propagate failed:', err.message)
+          logger.error({ err }, 'knowledge/review propagate failed')
         );
       });
     }
@@ -124,7 +125,7 @@ router.patch('/:id/review', validate(reviewSchema), async (req, res) => {
     return res.json(updated[0]);
   } catch (err) {
     client.release();
-    console.error('[knowledge/review]', err.message);
+    logger.error({ err }, 'PATCH /knowledge-chunks/:id/review failed');
     return res.status(500).json({ error: 'Internal server error' });
   }
 });

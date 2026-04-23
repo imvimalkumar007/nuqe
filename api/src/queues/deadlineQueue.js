@@ -1,5 +1,6 @@
 import { Queue, Worker } from 'bullmq';
 import { checkDeadlines } from '../engines/deadlineEngine.js';
+import logger from '../logger.js';
 
 const connection = {
   // BullMQ expects host/port options, not a connection string.
@@ -31,11 +32,11 @@ export const deadlineWorker = new Worker(
 );
 
 deadlineWorker.on('completed', () => {
-  console.log('[deadlineQueue] check completed');
+  logger.info('deadlineQueue check completed');
 });
 
 deadlineWorker.on('failed', (_job, err) => {
-  console.error('[deadlineQueue] check failed:', err.message);
+  logger.error({ err }, 'deadlineQueue check failed');
 });
 
 // Registers the repeating job. BullMQ deduplicates by jobId so this
@@ -49,5 +50,5 @@ export async function scheduleDeadlineMonitor() {
       jobId: 'deadline-monitor-recurring',
     }
   );
-  console.log(`[deadlineQueue] scheduled every ${REPEAT_EVERY_MS / 60000} minutes`);
+  logger.info({ intervalMin: REPEAT_EVERY_MS / 60000 }, 'deadlineQueue scheduled');
 }

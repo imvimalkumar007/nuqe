@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { pool } from '../db/pool.js';
 import { calculateDeadlines } from './deadlineEngine.js';
 import { retrieveContext } from './knowledgeLayer.js';
+import logger from '../logger.js';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MODEL = 'claude-sonnet-4-6';
@@ -127,7 +128,7 @@ async function openCaseForCommunication(client, comm, classification) {
   // Calculate deadlines outside this transaction — it opens its own connection
   setImmediate(() => {
     calculateDeadlines(newCase.id).catch((err) =>
-      console.error(`[communicationEngine] calculateDeadlines failed for ${newCase.id}:`, err.message)
+      logger.error({ caseId: newCase.id, err }, 'communicationEngine calculateDeadlines failed')
     );
   });
 
