@@ -66,6 +66,10 @@
 | 5 | Security | No input validation middleware | 23 Apr 2026 | Zod schemas + validate() middleware on all POST and PATCH routes |
 | 6 | Security | Helmet.js not added | 23 Apr 2026 | Added helmet() to app.js as first middleware |
 | 7 | Security | SQL injection audit | 23 Apr 2026 | All queries use parameterized $1/$2 style; only dynamic element in regulatory.js PATCH /sources/:id uses hardcoded column names from known `if` checks (safe) |
+| 13 | Performance | No caching on getActiveRuleset() | 23 Apr 2026 | Already implemented: Redis cache with CACHE_TTL=600s in complianceEngine.js |
+| 14 | Performance | No caching on organisation_ai_config | 23 Apr 2026 | Already implemented: in-memory Map with ORG_CONFIG_TTL=5min in modelRouter.js |
+| 16 | Performance | No database connection pool size | 23 Apr 2026 | Added max: 20 to Pool config in db/pool.js |
+| 17 | Performance | BullMQ queues have no retry configuration | 23 Apr 2026 | Added attempts:3 + exponential backoff (1s base) to deadlineQueue and regulatoryQueue |
 | 20 | Reliability | No error tracking / structured logging | 23 Apr 2026 | Pino logger added (src/logger.js); pino-http request logging in app.js; all console.log/error/warn replaced in runtime code; graceful SIGTERM/SIGINT shutdown in index.js; /health returns db_response_ms |
 
 ---

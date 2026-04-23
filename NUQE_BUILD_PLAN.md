@@ -443,11 +443,11 @@ Promise.all([
 - Connection pool confirmed at max 20
 - BullMQ dead letter queue logging
 **Exit criteria:**
-- [ ] getActiveRuleset cache confirmed with Redis KEYS command
-- [ ] BullMQ workers have retry config
-- [ ] Performance gaps in NUQE_TECHNICAL_DEBT.md resolved
+- [x] getActiveRuleset cache confirmed with Redis KEYS command
+- [x] BullMQ workers have retry config
+- [x] Performance gaps in NUQE_TECHNICAL_DEBT.md resolved
 
-**Date completed:** _______________
+**Date completed:** 23 April 2026
 
 ---
 

@@ -16,8 +16,10 @@ const connection = {
   maxRetriesPerRequest: null,
 };
 
+const JOB_OPTS = { attempts: 3, backoff: { type: 'exponential', delay: 1000 } };
+
 function makeQueue(name) {
-  return new Queue(name, { connection });
+  return new Queue(name, { connection, defaultJobOptions: JOB_OPTS });
 }
 
 function makeWorker(name, jurisdictions) {

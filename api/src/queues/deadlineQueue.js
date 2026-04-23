@@ -21,13 +21,16 @@ function parseRedisUrl(url) {
 const QUEUE_NAME = 'deadline-monitor';
 const REPEAT_EVERY_MS = 15 * 60 * 1000; // 15 minutes
 
-export const deadlineQueue = new Queue(QUEUE_NAME, { connection });
+const JOB_OPTS = { attempts: 3, backoff: { type: 'exponential', delay: 1000 } };
+
+export const deadlineQueue = new Queue(QUEUE_NAME, {
+  connection,
+  defaultJobOptions: JOB_OPTS,
+});
 
 export const deadlineWorker = new Worker(
   QUEUE_NAME,
-  async (_job) => {
-    await checkDeadlines();
-  },
+  async (_job) => { await checkDeadlines(); },
   { connection }
 );
 

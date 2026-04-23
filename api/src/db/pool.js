@@ -10,4 +10,4 @@ config({ path: resolve(__dirname, '../../../.env'), override: false });
 
 const { Pool } = pg;
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+export const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 20 });
