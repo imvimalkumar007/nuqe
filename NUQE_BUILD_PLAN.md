@@ -29,7 +29,7 @@
 | 1 | Core Data Layer | 3 | Database verified, Auth working, seed data correct | DONE |
 | 2 | Core API Layer | 3 | Cases, Communications, Deadlines APIs verified | NOT STARTED |
 | 3 | Business Engines | 4 | Deadline, Compliance, Model Router, PII Tokeniser verified | NOT STARTED |
-| 4 | Intelligence Layer | 2 | Knowledge Layer and Regulatory Monitor verified | NOT STARTED |
+| 4 | Intelligence Layer | 2 | Knowledge Layer and Regulatory Monitor verified | DONE |
 | 5 | Derived APIs | 2 | Metrics API and Settings API verified | NOT STARTED |
 | 6 | Integration | 2 | Webhooks verified, all APIs connected to real data | NOT STARTED |
 | 7 | Frontend Verification | 4 | All 4 frontend components verified with real data | NOT STARTED |
@@ -263,13 +263,13 @@ Promise.all([
 **Spec file:** spec/components/12_regulatory_monitor.md
 **Tests to pass:** RMON-001 through RMON-006 (6 tests)
 **Exit criteria:**
-- [ ] getMonitoringHealth returns correct status per source
-- [ ] Health status transitions (ok/amber/red) work correctly
-- [ ] propagateKnowledgeUpdate supersedes correct chunks
-- [ ] RMON-001 through RMON-006 all PASS (RMON-005 may be SKIPPED if pgvector unavailable)
-- [ ] Component 12 status updated to VERIFIED
+- [x] getMonitoringHealth returns correct status per source
+- [x] Health status transitions (ok/amber/red) work correctly
+- [x] propagateKnowledgeUpdate supersedes correct chunks
+- [x] RMON-001 through RMON-006 all PASS (RMON-005 via pg_trgm fallback — pgvector not enabled)
+- [x] Component 12 status updated to VERIFIED
 
-**Date completed:** _______________
+**Date completed:** 23 April 2026
 
 ---
 

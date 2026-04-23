@@ -6,9 +6,9 @@
 
 Last updated: 23 April 2026
 Total: 142
-PASS: 79
+PASS: 85
 FAIL: 0
-NOT RUN: 63
+NOT RUN: 57
 
 ---
 
@@ -180,12 +180,12 @@ NOT RUN: 63
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| RMON-001 | getMonitoringHealth returns health object for each source | NOT RUN | |
-| RMON-002 | Health status is ok when source checked within frequency | NOT RUN | |
-| RMON-003 | Health status is amber when overdue up to 2x frequency | NOT RUN | |
-| RMON-004 | Health status is red when overdue more than 2x frequency | NOT RUN | |
-| RMON-005 | propagateKnowledgeUpdate marks similar chunks as superseded | NOT RUN | |
-| RMON-006 | propagateKnowledgeUpdate creates pending ai_action for affected cases | NOT RUN | |
+| RMON-001 | getMonitoringHealth returns health object for each source | PASS | 23 Apr 2026 |
+| RMON-002 | Health status is ok when source checked within frequency | PASS | 23 Apr 2026 |
+| RMON-003 | Health status is amber when overdue up to 2x frequency | PASS | 23 Apr 2026 |
+| RMON-004 | Health status is red when overdue more than 2x frequency | PASS | 23 Apr 2026 |
+| RMON-005 | propagateKnowledgeUpdate marks similar chunks as superseded | PASS | 23 Apr 2026; pg_trgm fallback |
+| RMON-006 | propagateKnowledgeUpdate creates pending ai_action for affected cases | PASS | 23 Apr 2026 |
 
 ---
 

@@ -1,7 +1,7 @@
 # Component 12: Regulatory Monitor
 
 ## Status
-BUILT — code exists, never verified. Real monitoring not yet running.
+VERIFIED — all 6 tests passing (23 April 2026)
 
 ## Purpose
 Monitors official regulatory sources (RSS feeds and web scraping).
@@ -48,12 +48,12 @@ approved changes to affected open cases.
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| RMON-001 | getMonitoringHealth returns object for each source | NOT RUN | |
-| RMON-002 | Health is ok when checked within frequency | NOT RUN | |
-| RMON-003 | Health is amber when overdue up to 2x frequency | NOT RUN | |
-| RMON-004 | Health is red when overdue more than 2x frequency | NOT RUN | |
-| RMON-005 | propagateKnowledgeUpdate supersedes similar chunks | NOT RUN | Needs pgvector |
-| RMON-006 | propagateKnowledgeUpdate creates ai_action for affected cases | NOT RUN | |
+| RMON-001 | getMonitoringHealth returns object for each source | PASS | 23 Apr 2026 |
+| RMON-002 | Health is ok when checked within frequency | PASS | 23 Apr 2026 |
+| RMON-003 | Health is amber when overdue up to 2x frequency | PASS | 23 Apr 2026 |
+| RMON-004 | Health is red when overdue more than 2x frequency | PASS | 23 Apr 2026 |
+| RMON-005 | propagateKnowledgeUpdate supersedes similar chunks | PASS | 23 Apr 2026; pg_trgm fallback |
+| RMON-006 | propagateKnowledgeUpdate creates ai_action for affected cases | PASS | 23 Apr 2026 |
 
 ## Claude Code Prompt
 ```
