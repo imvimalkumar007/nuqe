@@ -28,6 +28,8 @@ services:
         generateValue: true
       - key: QUIDO_WEBHOOK_SECRET
         generateValue: true
+      - key: ENCRYPTION_SECRET
+        generateValue: true
       - key: CORS_ORIGIN
         sync: false
 
@@ -40,6 +42,8 @@ services:
     envVars:
       - key: VITE_API_URL
         sync: false
+      - key: VITE_FIRM_NAME
+        value: Nuqe Demo
 
   - type: redis
     name: nuqe-redis
