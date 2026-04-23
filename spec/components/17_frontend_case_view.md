@@ -1,7 +1,7 @@
 # Component 17: Frontend Case View
 
 ## Status
-PARTIAL — component built, never tested with real data
+VERIFIED — all 8 tests passing (23 April 2026)
 
 ## Purpose
 Shows a single complaint case in full detail. Unified communication
@@ -45,14 +45,14 @@ PendingActionCard component handles the review interaction.
 
 | ID | Description | Status | Notes |
 |---|---|---|---|
-| FE-CASE-001 | Clicking case row navigates to /cases/:id | NOT RUN | |
-| FE-CASE-002 | Case header shows case_ref and customer name | NOT RUN | |
-| FE-CASE-003 | DISP deadline panel shows three milestones | NOT RUN | |
-| FE-CASE-004 | Communication timeline shows seeded communications | NOT RUN | |
-| FE-CASE-005 | Pending AI draft renders in greyed-out state | NOT RUN | |
-| FE-CASE-006 | Approve button calls PATCH /ai-actions/:id/review | NOT RUN | |
-| FE-CASE-007 | Edit and Approve opens inline editor | NOT RUN | |
-| FE-CASE-008 | Reject dismisses the pending action | NOT RUN | |
+| FE-CASE-001 | Clicking case row navigates to /cases/:id | PASS | 23 Apr 2026 |
+| FE-CASE-002 | Case header shows case_ref and customer name | PASS | 23 Apr 2026 |
+| FE-CASE-003 | DISP deadline panel shows three milestones | PASS | 23 Apr 2026 |
+| FE-CASE-004 | Communication timeline shows 5 seeded communications | PASS | 23 Apr 2026 |
+| FE-CASE-005 | Pending AI draft renders with Pending review badge | PASS | 23 Apr 2026 |
+| FE-CASE-006 | Approve button calls PATCH /ai-actions/:id/approve | PASS | 23 Apr 2026 |
+| FE-CASE-007 | Edit and Approve pre-fills compose textarea | PASS | 23 Apr 2026 |
+| FE-CASE-008 | Reject button calls PATCH /ai-actions/:id/reject | PASS | 23 Apr 2026 |
 
 ## Claude Code Prompt
 ```

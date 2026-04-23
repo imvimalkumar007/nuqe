@@ -91,14 +91,21 @@ function normalizeComm(raw, normalizedActions) {
   const aiActionId = raw.ai_action_id ?? raw.aiActionId ?? null;
 
   if (raw.ai_generated || raw.aiGenerated) {
-    const linked = aiActionId
-      ? normalizedActions.find((a) => a.id === aiActionId)
-      : normalizedActions.find((a) => a.type === 'response_draft');
+    // If the comm record already carries an approval timestamp, trust it and
+    // don't re-derive state from the ai_actions list (prevents a sibling
+    // pending action from overriding an already-approved comm).
+    if (raw.ai_approved_at) {
+      state = 'approved_ai';
+    } else {
+      const linked = aiActionId
+        ? normalizedActions.find((a) => a.id === aiActionId)
+        : normalizedActions.find((a) => a.type === 'response_draft');
 
-    if (linked) {
-      if (linked.status === 'pending')  state = 'pending_ai';
-      else if (linked.status === 'approved') state = 'approved_ai';
-      else if (linked.status === 'rejected') state = 'rejected_ai';
+      if (linked) {
+        if (linked.status === 'pending')  state = 'pending_ai';
+        else if (linked.status === 'approved') state = 'approved_ai';
+        else if (linked.status === 'rejected') state = 'rejected_ai';
+      }
     }
   }
 

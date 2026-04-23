@@ -365,15 +365,15 @@ Promise.all([
 **Spec file:** spec/components/17_frontend_case_view.md
 **Tests to pass:** FE-CASE-001 through FE-CASE-008 (8 tests)
 **Exit criteria:**
-- [ ] Case header shows all required fields
-- [ ] DISP deadline panel shows three milestones with real dates
-- [ ] Communication timeline shows seeded communications
-- [ ] Pending AI draft renders in greyed-out state
-- [ ] Approve/Reject buttons call correct endpoints
-- [ ] FE-CASE-001 through FE-CASE-008 all PASS
-- [ ] Component 17 status updated to VERIFIED
+- [x] Case header shows all required fields
+- [x] DISP deadline panel shows three milestones with real dates
+- [x] Communication timeline shows seeded communications
+- [x] Pending AI draft renders in greyed-out state
+- [x] Approve/Reject buttons call correct endpoints
+- [x] FE-CASE-001 through FE-CASE-008 all PASS
+- [x] Component 17 status updated to VERIFIED
 
-**Date completed:** _______________
+**Date completed:** 23 April 2026
 
 ### Session 7.3: Component 18 — Frontend Analytics
 **Spec file:** spec/components/18_frontend_analytics.md

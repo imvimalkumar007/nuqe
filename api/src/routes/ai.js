@@ -3,16 +3,19 @@ import { pool } from '../db/pool.js';
 
 const router = Router();
 
-// GET /?status=pending&limit=50&offset=0
+// GET /?status=pending&case_id=<uuid>&limit=50&offset=0
 router.get('/', async (req, res) => {
-  const { status, limit = '50', offset = '0' } = req.query;
-  const cap  = Math.min(Math.max(parseInt(limit,  10) || 50, 1), 200);
-  const skip = Math.max(parseInt(offset, 10) || 0, 0);
+  const { status, case_id, caseId, limit = '50', offset = '0' } = req.query;
+  const cap      = Math.min(Math.max(parseInt(limit,  10) || 50, 1), 200);
+  const skip     = Math.max(parseInt(offset, 10) || 0, 0);
+  const caseFilter = case_id ?? caseId;
 
   try {
     const params = [cap, skip];
-    const where  = status ? 'WHERE status = $3' : '';
-    if (status) params.push(status);
+    const conditions = [];
+    if (status)     { params.push(status);     conditions.push(`status = $${params.length}`); }
+    if (caseFilter) { params.push(caseFilter); conditions.push(`case_id = $${params.length}`); }
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const { rows } = await pool.query(
       `SELECT * FROM ai_actions ${where} ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
