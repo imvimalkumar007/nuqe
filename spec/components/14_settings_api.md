@@ -1,8 +1,9 @@
 # Component 14: Settings API
 
 ## Status
-VERIFIED — all 7 tests passing (23 April 2026). Settings.js rewritten with
+VERIFIED — all 10 tests passing (26 April 2026). Settings.js rewritten with
 AES-256-GCM encryption, masked GET responses, audit_log writes, and connection test.
+org-profile endpoints added 26 April 2026 (jurisdiction switching, email config).
 
 ## Purpose
 Allows organisations to configure their AI provider, model, and API
@@ -56,6 +57,16 @@ NOTE: requires tokeniser_additions table to exist (currently missing)
 Creates new tokeniser addition for this organisation
 NOTE: requires tokeniser_additions table to exist
 
+### GET /api/v1/settings/org-profile
+Returns: { enabled_jurisdictions: string[], from_email: string|null, org_name: string|null, fca_firm_reference: string|null }
+Defaults if no row: enabled_jurisdictions=['UK'], rest null.
+
+### PATCH /api/v1/settings/org-profile
+Body: { enabled_jurisdictions: ('UK'|'IN'|'EU')[], from_email?, org_name?, fca_firm_reference? }
+Validation: enabled_jurisdictions must have at least one entry.
+Uses INSERT … ON CONFLICT (organisation_id) DO UPDATE for idempotent UPSERT.
+Returns: { saved: true }
+
 ## Tests
 
 | ID | Description | Status | Notes |
@@ -67,6 +78,9 @@ NOTE: requires tokeniser_additions table to exist
 | SET-005 | POST /settings/ai-config writes to audit_log | PASS | 23 Apr 2026 |
 | SET-006 | POST /settings/ai-config/test returns response_time_ms | PASS | 23 Apr 2026; mocked |
 | SET-007 | POST /settings/ai-config/test returns error on bad key | PASS | 23 Apr 2026; mocked |
+| SET-008 | GET /settings/org-profile returns enabled_jurisdictions and profile fields | PASS | 26 Apr 2026 |
+| SET-009 | PATCH /settings/org-profile saves all four fields via UPSERT | PASS | 26 Apr 2026 |
+| SET-010 | PATCH /settings/org-profile returns 400 when enabled_jurisdictions is empty | PASS | 26 Apr 2026 |
 
 ## Claude Code Prompt
 ```

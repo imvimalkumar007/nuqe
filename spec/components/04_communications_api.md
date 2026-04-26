@@ -1,7 +1,7 @@
 # Component 04: Communications API
 
 ## Status
-VERIFIED — all 8 tests passing (23 April 2026)
+VERIFIED — all 10 tests passing (26 April 2026)
 
 ## Purpose
 Returns all communications for a case in chronological order across
@@ -42,3 +42,5 @@ Response: 201 with created communication
 | COMMS-006 | Approved AI draft has ai_approved_by set | PASS | 23 Apr 2026 |
 | COMMS-007 | GET /communications returns empty array for case with no comms | PASS | 23 Apr 2026 |
 | COMMS-008 | Communications from all three channels appear in unified timeline | PASS | 23 Apr 2026 |
+| COMMS-009 | POST outbound email communication triggers sendEmail for channel=email direction=outbound | PASS | 26 Apr 2026 |
+| COMMS-010 | Outbound email uses org from_email when set; falls back to FROM_EMAIL env var | PASS | 26 Apr 2026 |

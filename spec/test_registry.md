@@ -4,9 +4,9 @@
 > Status: PASS, FAIL, NOT RUN, SKIPPED
 > This file is the ground truth for build status.
 
-Last updated: 23 April 2026
-Total: 142
-PASS: 142
+Last updated: 26 April 2026
+Total: 152
+PASS: 152
 FAIL: 0
 NOT RUN: 0
 
@@ -24,6 +24,8 @@ NOT RUN: 0
 | DB-006 | updated_at triggers fire on all mutable tables | PASS | 22 Apr 2026 |
 | DB-007 | ruleset table is seeded with UK, India, and EU rules | PASS | 22 Apr 2026 |
 | DB-008 | Foreign key constraints are enforced | PASS | 22 Apr 2026 |
+| DB-009 | knowledge_chunks.embedding column exists as vector(1536) with HNSW index | PASS | 26 Apr 2026 |
+| DB-010 | organisation_ai_config has UNIQUE constraint on organisation_id | PASS | 26 Apr 2026 |
 
 ---
 
@@ -73,6 +75,8 @@ NOT RUN: 0
 | COMMS-006 | Approved AI draft has ai_approved_by set | PASS | 23 Apr 2026 |
 | COMMS-007 | GET /communications returns empty array for case with no comms | PASS | 23 Apr 2026 |
 | COMMS-008 | Communications from all three channels appear in unified timeline | PASS | 23 Apr 2026 |
+| COMMS-009 | POST outbound email triggers sendEmail for channel=email direction=outbound | PASS | 26 Apr 2026 |
+| COMMS-010 | Outbound email uses org from_email when set; falls back to FROM_EMAIL env var | PASS | 26 Apr 2026 |
 
 ---
 
@@ -215,6 +219,9 @@ NOT RUN: 0
 | SET-005 | POST /settings/ai-config writes to audit_log | PASS | 23 Apr 2026 |
 | SET-006 | POST /settings/ai-config/test returns success and response_time_ms | PASS | 23 Apr 2026 |
 | SET-007 | POST /settings/ai-config/test returns failure message on bad credentials | PASS | 23 Apr 2026 |
+| SET-008 | GET /settings/org-profile returns enabled_jurisdictions and profile fields | PASS | 26 Apr 2026 |
+| SET-009 | PATCH /settings/org-profile saves all four fields via UPSERT | PASS | 26 Apr 2026 |
+| SET-010 | PATCH /settings/org-profile returns 400 when enabled_jurisdictions is empty | PASS | 26 Apr 2026 |
 
 ---
 
@@ -284,6 +291,9 @@ NOT RUN: 0
 | FE-SET-001 | Settings screen loads without errors | PASS | 23 Apr 2026 |
 | FE-SET-002 | AI Configuration panel loads saved config | PASS | 23 Apr 2026 |
 | FE-SET-003 | Connection Test button shows result message | PASS | 23 Apr 2026 |
+| FE-SET-004 | Organisation Profile tab loads saved enabled_jurisdictions | PASS | 26 Apr 2026 |
+| FE-SET-005 | Toggling a jurisdiction and saving persists the new value | PASS | 26 Apr 2026 |
+| FE-SET-006 | From email field accepts and saves a valid email address | PASS | 26 Apr 2026 |
 
 ---
 

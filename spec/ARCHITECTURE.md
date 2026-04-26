@@ -26,11 +26,11 @@ Three pillars:
 
 ## Test Registry Summary
 
-Last updated: 22 April 2026
-Total tests defined: 142
-Passing: 0
+Last updated: 26 April 2026
+Total tests defined: 152
+Passing: 152
 Failing: 0
-Not run: 142
+Not run: 0
 
 Full registry: spec/test_registry.md
 
@@ -40,25 +40,25 @@ Full registry: spec/test_registry.md
 
 | # | Component | File | Status | Tests passing |
 |---|---|---|---|---|
-| 01 | Database Schema | spec/components/01_database.md | PARTIAL | 0/8 |
-| 02 | Auth System | spec/components/02_auth.md | NOT BUILT | 0/10 |
-| 03 | Cases API | spec/components/03_cases_api.md | PARTIAL | 0/10 |
-| 04 | Communications API | spec/components/04_communications_api.md | PARTIAL | 0/8 |
-| 05 | Deadlines API | spec/components/05_deadlines_api.md | PARTIAL | 0/7 |
-| 06 | Deadline Engine | spec/components/06_deadline_engine.md | BUILT | 0/8 |
-| 07 | Communication Engine | spec/components/07_communication_engine.md | BUILT | 0/8 |
-| 08 | Compliance Engine | spec/components/08_compliance_engine.md | BUILT | 0/6 |
-| 09 | Model Router | spec/components/09_model_router.md | BUILT | 0/7 |
-| 10 | PII Tokeniser | spec/components/10_pii_tokeniser.md | BUILT | 0/8 |
-| 11 | Knowledge Layer | spec/components/11_knowledge_layer.md | BUILT | 0/7 |
-| 12 | Regulatory Monitor | spec/components/12_regulatory_monitor.md | BUILT | 0/6 |
-| 13 | Metrics API | spec/components/13_metrics_api.md | BROKEN | 0/8 |
-| 14 | Settings API | spec/components/14_settings_api.md | NOT BUILT | 0/7 |
-| 15 | Webhooks | spec/components/15_webhooks.md | BUILT | 0/6 |
-| 16 | Frontend: Dashboard | spec/components/16_frontend_dashboard.md | PARTIAL | 0/8 |
-| 17 | Frontend: Case View | spec/components/17_frontend_case_view.md | PARTIAL | 0/8 |
-| 18 | Frontend: Analytics | spec/components/18_frontend_analytics.md | PARTIAL | 0/6 |
-| 19 | Frontend: Monitoring | spec/components/19_frontend_monitoring.md | PARTIAL | 0/6 |
+| 01 | Database Schema | spec/components/01_database.md | VERIFIED | 10/10 |
+| 02 | Auth System | spec/components/02_auth.md | VERIFIED | 10/10 |
+| 03 | Cases API | spec/components/03_cases_api.md | VERIFIED | 10/10 |
+| 04 | Communications API | spec/components/04_communications_api.md | VERIFIED | 10/10 |
+| 05 | Deadlines API | spec/components/05_deadlines_api.md | VERIFIED | 7/7 |
+| 06 | Deadline Engine | spec/components/06_deadline_engine.md | VERIFIED | 8/8 |
+| 07 | Communication Engine | spec/components/07_communication_engine.md | VERIFIED | 8/8 |
+| 08 | Compliance Engine | spec/components/08_compliance_engine.md | VERIFIED | 6/6 |
+| 09 | Model Router | spec/components/09_model_router.md | VERIFIED | 7/7 |
+| 10 | PII Tokeniser | spec/components/10_pii_tokeniser.md | VERIFIED | 8/8 |
+| 11 | Knowledge Layer | spec/components/11_knowledge_layer.md | VERIFIED | 7/7 |
+| 12 | Regulatory Monitor | spec/components/12_regulatory_monitor.md | VERIFIED | 6/6 |
+| 13 | Metrics API | spec/components/13_metrics_api.md | VERIFIED | 8/8 |
+| 14 | Settings API | spec/components/14_settings_api.md | VERIFIED | 10/10 |
+| 15 | Webhooks | spec/components/15_webhooks.md | VERIFIED | 6/6 |
+| 16 | Frontend: Dashboard | spec/components/16_frontend_dashboard.md | VERIFIED | 8/8 |
+| 17 | Frontend: Case View | spec/components/17_frontend_case_view.md | VERIFIED | 8/8 |
+| 18 | Frontend: Analytics | spec/components/18_frontend_analytics.md | VERIFIED | 6/6 |
+| 19 | Frontend: Monitoring | spec/components/19_frontend_monitoring.md | VERIFIED | 9/9 |
 
 **Status key:**
 - NOT BUILT: code does not exist
@@ -128,16 +128,14 @@ Do not move to the next component until all tests for this one pass.
 
 ---
 
-## Current Known Issues (22 April 2026)
+## Known Issues (26 April 2026)
 
-| Issue | Component | Severity | Confirmed |
+No open HIGH severity issues. See NUQE_TECHNICAL_DEBT.md for the full gap list.
+
+| Issue | Component | Severity | Notes |
 |---|---|---|---|
-| Metric cards showing 0 | Metrics API, Frontend Dashboard | High | Yes |
-| Knowledge and Settings missing from sidebar | Frontend Dashboard | Medium | Yes |
-| No authentication | Auth System | High | Yes |
-| Firm name hardcoded | Frontend Dashboard | Low | Yes |
-| tokeniser_additions table missing | Database Schema | Medium | Yes |
-| knowledge_documents table missing | Database Schema | Medium | Yes |
+| pgvector embedding search uses recency fallback | Knowledge Layer | Low | Migration 009 adds column; run npm run embed to populate |
+| Refresh token cookie cross-origin (Render) | Auth System | Low | Access token 1h; sufficient for demo; full fix needs same-domain setup |
 
 ---
 
@@ -152,10 +150,16 @@ nuqe/
 │   │   │   │   ├── 001_initial_schema.sql
 │   │   │   │   ├── 002_ai_config_and_review_layer.sql
 │   │   │   │   ├── 003_knowledge_base.sql
-│   │   │   │   └── 005_regulatory_monitoring.sql
+│   │   │   │   ├── 005_regulatory_monitoring.sql
+│   │   │   │   ├── 006_users.sql
+│   │   │   │   ├── 007_tokeniser_additions.sql
+│   │   │   │   ├── 008_knowledge_documents.sql
+│   │   │   │   ├── 009_add_embedding_to_knowledge_chunks.sql
+│   │   │   │   └── 010_org_profile.sql
 │   │   │   ├── seeds/
 │   │   │   │   ├── demo_data.js
-│   │   │   │   └── regulatory_knowledge.js
+│   │   │   │   ├── regulatory_knowledge.js
+│   │   │   │   └── fca_regulations.js
 │   │   │   ├── pool.js
 │   │   │   └── migrate.js
 │   │   ├── engines/
@@ -166,6 +170,9 @@ nuqe/
 │   │   │   ├── piiTokeniser.js
 │   │   │   ├── knowledgeLayer.js
 │   │   │   └── regulatoryMonitor.js
+│   │   ├── jobs/
+│   │   │   ├── retentionArchiver.js
+│   │   │   └── generateEmbeddings.js
 │   │   ├── routes/
 │   │   │   ├── cases.js
 │   │   │   ├── communications.js
@@ -177,8 +184,11 @@ nuqe/
 │   │   │   ├── settings.js
 │   │   │   ├── knowledge.js
 │   │   │   └── webhooks.js
+│   │   ├── services/
+│   │   │   └── emailService.js
 │   │   ├── middleware/
-│   │   │   └── auth.js
+│   │   │   ├── auth.js
+│   │   │   └── validate.js
 │   │   ├── queues/
 │   │   └── index.js
 │   └── package.json

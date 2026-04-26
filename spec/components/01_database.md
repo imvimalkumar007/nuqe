@@ -1,7 +1,7 @@
 # Component 01: Database Schema
 
 ## Status
-VERIFIED — all 15 required tables exist. DB-001 through DB-008 passing (22 April 2026).
+VERIFIED — all 15 required tables exist. DB-001 through DB-010 passing (26 April 2026).
 
 ## Purpose
 The foundation of the entire system. All other components depend on
@@ -50,6 +50,8 @@ regulatory_monitoring_log, notifications, users (added by auth migration)
 | DB-006 | updated_at triggers fire on mutable tables | PASS | 22 Apr 2026 |
 | DB-007 | ruleset table is seeded with UK, India, and EU rules | PASS | 22 Apr 2026 |
 | DB-008 | Foreign key constraints enforced (e.g. cases.customer_id) | PASS | 22 Apr 2026 |
+| DB-009 | knowledge_chunks.embedding column exists as vector(1536) with HNSW index | PASS | 26 Apr 2026 |
+| DB-010 | organisation_ai_config has UNIQUE constraint on organisation_id | PASS | 26 Apr 2026 |
 
 ## Known Issues
 None. All tables present and verified.

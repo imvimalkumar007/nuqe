@@ -27,15 +27,16 @@
 |---|---|---|---|---|
 | 0 | Foundation | 1 | Spec system committed, test infra working | DONE |
 | 1 | Core Data Layer | 3 | Database verified, Auth working, seed data correct | DONE |
-| 2 | Core API Layer | 3 | Cases, Communications, Deadlines APIs verified | NOT STARTED |
-| 3 | Business Engines | 4 | Deadline, Compliance, Model Router, PII Tokeniser verified | NOT STARTED |
+| 2 | Core API Layer | 3 | Cases, Communications, Deadlines APIs verified | DONE |
+| 3 | Business Engines | 4 | Deadline, Compliance, Model Router, PII Tokeniser verified | DONE |
 | 4 | Intelligence Layer | 2 | Knowledge Layer and Regulatory Monitor verified | DONE |
 | 5 | Derived APIs | 2 | Metrics API and Settings API verified | DONE |
 | 6 | Integration | 2 | Webhooks verified, all APIs connected to real data | DONE |
-| 7 | Frontend Verification | 4 | All 4 frontend components verified with real data | IN PROGRESS |
-| 8 | Hardening | 3 | Security, observability, performance | NOT STARTED |
-| 9 | CI/CD and Deployment | 2 | Pipeline live, deployed to Render | NOT STARTED |
-| 10 | Demo Ready | 1 | All smoke tests passing, demo rehearsed | NOT STARTED |
+| 7 | Frontend Verification | 4 | All 4 frontend components verified with real data | DONE |
+| 8 | Hardening | 3 | Security, observability, performance | DONE |
+| 9 | CI/CD and Deployment | 2 | Pipeline live, deployed to Render | DONE |
+| 10 | Demo Ready | 1 | All smoke tests passing, demo rehearsed | DONE |
+| 11 | Feature Expansion | 1 | Jurisdiction switching, RAG engine, email sending | DONE |
 
 Total sessions: approximately 27
 Each session: 1 to 2 hours in Claude Code
@@ -510,6 +511,36 @@ Run the complete Playwright smoke test suite against the deployed Render instanc
 
 ---
 
+---
+
+## Phase 11: Feature Expansion
+**Goal:** Jurisdiction switching live. RAG engine fully wired. Outbound email integrated.
+
+### Session 11.1: Jurisdiction switching, RAG engine, email sending
+**What was built:**
+- Migration 009: `knowledge_chunks.embedding vector(1536)` column + HNSW index
+- Migration 010: `organisation_ai_config` gets `enabled_jurisdictions`, `from_email`, `org_name`, `fca_firm_reference`; UNIQUE constraint on `organisation_id`
+- Seed: `api/src/db/seeds/fca_regulations.js` — 14 FCA knowledge chunks (DISP, CONC, PRIN, PROD, PSR)
+- Job: `api/src/jobs/generateEmbeddings.js` — populates vector embeddings via OpenAI text-embedding-3-small
+- Service: `api/src/services/emailService.js` — Resend wrapper with graceful fallback
+- Route: GET/PATCH `/api/v1/settings/org-profile` — save and retrieve jurisdiction config
+- Frontend: `SettingsScreen.jsx` Organisation Profile tab — real panel replacing "Coming soon" placeholder
+- Frontend: `CaseView.jsx` compose area — "To: customer@email.com" shown when email channel selected
+**Tests added:** DB-009, DB-010, COMMS-009, COMMS-010, SET-008, SET-009, SET-010, FE-SET-004, FE-SET-005, FE-SET-006 (10 tests)
+**Exit criteria:**
+- [x] Migration 009 adds vector(1536) column + HNSW index to knowledge_chunks
+- [x] Migration 010 adds jurisdiction/email/org columns + UNIQUE constraint
+- [x] 14 FCA regulatory chunks seeded (npm run seed:fca)
+- [x] Embedding generation job created (npm run embed, requires OPENAI_API_KEY)
+- [x] GET/PATCH /settings/org-profile endpoints live and tested
+- [x] Organisation Profile UI panel replaces "Coming soon" placeholder
+- [x] Outbound email triggered on POST /communications with channel=email direction=outbound
+- [x] CaseView compose shows customer email when channel=email
+
+**Date completed:** 26 April 2026
+
+---
+
 ## Summary: What Done Looks Like at Each Phase
 
 | After phase | What you can do |
@@ -525,6 +556,7 @@ Run the complete Playwright smoke test suite against the deployed Render instanc
 | Phase 8 | Show the demo to a prospect without security concerns |
 | Phase 9 | Push code and it deploys automatically |
 | Phase 10 | Have a customer discovery conversation backed by a working product |
+| Phase 11 | Switch regulatory jurisdictions live; RAG retrieves FCA guidance; email responses sent via Resend |
 
 ---
 
@@ -543,6 +575,7 @@ Run the complete Playwright smoke test suite against the deployed Render instanc
 | Phase 8 | Security/observability checks (not unit tests) | 142 |
 | Phase 9 | CI pipeline counts as infrastructure | 142 |
 | Phase 10 | Smoke tests (Playwright, already counted in Phase 7) | 142 |
+| Phase 11 | 10 (DB:2 + COMMS:2 + SET:3 + FE-SET:3) | 152 |
 
 ---
 
@@ -551,4 +584,5 @@ Run the complete Playwright smoke test suite against the deployed Render instanc
 | Date | What changed |
 |---|---|
 | 22 April 2026 | Initial build plan created. 10 phases, 27 sessions, 142 tests. Based on confirmed demo screenshot and full system state assessment. |
-| 23 April 2026 | Phase 0 complete (e801c4f). Session 1.1 complete: migrations 006+007 added, 8 DB tests all PASS (3b397e9). Phase 1 IN PROGRESS. |
+| 23 April 2026 | Phase 0 complete (e801c4f). Session 1.1 complete: migrations 006+007 added, 8 DB tests all PASS (3b397e9). All phases 1–10 completed same day. 142/142 tests PASS. Deployed to Render. |
+| 26 April 2026 | Phase 11 complete (f50ceea). Session 11.1: jurisdiction switching, RAG engine wired, email sending via Resend. 10 new tests. Total: 152/152 PASS. |

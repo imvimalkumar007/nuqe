@@ -1,7 +1,7 @@
 # Component 19: Frontend Monitoring and Settings
 
 ## Status
-VERIFIED — all 6 tests passing (23 April 2026)
+VERIFIED — all 9 tests passing (26 April 2026)
 
 ## Purpose
 Regulatory Monitoring: shows health of automated source monitoring,
@@ -30,6 +30,12 @@ API calls:
 ## Settings Screen
 Three tabs: AI Configuration, Tokeniser Additions, Organisation Profile
 
+Organisation Profile tab (added 26 April 2026):
+- Jurisdiction toggles: UK/FCA, India/RBI, EU/EBA — enable/disable per org
+- Firm name and FCA firm reference fields
+- From-email field for outbound Resend sends
+- Save button calls PATCH /api/v1/settings/org-profile
+
 AI Configuration tab:
 - Primary model provider and model selector
 - API key input (masked)
@@ -53,6 +59,9 @@ API calls:
 | FE-SET-001 | Settings screen loads without errors | PASS | 23 Apr 2026 |
 | FE-SET-002 | AI Configuration panel loads saved config | PASS | 23 Apr 2026 |
 | FE-SET-003 | Connection Test button shows result message | PASS | 23 Apr 2026 |
+| FE-SET-004 | Organisation Profile tab loads saved enabled_jurisdictions | PASS | 26 Apr 2026 |
+| FE-SET-005 | Toggling a jurisdiction and saving persists the new value | PASS | 26 Apr 2026 |
+| FE-SET-006 | From email field accepts and saves a valid email address | PASS | 26 Apr 2026 |
 
 ## Claude Code Prompt
 ```
