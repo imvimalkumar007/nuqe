@@ -57,9 +57,10 @@ function normalizeCase(raw) {
     id:           raw.case_id ?? raw.id,
     caseRef:      raw.case_ref ?? raw.caseRef,
     customer: {
-      name:          raw.customer_name ?? raw.customer?.name ?? '—',
-      ref:           raw.customer_ref  ?? raw.account_ref   ?? raw.customer?.ref   ?? '—',
-      loanRef:       raw.loan_ref      ?? raw.customer?.loanRef ?? '—',
+      name:          raw.customer_name  ?? raw.customer?.name  ?? '—',
+      ref:           raw.customer_ref   ?? raw.account_ref     ?? raw.customer?.ref   ?? '—',
+      loanRef:       raw.loan_ref       ?? raw.customer?.loanRef ?? '—',
+      email:         raw.customer_email ?? raw.customer?.email ?? null,
       vulnerableFlag: raw.vulnerable_flag ?? raw.customer?.vulnerableFlag ?? false,
     },
     category:        raw.category        ?? raw.issue          ?? '—',
@@ -695,12 +696,20 @@ export default function CaseView() {
             </div>
 
             {composeChannel === 'email' && (
-              <input
-                value={composeSubject}
-                onChange={(e) => setComposeSubject(e.target.value)}
-                placeholder="Subject"
-                className="w-full px-3 py-2 mb-2 text-xs bg-nuqe-bg border border-white/10 rounded text-nuqe-text placeholder-nuqe-muted focus:outline-none focus:border-nuqe-purple/40"
-              />
+              <>
+                {caseData?.customer?.email && (
+                  <div className="flex items-center gap-2 mb-2 px-3 py-1.5 rounded text-xs border border-white/10 bg-nuqe-bg">
+                    <span className="text-nuqe-muted shrink-0">To:</span>
+                    <span className="text-nuqe-text truncate">{caseData.customer.email}</span>
+                  </div>
+                )}
+                <input
+                  value={composeSubject}
+                  onChange={(e) => setComposeSubject(e.target.value)}
+                  placeholder="Subject"
+                  className="w-full px-3 py-2 mb-2 text-xs bg-nuqe-bg border border-white/10 rounded text-nuqe-text placeholder-nuqe-muted focus:outline-none focus:border-nuqe-purple/40"
+                />
+              </>
             )}
 
             <textarea

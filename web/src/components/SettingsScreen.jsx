@@ -866,20 +866,230 @@ function TokeniserPanel() {
   );
 }
 
-// ─── Organisation Profile placeholder ────────────────────────────────────────
+// ─── Organisation Profile panel ──────────────────────────────────────────────
+
+const JURISDICTIONS = [
+  {
+    id:    'UK',
+    label: 'United Kingdom — FCA',
+    desc:  'Financial Conduct Authority. DISP, CONC, PRIN, Consumer Duty, PROD, PSR.',
+  },
+  {
+    id:    'IN',
+    label: 'India — RBI',
+    desc:  'Reserve Bank of India. Fair Practices Code, NBFC guidelines.',
+  },
+  {
+    id:    'EU',
+    label: 'European Union — EBA',
+    desc:  'European Banking Authority. ADR Directive, PSD2, MiFID II.',
+  },
+];
+
 function OrgProfilePanel() {
+  const [form,      setForm]      = useState({
+    enabled_jurisdictions: ['UK'],
+    from_email:            '',
+    org_name:              '',
+    fca_firm_reference:    '',
+  });
+  const [loading,   setLoading]   = useState(true);
+  const [saveState, setSaveState] = useState(null);
+  const [saveMsg,   setSaveMsg]   = useState('');
+  const [validErr,  setValidErr]  = useState('');
+
+  useEffect(() => {
+    client.get('/api/v1/settings/org-profile')
+      .then(({ data }) => {
+        setForm({
+          enabled_jurisdictions: data.enabled_jurisdictions ?? ['UK'],
+          from_email:            data.from_email            ?? '',
+          org_name:              data.org_name              ?? '',
+          fca_firm_reference:    data.fca_firm_reference    ?? '',
+        });
+      })
+      .catch(() => {/* keep defaults */})
+      .finally(() => setLoading(false));
+  }, []);
+
+  function toggleJurisdiction(id) {
+    setForm((f) => {
+      const active = f.enabled_jurisdictions ?? [];
+      const next   = active.includes(id)
+        ? active.filter((j) => j !== id)
+        : [...active, id];
+      return { ...f, enabled_jurisdictions: next };
+    });
+  }
+
+  async function handleSave() {
+    setValidErr('');
+    if (!form.enabled_jurisdictions?.length) {
+      setValidErr('At least one jurisdiction must be enabled.');
+      return;
+    }
+    setSaveState('loading');
+    setSaveMsg('');
+    try {
+      await client.patch('/api/v1/settings/org-profile', {
+        enabled_jurisdictions: form.enabled_jurisdictions,
+        from_email:            form.from_email  || null,
+        org_name:              form.org_name    || null,
+        fca_firm_reference:    form.fca_firm_reference || null,
+      });
+      setSaveMsg('Profile saved.');
+      setSaveState('ok');
+    } catch (err) {
+      setSaveMsg(err.response?.data?.error ?? 'Save failed.');
+      setSaveState('err');
+    }
+    setTimeout(() => setSaveState(null), 4000);
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2].map((i) => (
+          <div
+            key={i}
+            className="rounded-lg p-6"
+            style={{ background: C.surface, border: `1px solid ${C.border}`, opacity: 1 - i * 0.3 }}
+          >
+            <div className="h-3 w-32 rounded mb-4" style={{ background: 'rgba(255,255,255,0.08)' }} />
+            <div className="space-y-3">
+              {[1, 2].map((j) => (
+                <div key={j} className="h-9 rounded-md" style={{ background: 'rgba(255,255,255,0.05)' }} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
-    <div
-      className="rounded-lg p-8 flex flex-col items-center justify-center text-center gap-2"
-      style={{ background: C.surface, border: `1px solid ${C.border}`, minHeight: 240 }}
-    >
-      <p className="text-sm font-medium" style={{ color: C.text }}>Organisation Profile</p>
-      <p className="text-xs" style={{ color: C.muted }}>
-        Organisation name, contact details, and branding configuration.
-      </p>
-      <p className="text-[11px] mt-2 px-3 py-1 rounded" style={{ color: C.muted, background: C.bg }}>
-        Coming soon
-      </p>
+    <div className="space-y-0">
+
+      {validErr && (
+        <div
+          className="rounded-md px-4 py-3 mb-4 text-sm"
+          style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: C.danger }}
+        >
+          {validErr}
+        </div>
+      )}
+
+      {/* Regulatory jurisdictions */}
+      <div className="rounded-lg p-6" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
+        <SectionHeading>Regulatory jurisdictions</SectionHeading>
+        <p className="text-xs mb-4" style={{ color: C.muted }}>
+          Enable the regulatory frameworks active for this organisation. The RAG engine and AI
+          suggestions will be scoped to enabled jurisdictions only.
+        </p>
+        <div className="space-y-3">
+          {JURISDICTIONS.map((j) => {
+            const enabled = (form.enabled_jurisdictions ?? []).includes(j.id);
+            return (
+              <div
+                key={j.id}
+                className="flex items-start gap-4 rounded-md px-4 py-3 transition-colors"
+                style={{
+                  background: enabled ? 'rgba(124,58,237,0.08)' : C.bg,
+                  border:     `1px solid ${enabled ? 'rgba(124,58,237,0.3)' : C.border}`,
+                }}
+              >
+                <Toggle on={enabled} onChange={() => toggleJurisdiction(j.id)} id={`jur-${j.id}`} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium" style={{ color: enabled ? C.text : C.muted }}>
+                    {j.label}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: C.muted }}>{j.desc}</p>
+                </div>
+                <span
+                  className="text-[10px] font-semibold px-1.5 py-0.5 rounded border shrink-0 mt-0.5"
+                  style={
+                    enabled
+                      ? { color: C.ok,   background: 'rgba(16,185,129,0.10)', borderColor: 'rgba(16,185,129,0.25)' }
+                      : { color: C.muted, background: 'rgba(255,255,255,0.04)', borderColor: C.border }
+                  }
+                >
+                  {enabled ? 'Active' : 'Off'}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="my-4" />
+
+      {/* Firm details */}
+      <div className="rounded-lg p-6" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
+        <SectionHeading>Firm details</SectionHeading>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="org-name">Organisation name</Label>
+            <Input
+              id="org-name"
+              value={form.org_name}
+              onChange={(v) => setForm((f) => ({ ...f, org_name: v }))}
+              placeholder="Acme Financial Services Ltd"
+            />
+          </div>
+          <div>
+            <Label htmlFor="fca-ref">FCA firm reference number</Label>
+            <Input
+              id="fca-ref"
+              value={form.fca_firm_reference}
+              onChange={(v) => setForm((f) => ({ ...f, fca_firm_reference: v }))}
+              placeholder="123456"
+            />
+            <p className="text-[10px] mt-1" style={{ color: C.muted }}>
+              Used in outbound correspondence footers for FCA compliance.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="my-4" />
+
+      {/* Email sending */}
+      <div className="rounded-lg p-6" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
+        <SectionHeading>Outbound email</SectionHeading>
+        <div>
+          <Label htmlFor="from-email">From address</Label>
+          <Input
+            id="from-email"
+            type="email"
+            value={form.from_email}
+            onChange={(v) => setForm((f) => ({ ...f, from_email: v }))}
+            placeholder="complaints@yourfirm.com"
+          />
+          <p className="text-[10px] mt-1" style={{ color: C.muted }}>
+            Outbound case responses are sent from this address via Resend. Must be a verified sender
+            domain. Leave blank to use the platform default.
+          </p>
+        </div>
+      </div>
+
+      <div className="my-4" />
+
+      {/* Save */}
+      <div className="rounded-lg p-6" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
+        <div className="flex items-center gap-3">
+          <Btn
+            variant="primary"
+            onClick={handleSave}
+            loading={saveState === 'loading'}
+            disabled={saveState === 'loading'}
+          >
+            Save profile
+          </Btn>
+          {saveState === 'ok'  && <InlineBanner kind="ok">{saveMsg}</InlineBanner>}
+          {saveState === 'err' && <InlineBanner kind="err">{saveMsg}</InlineBanner>}
+        </div>
+      </div>
+
     </div>
   );
 }

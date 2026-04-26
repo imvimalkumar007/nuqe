@@ -285,4 +285,52 @@ router.post('/tokeniser-additions', validate(tokeniserAdditionSchema), async (re
 router.get('/tokeniser',  (req, res) => res.redirect(307, '/api/v1/settings/tokeniser-additions'));
 router.post('/tokeniser', (req, res) => res.redirect(307, '/api/v1/settings/tokeniser-additions'));
 
+// ─── GET /api/v1/settings/org-profile ────────────────────────────────────────
+
+router.get('/org-profile', async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT enabled_jurisdictions, from_email, org_name, fca_firm_reference
+       FROM organisation_ai_config WHERE organisation_id = $1`,
+      [ORG_ID]
+    );
+    res.json(rows[0] ?? { enabled_jurisdictions: ['UK'], from_email: null, org_name: null, fca_firm_reference: null });
+  } catch (err) {
+    logger.error({ err }, 'GET /settings/org-profile failed');
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── PATCH /api/v1/settings/org-profile ──────────────────────────────────────
+
+const orgProfileSchema = z.object({
+  enabled_jurisdictions: z.array(z.enum(['UK', 'IN', 'EU'])).min(1),
+  from_email:            z.string().email().optional().nullable(),
+  org_name:              z.string().max(200).optional().nullable(),
+  fca_firm_reference:    z.string().max(20).optional().nullable(),
+});
+
+router.patch('/org-profile', validate(orgProfileSchema), async (req, res) => {
+  const { enabled_jurisdictions, from_email, org_name, fca_firm_reference } = req.body;
+  try {
+    await pool.query(
+      `INSERT INTO organisation_ai_config
+         (organisation_id, primary_provider, primary_model, primary_api_key_encrypted,
+          data_agreement_tier, enabled_jurisdictions, from_email, org_name, fca_firm_reference)
+       VALUES ($1, 'claude', 'claude-sonnet-4-6', '', 'standard', $2, $3, $4, $5)
+       ON CONFLICT (organisation_id) DO UPDATE SET
+         enabled_jurisdictions = EXCLUDED.enabled_jurisdictions,
+         from_email            = EXCLUDED.from_email,
+         org_name              = EXCLUDED.org_name,
+         fca_firm_reference    = EXCLUDED.fca_firm_reference,
+         updated_at            = NOW()`,
+      [ORG_ID, enabled_jurisdictions, from_email ?? null, org_name ?? null, fca_firm_reference ?? null]
+    );
+    res.json({ saved: true });
+  } catch (err) {
+    logger.error({ err }, 'PATCH /settings/org-profile failed');
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
