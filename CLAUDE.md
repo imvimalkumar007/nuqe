@@ -2,17 +2,20 @@
 
 ## Start of every session
 
-Read these two files before doing anything else:
+Read these four files before doing anything else:
 
 ```
 spec/ARCHITECTURE.md
 spec/test_registry.md
+NUQE_CONTEXT.md
+NUQE_TECHNICAL_DEBT.md
 ```
 
 Report:
 1. How many tests are currently passing
-2. Which component was last worked on
-3. What the next action should be
+2. Current deployment state and any open HIGH priority gaps
+3. Which component was last worked on
+4. What the next action should be
 
 Then wait for instruction.
 
@@ -45,13 +48,24 @@ Do not commit code changes without completing all four.
 
 ---
 
+### 5. `NUQE_CONTEXT.md`
+- Update "Stage" and current system state if anything changed
+- Update deployment URLs or demo credentials if they changed
+- Update the Demo Flow if new features were added or steps changed
+- Update the "What works" / "What doesn't" summary if applicable
+
+### 6. `NUQE_TECHNICAL_DEBT.md`
+- Add a row to Open Gaps for any new known issue, shortcut, or deferred decision introduced this session
+- Move rows from Open Gaps to Resolved for any gap closed this session
+- Add a changelog entry at the bottom
+
+---
+
 ## When any of these also apply, update them too
 
 | Condition | File to update |
 |-----------|---------------|
 | New environment variable added | `.env.example` |
-| Gap opened or closed | `NUQE_TECHNICAL_DEBT.md` |
-| Deploy URL, credentials, or demo flow changed | `NUQE_CONTEXT.md` |
 | Root architecture doc needs to mirror spec | `ARCHITECTURE.md` (root) |
 
 ---
@@ -81,12 +95,13 @@ mandatory doc files in the same commit. Never commit code without the docs.
 
 ## Key file locations
 
-| Purpose | File |
-|---------|------|
-| Master spec + component index | `spec/ARCHITECTURE.md` |
-| Every test result | `spec/test_registry.md` |
-| 19 component specs | `spec/components/[01-19]_*.md` |
-| Phase and session tracking | `NUQE_BUILD_PLAN.md` |
-| Open gaps and tech debt | `NUQE_TECHNICAL_DEBT.md` |
-| Deployment state and demo flow | `NUQE_CONTEXT.md` |
-| Root architecture (external-facing) | `ARCHITECTURE.md` |
+| Purpose | File | Update frequency |
+|---------|------|-----------------|
+| Master spec + component index | `spec/ARCHITECTURE.md` | Every session |
+| Every test result | `spec/test_registry.md` | Every session |
+| Phase and session tracking | `NUQE_BUILD_PLAN.md` | Every session |
+| 19 component specs | `spec/components/[01-19]_*.md` | Every session (touched component) |
+| Living product state + demo flow | `NUQE_CONTEXT.md` | Every session |
+| Open gaps and tech debt | `NUQE_TECHNICAL_DEBT.md` | Every session |
+| Root architecture (external-facing) | `ARCHITECTURE.md` | When spec changes |
+| Environment variable reference | `.env.example` | When new vars added |
