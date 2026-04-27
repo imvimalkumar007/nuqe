@@ -2,36 +2,284 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Design tokens ─────────────────────────────────────────────────────────── */
+
 :root {
+  /* Brand */
   --nuqe-purple:       #7C3AED;
-  --nuqe-purple-light: #EDE9FE;
+  --nuqe-purple-hover: #6D28D9;
+  --nuqe-purple-light: #8B5CF6;
   --nuqe-dark:         #1E1B4B;
-  --nuqe-bg:           #0A0C10;
-  --nuqe-surface:      #111318;
-  --nuqe-text:         #E8EAF0;
-  --nuqe-muted:        #6B7280;
-  --nuqe-danger:       #EF4444;
-  --nuqe-warn:         #F59E0B;
-  --nuqe-ok:           #10B981;
-  --nuqe-border:       rgba(255,255,255,0.07);
+
+  /* 3-tier elevation model */
+  --nuqe-bg:           #0D0F17;
+  --nuqe-surface:      #161B28;
+  --nuqe-surface-hi:   #1E2436;
+
+  /* Borders */
+  --nuqe-border:       rgba(255, 255, 255, 0.08);
+  --nuqe-border-hi:    rgba(255, 255, 255, 0.14);
+
+  /* Text hierarchy */
+  --nuqe-text:         #EDF0F7;
+  --nuqe-muted:        #8892A4;
+  --nuqe-subtle:       #4A5568;
+
+  /* Semantic colours — lighter variants for legibility on dark surfaces */
+  --nuqe-danger:       #FC8181;
+  --nuqe-danger-dim:   rgba(252, 129, 129, 0.12);
+  --nuqe-danger-ring:  rgba(252, 129, 129, 0.25);
+
+  --nuqe-warn:         #F6AD55;
+  --nuqe-warn-dim:     rgba(246, 173, 85, 0.12);
+  --nuqe-warn-ring:    rgba(246, 173, 85, 0.25);
+
+  --nuqe-ok:           #68D391;
+  --nuqe-ok-dim:       rgba(104, 211, 145, 0.12);
+  --nuqe-ok-ring:      rgba(104, 211, 145, 0.25);
+
+  --nuqe-info:         #63B3ED;
+  --nuqe-info-dim:     rgba(99, 179, 237, 0.12);
+  --nuqe-info-ring:    rgba(99, 179, 237, 0.25);
+}
+
+/* ─── Base ──────────────────────────────────────────────────────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
   background-color: var(--nuqe-bg);
   color: var(--nuqe-text);
-  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-family: 'Geist Variable', 'Geist', ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
 }
 
-/* ─── Pending AI treatment ───────────────────────────────────────────────── */
+/* ─── Typography helpers ────────────────────────────────────────────────────── */
+
+.label-xs {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--nuqe-muted);
+}
+
+.mono-ref {
+  font-family: 'Geist Mono', 'SF Mono', ui-monospace, monospace;
+  font-size: 12px;
+  letter-spacing: -0.02em;
+}
+
+/* ─── Scrollbars ────────────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar        { width: 4px; height: 4px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: rgba(255,255,255,0.12); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* ─── Focus ring ────────────────────────────────────────────────────────────── */
+
+:focus-visible {
+  outline: 2px solid var(--nuqe-purple);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ─── Inputs ────────────────────────────────────────────────────────────────── */
+
+.input {
+  width: 100%;
+  background: var(--nuqe-bg);
+  border: 1px solid var(--nuqe-border-hi);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--nuqe-text);
+  font-family: 'Geist Variable', 'Geist', ui-sans-serif, system-ui, sans-serif;
+  transition: border-color 150ms, box-shadow 150ms;
+  outline: none;
+}
+
+.input::placeholder { color: var(--nuqe-subtle); }
+
+.input:hover { border-color: rgba(255,255,255,0.2); }
+
+.input:focus {
+  border-color: var(--nuqe-purple);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.18);
+}
+
+/* ─── Buttons ───────────────────────────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: 13.5px;
+  font-weight: 500;
+  font-family: inherit;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms, box-shadow 120ms, opacity 120ms;
+  white-space: nowrap;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--nuqe-purple);
+  color: #fff;
+  border-color: transparent;
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--nuqe-purple-hover);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.22);
+}
+
+.btn-secondary {
+  background: var(--nuqe-surface-hi);
+  color: var(--nuqe-text);
+  border-color: var(--nuqe-border-hi);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.2);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--nuqe-muted);
+  border-color: transparent;
+}
+.btn-ghost:hover:not(:disabled) {
+  background: rgba(255,255,255,0.06);
+  color: var(--nuqe-text);
+}
+
+.btn-danger {
+  background: rgba(252, 129, 129, 0.12);
+  color: var(--nuqe-danger);
+  border-color: rgba(252, 129, 129, 0.2);
+}
+.btn-danger:hover:not(:disabled) {
+  background: rgba(252, 129, 129, 0.2);
+  border-color: rgba(252, 129, 129, 0.35);
+}
+
+/* ─── Badges / pills ────────────────────────────────────────────────────────── */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 11.5px;
+  font-weight: 500;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+}
+
+.badge-danger  { background: var(--nuqe-danger-dim);  color: var(--nuqe-danger); border-color: var(--nuqe-danger-ring); }
+.badge-warn    { background: var(--nuqe-warn-dim);    color: var(--nuqe-warn);   border-color: var(--nuqe-warn-ring);   }
+.badge-ok      { background: var(--nuqe-ok-dim);      color: var(--nuqe-ok);     border-color: var(--nuqe-ok-ring);     }
+.badge-info    { background: var(--nuqe-info-dim);    color: var(--nuqe-info);   border-color: var(--nuqe-info-ring);   }
+.badge-purple  { background: rgba(124,58,237,0.12);   color: var(--nuqe-purple-light); border-color: rgba(124,58,237,0.25); }
+.badge-muted   { background: rgba(255,255,255,0.06);  color: var(--nuqe-muted);  border-color: var(--nuqe-border-hi);   }
+
+/* ─── Cards ─────────────────────────────────────────────────────────────────── */
+
+.card {
+  background: var(--nuqe-surface);
+  border: 1px solid var(--nuqe-border);
+  border-radius: 8px;
+}
+
+.card-raised {
+  background: var(--nuqe-surface-hi);
+  border: 1px solid var(--nuqe-border-hi);
+  border-radius: 8px;
+}
+
+/* ─── Tables ────────────────────────────────────────────────────────────────── */
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.data-table thead tr {
+  border-bottom: 1px solid var(--nuqe-border);
+}
+
+.data-table th {
+  padding: 10px 16px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--nuqe-muted);
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--nuqe-border);
+  color: var(--nuqe-text);
+  vertical-align: middle;
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table tbody tr {
+  transition: background 120ms;
+}
+
+.data-table tbody tr:hover {
+  background: rgba(255,255,255,0.03);
+}
+
+/* ─── Dividers ──────────────────────────────────────────────────────────────── */
+
+.divider {
+  height: 1px;
+  background: var(--nuqe-border);
+}
+
+/* ─── Pending AI pulse ──────────────────────────────────────────────────────── */
 
 @keyframes pending-pulse {
-  0%, 100% { opacity: 0.6; }
-  50%       { opacity: 0.82; }
+  0%, 100% { opacity: 0.55; }
+  50%       { opacity: 0.8;  }
 }
 
 .pending-ai {
   position: relative;
-  opacity: 0.6;
+  opacity: 0.55;
   border: 1px solid var(--nuqe-border) !important;
   animation: pending-pulse 2.8s ease-in-out infinite;
 }
@@ -39,32 +287,28 @@ body {
 .pending-ai::after {
   content: 'Pending review';
   position: absolute;
-  top: 8px;
-  right: 8px;
-  font-size: 10px;
+  top: 10px;
+  right: 10px;
+  font-size: 10.5px;
   font-weight: 500;
   line-height: 1;
   color: var(--nuqe-warn);
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  border-radius: 9999px;
+  background: var(--nuqe-warn-dim);
+  border: 1px solid var(--nuqe-warn-ring);
+  border-radius: 20px;
   padding: 3px 8px;
   pointer-events: none;
   z-index: 10;
   white-space: nowrap;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
 }
 
-/* ─── Thin scrollbar for sidebar and content panels ──────────────────────── */
-::-webkit-scrollbar        { width: 4px; height: 4px; }
-::-webkit-scrollbar-track  { background: transparent; }
-::-webkit-scrollbar-thumb  { background: var(--nuqe-muted); border-radius: 2px; }
+/* ─── Tiptap prose ──────────────────────────────────────────────────────────── */
 
-/* ─── Tiptap editor prose styles (dark theme) ────────────────────────────── */
 .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
-  color: var(--nuqe-muted);
+  color: var(--nuqe-subtle);
   pointer-events: none;
   height: 0;
 }
@@ -74,10 +318,23 @@ body {
 .ProseMirror ol  { padding-left: 1.25em; margin: 0.25em 0; }
 .ProseMirror li  { margin: 0.1em 0; }
 .ProseMirror blockquote {
-  border-left: 3px solid rgba(255,255,255,0.15);
+  border-left: 2px solid rgba(255,255,255,0.14);
   padding-left: 0.75em;
   color: var(--nuqe-muted);
   margin: 0.5em 0;
 }
-.ProseMirror hr  { border-color: rgba(255,255,255,0.1); margin: 0.75em 0; }
+.ProseMirror hr     { border-color: var(--nuqe-border); margin: 0.75em 0; }
 .ProseMirror strong { color: var(--nuqe-text); }
+
+/* ─── Skeleton loader animation ────────────────────────────────────────────── */
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.35; }
+  50%       { opacity: 0.7;  }
+}
+
+.skeleton {
+  background: rgba(255,255,255,0.07);
+  border-radius: 4px;
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+}

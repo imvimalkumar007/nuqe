@@ -9,15 +9,15 @@ import { useMetrics } from '../hooks/useMetrics';
 // ─── Brand tokens ─────────────────────────────────────────────────────────────
 const C = {
   purple:  '#7C3AED',
-  surface: '#111318',
-  bg:      '#0A0C10',
-  text:    '#E8EAF0',
-  muted:   '#6B7280',
-  ok:      '#10B981',
-  warn:    '#F59E0B',
-  danger:  '#EF4444',
-  border:  'rgba(255,255,255,0.07)',
-  blue:    '#3B82F6',
+  surface: '#161B28',
+  bg:      '#0D0F17',
+  text:    '#EDF0F7',
+  muted:   '#8892A4',
+  ok:      '#68D391',
+  warn:    '#F6AD55',
+  danger:  '#FC8181',
+  border:  'rgba(255,255,255,0.08)',
+  blue:    '#63B3ED',
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -493,12 +493,12 @@ export default function AnalyticsDashboard() {
       {/* Error banner */}
       {error && (
         <div className="flex items-center gap-3 rounded-lg px-5 py-3"
-             style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.25)' }}>
-          <span className="text-red-400 text-sm shrink-0">✕</span>
-          <p className="text-xs text-red-400 flex-1">{error}</p>
+             style={{ background: 'rgba(252,129,129,0.06)', border: '1px solid rgba(252,129,129,0.25)' }}>
+          <span className="text-nuqe-danger text-sm shrink-0">✕</span>
+          <p className="text-xs text-nuqe-danger flex-1">{error}</p>
           <button onClick={refetch}
                   className="text-xs font-medium px-3 py-1.5 rounded-md shrink-0"
-                  style={{ border: '1px solid rgba(239,68,68,0.35)', color: 'rgb(248,113,113)', background: 'rgba(239,68,68,0.08)' }}>
+                  style={{ border: '1px solid rgba(252,129,129,0.35)', color: C.danger, background: 'rgba(252,129,129,0.08)' }}>
             Retry
           </button>
         </div>

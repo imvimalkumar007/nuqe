@@ -4,15 +4,15 @@ import client from '../api/client';
 // ─── Brand tokens ─────────────────────────────────────────────────────────────
 const C = {
   purple:  '#7C3AED',
-  surface: '#111318',
-  bg:      '#0A0C10',
-  text:    '#E8EAF0',
-  muted:   '#6B7280',
-  ok:      '#10B981',
-  warn:    '#F59E0B',
-  danger:  '#EF4444',
-  border:  'rgba(255,255,255,0.07)',
-  blue:    '#3B82F6',
+  surface: '#161B28',
+  bg:      '#0D0F17',
+  text:    '#EDF0F7',
+  muted:   '#8892A4',
+  ok:      '#68D391',
+  warn:    '#F6AD55',
+  danger:  '#FC8181',
+  border:  'rgba(255,255,255,0.08)',
+  blue:    '#63B3ED',
 };
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
@@ -106,7 +106,7 @@ function Btn({ children, onClick, variant = 'ghost', disabled, type = 'button', 
     ghost:   { color: C.muted },
     primary: { background: C.purple, color: '#fff' },
     outline: { border: `1px solid ${C.border}`, color: C.text },
-    danger:  { border: `1px solid rgba(239,68,68,0.3)`, color: C.danger },
+    danger:  { border: `1px solid rgba(252,129,129,0.3)`, color: C.danger },
   };
   return (
     <button
@@ -123,8 +123,8 @@ function Btn({ children, onClick, variant = 'ghost', disabled, type = 'button', 
 
 function InlineBanner({ kind, children }) {
   const s = kind === 'ok'
-    ? { bg: 'rgba(16,185,129,0.08)',  border: 'rgba(16,185,129,0.2)',  color: C.ok }
-    : { bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.2)',   color: C.danger };
+    ? { bg: 'rgba(104,211,145,0.08)',  border: 'rgba(104,211,145,0.2)',  color: C.ok }
+    : { bg: 'rgba(252,129,129,0.08)',  border: 'rgba(252,129,129,0.2)',  color: C.danger };
   return (
     <div
       className="flex items-center gap-2 rounded-md px-3 py-2 text-xs font-medium"
@@ -349,7 +349,7 @@ function AiConfigPanel() {
     return (
       <div
         className="rounded-lg p-6 text-sm"
-        style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.25)', color: C.danger }}
+        style={{ background: 'rgba(252,129,129,0.06)', border: '1px solid rgba(252,129,129,0.25)', color: C.danger }}
       >
         Failed to load AI configuration: {configError}
       </div>
@@ -362,7 +362,7 @@ function AiConfigPanel() {
       {validErr && (
         <div
           className="rounded-md px-4 py-3 mb-4 text-sm"
-          style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: C.danger }}
+          style={{ background: 'rgba(252,129,129,0.08)', border: '1px solid rgba(252,129,129,0.25)', color: C.danger }}
         >
           {validErr}
         </div>
@@ -570,7 +570,7 @@ function AddPatternModal({ onClose, onAdded }) {
         {errMsg && (
           <div
             className="rounded-md px-3 py-2 text-xs"
-            style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: C.danger }}
+            style={{ background: 'rgba(252,129,129,0.08)', border: '1px solid rgba(252,129,129,0.25)', color: C.danger }}
           >
             {errMsg}
           </div>
@@ -629,10 +629,10 @@ function AddPatternModal({ onClose, onAdded }) {
 // ─── Tokeniser Additions panel ─────────────────────────────────────────────────
 function TypeBadge({ type }) {
   const colors = {
-    'NI Number':          { color: C.blue,   bg: 'rgba(59,130,246,0.12)',  border: 'rgba(59,130,246,0.25)' },
-    'Payment Card':       { color: C.danger, bg: 'rgba(239,68,68,0.12)',   border: 'rgba(239,68,68,0.25)'  },
+    'NI Number':          { color: C.blue,   bg: 'rgba(99,179,237,0.12)',  border: 'rgba(99,179,237,0.25)' },
+    'Payment Card':       { color: C.danger, bg: 'rgba(252,129,129,0.12)',   border: 'rgba(252,129,129,0.25)'  },
     'Account Ref':        { color: C.purple, bg: 'rgba(124,58,237,0.12)', border: 'rgba(124,58,237,0.25)' },
-    'Vulnerability Flag': { color: C.warn,   bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.25)' },
+    'Vulnerability Flag': { color: C.warn,   bg: 'rgba(246,173,85,0.12)', border: 'rgba(246,173,85,0.25)' },
   };
   const s = colors[type] ?? { color: C.muted, bg: 'rgba(255,255,255,0.05)', border: C.border };
   return (
@@ -667,14 +667,14 @@ function StatusBadge({ status }) {
   return status === 'active' ? (
     <span
       className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border"
-      style={{ color: C.ok, background: 'rgba(16,185,129,0.10)', borderColor: 'rgba(16,185,129,0.25)' }}
+      style={{ color: C.ok, background: 'rgba(104,211,145,0.10)', borderColor: 'rgba(104,211,145,0.25)' }}
     >
       Active
     </span>
   ) : (
     <span
       className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border"
-      style={{ color: C.warn, background: 'rgba(245,158,11,0.10)', borderColor: 'rgba(245,158,11,0.25)' }}
+      style={{ color: C.warn, background: 'rgba(246,173,85,0.10)', borderColor: 'rgba(246,173,85,0.25)' }}
     >
       Pending review
     </span>
@@ -973,7 +973,7 @@ function OrgProfilePanel() {
       {validErr && (
         <div
           className="rounded-md px-4 py-3 mb-4 text-sm"
-          style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: C.danger }}
+          style={{ background: 'rgba(252,129,129,0.08)', border: '1px solid rgba(252,129,129,0.25)', color: C.danger }}
         >
           {validErr}
         </div>
@@ -1009,7 +1009,7 @@ function OrgProfilePanel() {
                   className="text-[10px] font-semibold px-1.5 py-0.5 rounded border shrink-0 mt-0.5"
                   style={
                     enabled
-                      ? { color: C.ok,   background: 'rgba(16,185,129,0.10)', borderColor: 'rgba(16,185,129,0.25)' }
+                      ? { color: C.ok,   background: 'rgba(104,211,145,0.10)', borderColor: 'rgba(104,211,145,0.25)' }
                       : { color: C.muted, background: 'rgba(255,255,255,0.04)', borderColor: C.border }
                   }
                 >

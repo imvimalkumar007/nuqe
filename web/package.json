@@ -10,6 +10,8 @@
     "lint": "eslint src/"
   },
   "dependencies": {
+    "@fontsource-variable/geist": "^5.2.8",
+    "@fontsource/geist-mono": "^5.2.7",
     "@tiptap/extension-character-count": "^3.22.4",
     "@tiptap/extension-placeholder": "^3.22.4",
     "@tiptap/pm": "^3.22.4",

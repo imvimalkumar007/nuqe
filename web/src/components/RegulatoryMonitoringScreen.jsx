@@ -4,15 +4,15 @@ import client from '../api/client';
 // ─── Brand tokens ─────────────────────────────────────────────────────────────
 const C = {
   purple:  '#7C3AED',
-  surface: '#111318',
-  bg:      '#0A0C10',
-  text:    '#E8EAF0',
-  muted:   '#6B7280',
-  ok:      '#10B981',
-  warn:    '#F59E0B',
-  danger:  '#EF4444',
-  border:  'rgba(255,255,255,0.07)',
-  blue:    '#3B82F6',
+  surface: '#161B28',
+  bg:      '#0D0F17',
+  text:    '#EDF0F7',
+  muted:   '#8892A4',
+  ok:      '#68D391',
+  warn:    '#F6AD55',
+  danger:  '#FC8181',
+  border:  'rgba(255,255,255,0.08)',
+  blue:    '#63B3ED',
 };
 
 // ─── Normalisers ──────────────────────────────────────────────────────────────
@@ -99,8 +99,8 @@ function fmtLastCheck(iso) {
 function JurisdictionBadge({ j }) {
   const styles = {
     UK:    { color: C.purple, background: 'rgba(124,58,237,0.12)', border: 'rgba(124,58,237,0.3)' },
-    India: { color: C.warn,   background: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)' },
-    EU:    { color: C.blue,   background: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.3)' },
+    India: { color: C.warn,   background: 'rgba(246,173,85,0.12)', border: 'rgba(246,173,85,0.3)' },
+    EU:    { color: C.blue,   background: 'rgba(99,179,237,0.12)', border: 'rgba(99,179,237,0.3)' },
   };
   const s = styles[j] ?? styles.UK;
   return (
@@ -163,8 +163,8 @@ function Toast({ toast }) {
     <div
       className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium shadow-xl"
       style={{
-        background:  isOk ? 'rgba(16,185,129,0.12)'  : 'rgba(239,68,68,0.12)',
-        border:      `1px solid ${isOk ? 'rgba(16,185,129,0.35)' : 'rgba(239,68,68,0.35)'}`,
+        background:  isOk ? 'rgba(104,211,145,0.12)'  : 'rgba(252,129,129,0.12)',
+        border:      `1px solid ${isOk ? 'rgba(104,211,145,0.35)' : 'rgba(252,129,129,0.35)'}`,
         color:       isOk ? C.ok : C.danger,
         backdropFilter: 'blur(8px)',
       }}
@@ -177,9 +177,9 @@ function Toast({ toast }) {
 
 // ─── Review Modal ─────────────────────────────────────────────────────────────
 const CONFIDENCE_COLORS = {
-  high:   { color: C.ok,     bg: 'rgba(16,185,129,0.10)',  border: 'rgba(16,185,129,0.25)' },
-  medium: { color: C.warn,   bg: 'rgba(245,158,11,0.10)',  border: 'rgba(245,158,11,0.25)' },
-  low:    { color: C.danger, bg: 'rgba(239,68,68,0.10)',   border: 'rgba(239,68,68,0.25)'  },
+  high:   { color: C.ok,     bg: 'rgba(104,211,145,0.10)',  border: 'rgba(104,211,145,0.25)' },
+  medium: { color: C.warn,   bg: 'rgba(246,173,85,0.10)',  border: 'rgba(246,173,85,0.25)' },
+  low:    { color: C.danger, bg: 'rgba(252,129,129,0.10)',   border: 'rgba(252,129,129,0.25)'  },
 };
 
 function ReviewModal({ chunk, onApprove, onReject, onClose }) {
@@ -287,7 +287,7 @@ function ReviewModal({ chunk, onApprove, onReject, onClose }) {
         {errMsg && (
           <div
             className="mx-6 mb-4 rounded-md px-4 py-3 text-xs"
-            style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: C.danger }}
+            style={{ background: 'rgba(252,129,129,0.08)', border: '1px solid rgba(252,129,129,0.25)', color: C.danger }}
           >
             {errMsg}
           </div>
@@ -309,7 +309,7 @@ function ReviewModal({ chunk, onApprove, onReject, onClose }) {
             onClick={handleReject}
             disabled={!!actionLoading}
             className="text-sm font-medium px-4 py-2 rounded-md disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ border: `1px solid rgba(239,68,68,0.3)`, color: C.danger }}
+            style={{ border: `1px solid rgba(252,129,129,0.3)`, color: C.danger }}
           >
             {actionLoading === 'reject' ? 'Rejecting…' : 'Reject'}
           </button>
@@ -343,7 +343,7 @@ function HealthBanner({ sources, loading }) {
     return (
       <div
         className="flex items-center gap-3 rounded-lg px-5 py-3"
-        style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}
+        style={{ background: 'rgba(104,211,145,0.08)', border: '1px solid rgba(104,211,145,0.2)' }}
       >
         <span className="text-emerald-400 text-base">✓</span>
         <p className="text-sm text-emerald-400 font-medium">All sources checked within schedule</p>
@@ -354,7 +354,7 @@ function HealthBanner({ sources, loading }) {
   return (
     <div
       className="flex items-start gap-3 rounded-lg px-5 py-3"
-      style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)' }}
+      style={{ background: 'rgba(246,173,85,0.08)', border: '1px solid rgba(246,173,85,0.25)' }}
     >
       <span className="text-amber-400 text-base mt-0.5">⚠</span>
       <div>
@@ -498,7 +498,7 @@ function PendingBadge({ count }) {
   return (
     <span
       className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
-      style={{ color: C.warn, background: 'rgba(245,158,11,0.12)', borderColor: 'rgba(245,158,11,0.3)' }}
+      style={{ color: C.warn, background: 'rgba(246,173,85,0.12)', borderColor: 'rgba(246,173,85,0.3)' }}
     >
       {count} pending
     </span>
@@ -620,8 +620,8 @@ function RecentChangesPanel({ changes, loading, error, onRetry }) {
                           className="text-[10px] font-medium px-1.5 py-0.5 rounded"
                           style={
                             isSuperseded
-                              ? { color: C.warn, background: 'rgba(245,158,11,0.10)' }
-                              : { color: C.ok,   background: 'rgba(16,185,129,0.10)' }
+                              ? { color: C.warn, background: 'rgba(246,173,85,0.10)' }
+                              : { color: C.ok,   background: 'rgba(104,211,145,0.10)' }
                           }
                         >
                           {isSuperseded ? 'Superseded' : 'Approved'}
@@ -663,7 +663,7 @@ function RecentChangesPanel({ changes, loading, error, onRetry }) {
 function JurisdictionHealthCard({ j }) {
   const isOk        = j.status === 'ok';
   const accent      = isOk ? C.ok : C.warn;
-  const borderColor = isOk ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.2)';
+  const borderColor = isOk ? 'rgba(104,211,145,0.15)' : 'rgba(246,173,85,0.2)';
 
   return (
     <div className="rounded-lg p-5 space-y-4" style={{ background: C.bg, border: `1px solid ${borderColor}` }}>
