@@ -90,3 +90,4 @@
 | 23 April 2026 | Resolved gaps 2 (ENCRYPTION_SECRET), 8 (GDPR erasure endpoint), 26 (retention archiver + BullMQ job), 27 (DPA template), 28 (AI provider checklist), 29 (ToS + privacy policy templates). Gaps 9 and 19 flagged as manual actions. |
 | 23 April 2026 | Session 9.2: Render deployment live. Resolved gaps 9 (API key rotated and set) and 19 (backup confirmed: PITR 7 days + on-demand export). No URGENT or High gaps remaining. |
 | 27 April 2026 | IMAP/SMTP architectural rework. Resolved gaps 50 (inbound.nuqe.io no longer needed), 51 (Mailgun inbound removed), 53 (superseded by gap 56). Added gaps 54 (OAuth2 deferred), 55 (IMAP polling on Render free dyno), 56 (per-channel email signature). |
+| 27 April 2026 | Frontend production-grade redesign. Gap 35 (no network error handling) and gap 36 (no mobile responsiveness) remain open. No new gaps introduced. |

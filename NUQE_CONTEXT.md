@@ -106,6 +106,12 @@ Note: DATABASE_URL uses localhost for running outside Docker. The docker-compose
 
 - 186 tests defined, 182 passing, 4 skipped (removed Mailgun inbound route)
 - All API routes implemented and tested
+- Frontend production-grade redesign shipped 27 April 2026 (eb3895f):
+  - Geist Variable + Geist Mono fonts (replaces Inter)
+  - Complete CSS design system: 3-tier elevation (`--nuqe-bg` / `--nuqe-surface` / `--nuqe-surface-hi`)
+  - Semantic colour tokens with dim/ring opacity variants; global component classes
+  - LoginPage, Sidebar, ComplaintsDashboard fully redesigned with new system
+  - AnalyticsDashboard, SettingsScreen, RegulatoryMonitoringScreen updated to new tokens
 - Email omnichannel shipped 27 April 2026:
   - `channels` table — named queues, each holding the client's own IMAP/SMTP credentials
   - `user_channel_assignments` — many-to-many staff-to-channel with `can_write` flag
