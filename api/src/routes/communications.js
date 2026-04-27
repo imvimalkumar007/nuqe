@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { pool } from '../db/pool.js';
 import { validate } from '../middleware/validate.js';
-import { sendEmail } from '../services/emailService.js';
+import { sendViaChannel } from '../services/smtpService.js';
 import logger from '../logger.js';
 
 const ORG_ID = '10000000-0000-0000-0000-000000000001';
@@ -63,10 +63,12 @@ router.post('/', validate(createCommSchema), async (req, res) => {
 
   try {
     const { rows: caseRows } = await pool.query(
-      `SELECT c.customer_id, cu.email AS customer_email, cu.full_name AS customer_name,
-              c.case_ref
+      `SELECT c.customer_id, cu.email AS customer_email, c.case_ref,
+              ch.id AS ch_id, ch.smtp_host, ch.smtp_port, ch.smtp_username,
+              ch.smtp_password, ch.smtp_from, ch.smtp_tls, ch.inbound_email
        FROM cases c
        JOIN customers cu ON cu.id = c.customer_id
+       LEFT JOIN channels ch ON ch.id = c.channel_id
        WHERE c.id = $1`,
       [case_id]
     );
@@ -74,6 +76,16 @@ router.post('/', validate(createCommSchema), async (req, res) => {
       return res.status(404).json({ error: 'Case not found' });
     }
     const { customer_id, customer_email, case_ref } = caseRows[0];
+    const channelRow = caseRows[0].ch_id ? {
+      id:            caseRows[0].ch_id,
+      smtp_host:     caseRows[0].smtp_host,
+      smtp_port:     caseRows[0].smtp_port,
+      smtp_username: caseRows[0].smtp_username,
+      smtp_password: caseRows[0].smtp_password,
+      smtp_from:     caseRows[0].smtp_from,
+      smtp_tls:      caseRows[0].smtp_tls,
+      inbound_email: caseRows[0].inbound_email,
+    } : null;
 
     // Generate a RFC Message-ID for outbound emails so inbound replies can thread
     const messageId = (channel === 'email' && effectiveDirection === 'outbound')
@@ -97,15 +109,8 @@ router.post('/', validate(createCommSchema), async (req, res) => {
 
     // Fire email for outbound email channel
     if (channel === 'email' && effectiveDirection === 'outbound' && !is_internal && customer_email) {
-      const orgRows = await pool.query(
-        `SELECT from_email FROM organisation_ai_config WHERE organisation_id = $1`,
-        [ORG_ID]
-      );
-      const fromEmail = orgRows.rows[0]?.from_email ?? process.env.FROM_EMAIL;
-
-      sendEmail({
+      sendViaChannel(channelRow, {
         to:        customer_email,
-        from:      fromEmail,
         subject:   subject ?? `Re: your complaint ${case_ref}`,
         text:      body_plain,
         html:      body,
@@ -114,7 +119,7 @@ router.post('/', validate(createCommSchema), async (req, res) => {
         commId:    comm.id,
         messageId: messageId ?? undefined,
       }).then(async (result) => {
-        if (result.id) {
+        if (result?.id) {
           await pool.query(
             `UPDATE communications SET resend_id = $1 WHERE id = $2`,
             [result.id, comm.id]

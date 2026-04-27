@@ -1,7 +1,7 @@
 # Component 01: Database Schema
 
 ## Status
-VERIFIED — all 17 required tables exist. DB-001 through DB-013 passing (27 April 2026).
+VERIFIED — all 17 required tables exist. DB-001 through DB-014 passing (27 April 2026).
 
 ## Purpose
 The foundation of the entire system. All other components depend on
@@ -53,9 +53,10 @@ channels, user_channel_assignments
 | DB-008 | Foreign key constraints enforced (e.g. cases.customer_id) | PASS | 22 Apr 2026 |
 | DB-009 | knowledge_chunks.embedding column exists as vector(1536) with HNSW index | PASS | 26 Apr 2026 |
 | DB-010 | organisation_ai_config has UNIQUE constraint on organisation_id | PASS | 26 Apr 2026 |
-| DB-011 | channels table exists with nuqe_inbound UNIQUE constraint | PASS | 27 Apr 2026 |
+| DB-011 | channels table exists with is_active, inbound_email, case_categories columns | PASS | 27 Apr 2026 |
 | DB-012 | user_channel_assignments has UNIQUE(user_id, channel_id) and cascade deletes | PASS | 27 Apr 2026 |
 | DB-013 | communications has message_id, in_reply_to, delivery_status, is_internal columns | PASS | 27 Apr 2026 |
+| DB-014 | migration 013: channels has imap_host, smtp_host, connection_status; nuqe_inbound dropped | PASS | 27 Apr 2026 |
 
 ## Known Issues
 None. All tables present and verified.

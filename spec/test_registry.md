@@ -5,10 +5,11 @@
 > This file is the ground truth for build status.
 
 Last updated: 27 April 2026
-Total: 183
-PASS: 183
+Total: 186
+PASS: 182
 FAIL: 0
 NOT RUN: 0
+SKIPPED: 4
 
 ---
 
@@ -26,9 +27,10 @@ NOT RUN: 0
 | DB-008 | Foreign key constraints are enforced | PASS | 22 Apr 2026 |
 | DB-009 | knowledge_chunks.embedding column exists as vector(1536) with HNSW index | PASS | 26 Apr 2026 |
 | DB-010 | organisation_ai_config has UNIQUE constraint on organisation_id | PASS | 26 Apr 2026 |
-| DB-011 | channels table exists with nuqe_inbound UNIQUE constraint | PASS | 27 Apr 2026 |
+| DB-011 | channels table exists with is_active, inbound_email, case_categories columns | PASS | 27 Apr 2026 |
 | DB-012 | user_channel_assignments has UNIQUE(user_id, channel_id) and cascade deletes | PASS | 27 Apr 2026 |
 | DB-013 | communications has message_id, in_reply_to, delivery_status, is_internal columns | PASS | 27 Apr 2026 |
+| DB-014 | migration 013: channels has imap_host, smtp_host, connection_status columns; nuqe_inbound dropped | PASS | 27 Apr 2026 |
 
 ---
 
@@ -241,10 +243,10 @@ NOT RUN: 0
 | HOOK-004 | Webhook triggers classification for complaint reason | PASS | 23 Apr 2026 |
 | HOOK-005 | Webhook opens new case when complaint detected | PASS | 23 Apr 2026 |
 | HOOK-006 | Webhook returns case_id when case is opened | PASS | 23 Apr 2026 |
-| HOOK-007 | POST /webhooks/email-inbound routes to correct channel by nuqe_inbound address | PASS | 27 Apr 2026 |
-| HOOK-008 | email-inbound matches In-Reply-To header to existing case (no new case opened) | PASS | 27 Apr 2026 |
-| HOOK-009 | email-inbound matches subject case ref to existing case | PASS | 27 Apr 2026 |
-| HOOK-010 | email-inbound with no match creates new case and runs classification | PASS | 27 Apr 2026 |
+| HOOK-007 | POST /webhooks/email-inbound routes to correct channel by nuqe_inbound address | SKIPPED | Mailgun inbound route removed 27 Apr 2026; replaced by IMAP polling in imapService.js |
+| HOOK-008 | email-inbound matches In-Reply-To header to existing case (no new case opened) | SKIPPED | Mailgun inbound route removed 27 Apr 2026; IMAP polling handles thread matching |
+| HOOK-009 | email-inbound matches subject case ref to existing case | SKIPPED | Mailgun inbound route removed 27 Apr 2026; IMAP polling handles subject case ref match |
+| HOOK-010 | email-inbound with no match creates new case and runs classification | SKIPPED | Mailgun inbound route removed 27 Apr 2026; IMAP polling handles new-case creation |
 | HOOK-011 | POST /webhooks/resend email.delivered updates delivery_status on comm row | PASS | 27 Apr 2026 |
 
 ---
@@ -317,12 +319,14 @@ NOT RUN: 0
 | ID | Description | Status | Notes |
 |---|---|---|---|
 | CH-001 | GET /channels returns empty array when no channels exist | PASS | 27 Apr 2026 |
-| CH-002 | POST /channels creates channel with generated nuqe_inbound address | PASS | 27 Apr 2026 |
+| CH-002 | POST /channels creates channel; name/display_name returned; no nuqe_inbound | PASS | 27 Apr 2026 |
 | CH-003 | POST /channels returns 409 when name already exists for org | PASS | 27 Apr 2026 |
 | CH-004 | POST /channels/:id/members assigns user with can_write=true | PASS | 27 Apr 2026 |
 | CH-005 | GET /channels/:id includes members array with user email and full_name | PASS | 27 Apr 2026 |
 | CH-006 | PATCH /channels/:id can deactivate channel (is_active=false) | PASS | 27 Apr 2026 |
 | CH-007 | DELETE /channels/:id/members/:userId removes assignment | PASS | 27 Apr 2026 |
+| CH-008 | POST /channels/:id/test validates connectivity and updates connection_status | PASS | 27 Apr 2026 |
+| CH-009 | GET /channels masks imap_password and smtp_password with •••••••• | PASS | 27 Apr 2026 |
 
 ---
 

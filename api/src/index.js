@@ -4,6 +4,7 @@ import { pool } from './db/pool.js';
 import { scheduleDeadlineMonitor }   from './queues/deadlineQueue.js';
 import { scheduleRegulatoryMonitor } from './queues/regulatoryQueue.js';
 import { scheduleRetentionArchiver } from './queues/retentionQueue.js';
+import { startImapPolling }          from './services/imapService.js';
 
 const PORT = process.env.PORT || 3001;
 
@@ -12,6 +13,7 @@ const server = app.listen(PORT, async () => {
   await scheduleDeadlineMonitor();
   await scheduleRegulatoryMonitor();
   await scheduleRetentionArchiver();
+  startImapPolling();
 });
 
 async function shutdown(signal) {

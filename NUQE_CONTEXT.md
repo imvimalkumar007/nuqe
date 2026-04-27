@@ -102,23 +102,25 @@ Note: DATABASE_URL uses localhost for running outside Docker. The docker-compose
 
 ## 7. Build Progress
 
-**Phase 0–11 complete as of 26 April 2026. Phase 12 (email omnichannel) in progress as of 27 April 2026.**
+**Phase 0–12 complete as of 27 April 2026.**
 
-- 183 tests defined and passing (20 components)
+- 186 tests defined, 182 passing, 4 skipped (removed Mailgun inbound route)
 - All API routes implemented and tested
 - Email omnichannel shipped 27 April 2026:
-  - `channels` table — named queues with nuqe_inbound routing addresses
-  - `user_channel_assignments` — many-to-many staff-to-channel
-  - Inbound email webhook (Mailgun) — thread matching via In-Reply-To + subject case ref
-  - Resend delivery status webhook — `delivery_status` updated on communications
+  - `channels` table — named queues, each holding the client's own IMAP/SMTP credentials
+  - `user_channel_assignments` — many-to-many staff-to-channel with `can_write` flag
+  - **IMAP polling** (60s) — reads client's own mailbox via ImapFlow; thread matching via In-Reply-To + subject case ref NQ-YYYY-NNNN; auto-creates customer + case
+  - **Per-channel SMTP** — outbound via client's own credentials (nodemailer); Resend fallback if no SMTP configured
+  - **AES-256-GCM** credential storage for IMAP/SMTP passwords; masked on all GET responses
   - Tiptap rich text composer — Bold, Italic, lists, blockquote, CC/BCC, internal notes
   - Internal notes — `is_internal=true`, amber styling, never sent to customer
   - Delivery status dots on comm cards — sent/delivered/opened/bounced
+  - Resend delivery webhook (`/webhooks/resend`) — updates `delivery_status` on comm rows
 
 **Pending (to go live):**
-- Register `inbound.nuqe.io` domain and set MX records to Mailgun
-- Set `MAILGUN_WEBHOOK_SIGNING_KEY` in Render env
-- Set `RESEND_WEBHOOK_SECRET` in Render env
+- Set `RESEND_WEBHOOK_SECRET` in Render env (delivery status events)
+- Configure IMAP/SMTP credentials per channel in the Channels settings screen
+- Consider upgrading Render dyno from free to paid for reliable IMAP polling (gap #55)
 
 ---
 
@@ -141,6 +143,8 @@ Migration files: 001_initial_schema.sql, 002_ai_config_and_review_layer.sql, 003
 - Cosine similarity above 0.85 for chunk supersession
 - Rancher Desktop instead of Docker Desktop (Windows permissions issue)
 - docker-compose.yml environment override for Docker service hostnames
+- Provider-agnostic email: Nuqe never owns a domain; client's IMAP/SMTP used directly (AES-256-GCM encrypted credentials stored per channel)
+- IMAP polling (60s) instead of IMAP IDLE: Render free dynos spin down, breaking persistent IDLE connections
 
 ---
 

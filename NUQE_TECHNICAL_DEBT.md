@@ -12,10 +12,10 @@
 | 15 | Performance | pgvector index may need tuning at scale | Low | Apr 2026 | Revisit when chunks exceed 100,000 rows |
 | 18 | Reliability | No health check monitoring or alerting | Medium | Apr 2026 | Add UptimeRobot free tier |
 | 21 | Reliability | BullMQ dead letter queue not configured | Low | Apr 2026 | Configure failed job handler |
-| 50 | Infrastructure | inbound.nuqe.io domain not registered | Medium | Apr 2026 | Must register domain and set Mailgun MX records before first client onboarding |
-| 51 | Security | MAILGUN_WEBHOOK_SIGNING_KEY not set in Render | Medium | Apr 2026 | Signature verification skipped without it; set before processing real inbound emails |
+| 54 | Feature | OAuth2 for Google Workspace / Microsoft 365 not implemented | Medium | Apr 2026 | oauth_provider + oauth_token columns exist in channels; IMAP/SMTP password auth works for now |
+| 55 | Infrastructure | IMAP polling on Render free dyno may be unreliable | Medium | Apr 2026 | Render free dynos spin down after 15 min; polling interval is 60s but connection resets on cold start — upgrade to paid dyno for production use |
+| 56 | Feature | Per-channel email signature not wired to Settings API | Low | Apr 2026 | EmailComposer accepts signature prop but no GET /settings/org-profile channel-level signature field yet |
 | 52 | Security | RESEND_WEBHOOK_SECRET not set in Render | Low | Apr 2026 | Delivery status events not verified without it; set before go-live |
-| 53 | Frontend | EmailComposer signature field not wired to Settings API | Low | Apr 2026 | Per-channel signature needs GET /settings/org-profile → channelSignature field |
 | 22 | Architecture | Multi-tenancy relies on application-level filtering only | Medium | Apr 2026 | Consider PostgreSQL row-level security |
 | 23 | Architecture | Express API is a monolith | Low | Apr 2026 | Plan to extract engines before scaling beyond 10 clients |
 | 24 | Architecture | No API versioning strategy | Low | Apr 2026 | Document before releasing public API |
@@ -63,6 +63,9 @@
 | 29 | Compliance | No terms of service or privacy policy | 23 Apr 2026 | docs/compliance/terms-of-service-template.md and privacy-policy-template.md created. Needs legal review before publishing. |
 | 9 | Security | Anthropic API key accidentally exposed in chat on 22 April 2026 | 23 Apr 2026 | Exposed key deleted at console.anthropic.com/settings/keys; new key generated and set in Render environment. |
 | 19 | Reliability | No database backup strategy confirmed | 23 Apr 2026 | Confirmed: Render PostgreSQL Basic plan provides point-in-time recovery for any timestamp in the past 7 days, plus on-demand logical export retained 7+ days. |
+| 50 | Infrastructure | inbound.nuqe.io domain not registered | 27 Apr 2026 | No longer needed. Nuqe is provider-agnostic; client's own IMAP/SMTP used directly. |
+| 51 | Security | MAILGUN_WEBHOOK_SIGNING_KEY not set in Render | 27 Apr 2026 | Mailgun inbound webhook removed entirely. IMAP polling replaces it; no Mailgun dependency. |
+| 53 | Frontend | EmailComposer signature field not wired to Settings API | 27 Apr 2026 | Replaced by gap 56 (per-channel signature) in Open Gaps. |
 
 ---
 
@@ -86,3 +89,4 @@
 | 23 April 2026 | Session 8.1–8.3: resolved gaps 1,3,4,5,6,7 (security), 13,14,16,17 (performance), 20 (observability). Session 9.1: resolved gap 37 (CI/CD). Docker fixes: resolved gaps 25, 40. API audit: resolved gaps 46,47,48,49 (already implemented). Housekeeping: resolved gaps 10,11,33 (tests and auth screen done). |
 | 23 April 2026 | Resolved gaps 2 (ENCRYPTION_SECRET), 8 (GDPR erasure endpoint), 26 (retention archiver + BullMQ job), 27 (DPA template), 28 (AI provider checklist), 29 (ToS + privacy policy templates). Gaps 9 and 19 flagged as manual actions. |
 | 23 April 2026 | Session 9.2: Render deployment live. Resolved gaps 9 (API key rotated and set) and 19 (backup confirmed: PITR 7 days + on-demand export). No URGENT or High gaps remaining. |
+| 27 April 2026 | IMAP/SMTP architectural rework. Resolved gaps 50 (inbound.nuqe.io no longer needed), 51 (Mailgun inbound removed), 53 (superseded by gap 56). Added gaps 54 (OAuth2 deferred), 55 (IMAP polling on Render free dyno), 56 (per-channel email signature). |
