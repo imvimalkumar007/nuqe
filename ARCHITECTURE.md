@@ -27,10 +27,11 @@ Three pillars:
 ## Test Registry Summary
 
 Last updated: 27 April 2026
-Total tests defined: 183
-Passing: 183
+Total tests defined: 186
+Passing: 182
 Failing: 0
 Not run: 0
+Skipped: 4
 
 Full registry: spec/test_registry.md
 
@@ -40,7 +41,7 @@ Full registry: spec/test_registry.md
 
 | # | Component | File | Status | Tests passing |
 |---|---|---|---|---|
-| 01 | Database Schema | spec/components/01_database.md | VERIFIED | 13/13 |
+| 01 | Database Schema | spec/components/01_database.md | VERIFIED | 14/14 |
 | 02 | Auth System | spec/components/02_auth.md | VERIFIED | 10/10 |
 | 03 | Cases API | spec/components/03_cases_api.md | VERIFIED | 10/10 |
 | 04 | Communications API | spec/components/04_communications_api.md | VERIFIED | 13/13 |
@@ -59,7 +60,7 @@ Full registry: spec/test_registry.md
 | 17 | Frontend: Case View | spec/components/17_frontend_case_view.md | VERIFIED | 12/12 |
 | 18 | Frontend: Analytics | spec/components/18_frontend_analytics.md | VERIFIED | 6/6 |
 | 19 | Frontend: Monitoring | spec/components/19_frontend_monitoring.md | VERIFIED | 9/9 |
-| 20 | Channels | spec/components/20_channels.md | VERIFIED | 7/7 |
+| 20 | Channels | spec/components/20_channels.md | VERIFIED | 9/9 |
 
 **Status key:**
 - NOT BUILT: code does not exist
@@ -129,9 +130,11 @@ Do not move to the next component until all tests for this one pass.
 
 ---
 
-## Known Issues (23 April 2026)
+## Known Issues (27 April 2026)
 
 No open HIGH severity issues. See NUQE_TECHNICAL_DEBT.md for the full gap list.
+Medium: IMAP polling reliability on Render free dyno (gap #55). Upgrade to paid dyno before first client.
+Medium: OAuth2 for Google Workspace / Microsoft 365 deferred (gap #54).
 
 ---
 
@@ -146,10 +149,19 @@ nuqe/
 │   │   │   │   ├── 001_initial_schema.sql
 │   │   │   │   ├── 002_ai_config_and_review_layer.sql
 │   │   │   │   ├── 003_knowledge_base.sql
-│   │   │   │   └── 005_regulatory_monitoring.sql
+│   │   │   │   ├── 005_regulatory_monitoring.sql
+│   │   │   │   ├── 006_users.sql
+│   │   │   │   ├── 007_notifications.sql
+│   │   │   │   ├── 008_users_extended.sql
+│   │   │   │   ├── 009_knowledge_embeddings.sql
+│   │   │   │   ├── 010_org_profile.sql
+│   │   │   │   ├── 011_channels.sql
+│   │   │   │   ├── 012_email_metadata.sql
+│   │   │   │   └── 013_channel_connection.sql
 │   │   │   ├── seeds/
 │   │   │   │   ├── demo_data.js
-│   │   │   │   └── regulatory_knowledge.js
+│   │   │   │   ├── regulatory_knowledge.js
+│   │   │   │   └── fca_regulations.js
 │   │   │   ├── pool.js
 │   │   │   └── migrate.js
 │   │   ├── engines/
@@ -162,6 +174,7 @@ nuqe/
 │   │   │   └── regulatoryMonitor.js
 │   │   ├── routes/
 │   │   │   ├── cases.js
+│   │   │   ├── channels.js
 │   │   │   ├── communications.js
 │   │   │   ├── deadlines.js
 │   │   │   ├── compliance.js
@@ -171,6 +184,12 @@ nuqe/
 │   │   │   ├── settings.js
 │   │   │   ├── knowledge.js
 │   │   │   └── webhooks.js
+│   │   ├── services/
+│   │   │   ├── emailService.js      (Resend wrapper)
+│   │   │   ├── imapService.js       (60s IMAP polling)
+│   │   │   └── smtpService.js       (per-channel SMTP + Resend fallback)
+│   │   ├── utils/
+│   │   │   └── crypto.js            (AES-256-GCM for channel credentials)
 │   │   ├── middleware/
 │   │   │   └── auth.js
 │   │   ├── queues/
@@ -202,8 +221,10 @@ nuqe/
 ## Build Plan
 
 The phased build plan is in NUQE_BUILD_PLAN.md at the repository root.
-It defines 10 phases, 27 sessions, and 142 tests.
+It defines 12 phases and 186 tests.
 Always consult the build plan to know which phase you are in and what the exit criteria are.
 
-Current phase: Phase 12 in progress — email omnichannel. Channels table, inbound Mailgun webhook, Tiptap composer, delivery tracking, internal notes shipped 27 April 2026.
+Current status: Phase 12 complete — all 12 phases done.
+Email omnichannel: per-channel IMAP polling (60s) + per-channel SMTP via client's own credentials.
+Nuqe never owns a sending domain — all email appears from the client's own address.
 Live at: https://nuqe-web.onrender.com (admin@nuqe.io / NuqeAdmin2026!)
