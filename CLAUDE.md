@@ -86,6 +86,32 @@ Do not move to the next component until all tests pass.
 
 ---
 
+## External product document (Nuqe Project Document PDF)
+
+This is the external-facing product document shared with prospects, investors, and pilots.
+It is a living document maintained outside the repository (PDF/Word source).
+Claude Code cannot edit it directly. Instead, flag what needs updating at the end of each session.
+
+### What triggers a flag
+- Any build phase that moves to Done → update Section 13 Build Roadmap status
+- Any validation activity that completes → update Section 14 Validation Status
+- Any new feature added to the core product (new namespace, new channel, new jurisdiction) → note for Section 4–9
+- Version and stage change: bump version number and update stage label (e.g. Pre-validation → Demo-ready → Pilot)
+
+### How to flag
+At the end of any session where the above apply, output a block like this:
+
+```
+PRODUCT DOCUMENT FLAG — needs manual update before next prospect meeting:
+- Section 13: Phase [X] status: Planned → Done
+- Section 14: [Activity] status: In progress → Complete
+- Version: v0.X → v0.Y  |  Stage: Pre-validation → Demo-ready
+```
+
+Current version: v0.3 (Pre-validation) — needs bump to v0.4 (Demo-ready) as of 27 April 2026.
+
+---
+
 ## Commit message discipline
 
 Every commit that touches a component must also stage and commit the four
