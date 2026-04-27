@@ -20,9 +20,26 @@ const quidoSchema = z.object({
   metadata:       z.record(z.unknown()).optional().nullable(),
 });
 
+const contactSchema = z.object({
+  externalId:    z.string().min(1),
+  createdAt:     z.string().optional(),
+  channel:       z.string().min(1),
+  source:        z.string().optional(),
+  status:        z.string().optional(),
+  priority:      z.string().optional(),
+  customerName:  z.string().optional().nullable(),
+  customerEmail: z.string().email(),
+  customerPhone: z.string().optional().nullable(),
+  loanId:        z.string().optional().nullable(),
+  customerType:  z.string().optional().nullable(),
+  subject:       z.string().optional().nullable(),
+  body:          z.string().min(1),
+  _quido:        z.record(z.unknown()).optional(),
+});
+
 const router = Router();
 
-// ─── Shared secret guard ──────────────────────────────────────────────────────
+// ─── Auth guards ──────────────────────────────────────────────────────────────
 
 function requireQuidoSecret(req, res, next) {
   const secret = process.env.QUIDO_WEBHOOK_SECRET;
@@ -31,6 +48,20 @@ function requireQuidoSecret(req, res, next) {
     return res.status(500).json({ error: 'Webhook secret not configured' });
   }
   if (req.headers['x-quido-secret'] !== secret) {
+    return res.status(401).json({ error: 'Unauthorised' });
+  }
+  next();
+}
+
+function requireBearerSecret(req, res, next) {
+  const secret = process.env.QUIDO_WEBHOOK_SECRET;
+  if (!secret) {
+    logger.error('webhooks QUIDO_WEBHOOK_SECRET is not set');
+    return res.status(500).json({ error: 'Webhook secret not configured' });
+  }
+  const auth = req.headers['authorization'] ?? '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  if (token !== secret) {
     return res.status(401).json({ error: 'Unauthorised' });
   }
   next();
@@ -138,6 +169,111 @@ router.post('/quido', requireQuidoSecret, validate(quidoSchema), async (req, res
     } catch (err) {
       logger.error({ err }, 'webhooks/quido classification error');
     }
+  }
+
+  return res.status(200).json({ communication_id: comm.id, case_id: caseId });
+});
+
+// ─── POST /api/v1/webhooks/contact ───────────────────────────────────────────
+// Quido contact-form submissions (camelCase payload, Bearer auth)
+
+router.post('/contact', requireBearerSecret, validate(contactSchema), async (req, res) => {
+  const {
+    externalId, customerEmail, customerName, customerPhone,
+    loanId, subject, body, channel: rawChannel,
+    source, status, priority, customerType, _quido,
+  } = req.body;
+
+  // Map Quido channel values to our internal enum
+  const CHANNEL_MAP = {
+    web_contact_form: 'email',
+    email:            'email',
+    chat:             'chat',
+    live_chat:        'chat',
+    postal:           'postal',
+    post:             'postal',
+  };
+  const channel = CHANNEL_MAP[rawChannel] ?? 'email';
+
+  const client = await pool.connect();
+  let comm;
+  try {
+    await client.query('BEGIN');
+
+    // Upsert customer
+    let customer;
+    {
+      const { rows } = await client.query(
+        `SELECT * FROM customers WHERE email = $1 LIMIT 1`,
+        [customerEmail.toLowerCase().trim()]
+      );
+      customer = rows[0] ?? null;
+    }
+
+    if (!customer) {
+      const { rows } = await client.query(
+        `INSERT INTO customers (full_name, email, jurisdiction, external_ref)
+         VALUES ($1, $2, 'UK', $3) RETURNING *`,
+        [customerName ?? customerEmail, customerEmail.toLowerCase().trim(), loanId ?? null]
+      );
+      customer = rows[0];
+      await writeAudit(client, {
+        entityType: 'customer', entityId: customer.id, action: 'created',
+        newValue: { source: 'quido_contact', email: customer.email, loan_id: loanId },
+      });
+    } else if (loanId && customer.external_ref !== loanId) {
+      await client.query(
+        `UPDATE customers SET external_ref = $1, updated_at = NOW() WHERE id = $2`,
+        [loanId, customer.id]
+      );
+    }
+
+    // Build communication body
+    const body_plain = body.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const metadata = {
+      source,
+      priority,
+      customer_type: customerType,
+      phone: customerPhone ?? null,
+      quido: _quido ?? null,
+    };
+
+    const { rows } = await client.query(
+      `INSERT INTO communications
+         (customer_id, channel, direction, subject, body, body_plain,
+          author_type, external_ref, metadata)
+       VALUES ($1, $2, 'inbound', $3, $4, $5, 'customer', $6, $7::jsonb) RETURNING *`,
+      [customer.id, channel, subject ?? null, body, body_plain,
+       externalId, JSON.stringify(metadata)]
+    );
+    comm = rows[0];
+
+    await writeAudit(client, {
+      entityType: 'communication', entityId: comm.id, action: 'created',
+      newValue: { source: 'quido_contact', channel, customer_id: customer.id, subject },
+    });
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    client.release();
+    logger.error({ err }, 'webhooks/contact DB error');
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+  client.release();
+
+  // Always run AI classification — let the engine decide if it's a complaint
+  let caseId = null;
+  try {
+    const result = await classifyCommunication(comm.id);
+    if (result.classification === 'complaint' || result.classification === 'implicit_complaint') {
+      const { rows } = await pool.query(
+        `SELECT case_id FROM communications WHERE id = $1`, [comm.id]
+      );
+      caseId = rows[0]?.case_id ?? null;
+    }
+  } catch (err) {
+    logger.error({ err }, 'webhooks/contact classification error');
   }
 
   return res.status(200).json({ communication_id: comm.id, case_id: caseId });

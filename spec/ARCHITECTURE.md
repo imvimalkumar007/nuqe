@@ -27,8 +27,8 @@ Three pillars:
 ## Test Registry Summary
 
 Last updated: 27 April 2026
-Total tests defined: 186
-Passing: 182
+Total tests defined: 187
+Passing: 183
 Failing: 0
 Not run: 0
 Skipped: 4
@@ -55,7 +55,7 @@ Full registry: spec/test_registry.md
 | 12 | Regulatory Monitor | spec/components/12_regulatory_monitor.md | VERIFIED | 6/6 |
 | 13 | Metrics API | spec/components/13_metrics_api.md | VERIFIED | 8/8 |
 | 14 | Settings API | spec/components/14_settings_api.md | VERIFIED | 10/10 |
-| 15 | Webhooks | spec/components/15_webhooks.md | VERIFIED | 11/11 |
+| 15 | Webhooks | spec/components/15_webhooks.md | VERIFIED | 8/8 + 4 SKIPPED |
 | 16 | Frontend: Dashboard | spec/components/16_frontend_dashboard.md | VERIFIED | 8/8 |
 | 17 | Frontend: Case View | spec/components/17_frontend_case_view.md | VERIFIED | 12/12 |
 | 18 | Frontend: Analytics | spec/components/18_frontend_analytics.md | VERIFIED | 6/6 |

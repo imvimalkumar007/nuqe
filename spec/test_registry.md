@@ -5,8 +5,8 @@
 > This file is the ground truth for build status.
 
 Last updated: 27 April 2026
-Total: 186
-PASS: 182
+Total: 187
+PASS: 183
 FAIL: 0
 NOT RUN: 0
 SKIPPED: 4
@@ -248,6 +248,7 @@ SKIPPED: 4
 | HOOK-009 | email-inbound matches subject case ref to existing case | SKIPPED | Mailgun inbound route removed 27 Apr 2026; IMAP polling handles subject case ref match |
 | HOOK-010 | email-inbound with no match creates new case and runs classification | SKIPPED | Mailgun inbound route removed 27 Apr 2026; IMAP polling handles new-case creation |
 | HOOK-011 | POST /webhooks/resend email.delivered updates delivery_status on comm row | PASS | 27 Apr 2026 |
+| HOOK-012 | POST /webhooks/contact with valid Bearer token and Quido camelCase payload returns 200 | PASS | 27 Apr 2026 |
 
 ---
 
