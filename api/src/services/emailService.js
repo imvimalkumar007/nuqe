@@ -1,9 +1,3 @@
-/**
- * Email sending via Resend (https://resend.com).
- * Falls back to a no-op log if RESEND_API_KEY is not configured,
- * so the API never crashes when email is unconfigured.
- */
-
 import logger from '../logger.js';
 
 let resendClient = null;
@@ -11,7 +5,6 @@ let resendClient = null;
 function getClient() {
   if (resendClient) return resendClient;
   if (!process.env.RESEND_API_KEY) return null;
-  // Lazy-import so the module loads even when resend is not installed
   return import('resend').then(({ Resend }) => {
     resendClient = new Resend(process.env.RESEND_API_KEY);
     return resendClient;
@@ -19,16 +12,21 @@ function getClient() {
 }
 
 /**
- * Send an email.
- * @param {object} opts
- * @param {string}   opts.to       — recipient address
- * @param {string}  [opts.from]    — sender (falls back to FROM_EMAIL env var)
- * @param {string}   opts.subject  — email subject line
- * @param {string}   opts.text     — plain-text body
- * @param {string}  [opts.html]    — HTML body (generated from text if omitted)
+ * Send an email via Resend.
+ * @param {object}   opts
+ * @param {string}   opts.to          — recipient address
+ * @param {string[]} [opts.cc]        — CC addresses
+ * @param {string[]} [opts.bcc]       — BCC addresses
+ * @param {string}   [opts.from]      — sender (falls back to FROM_EMAIL env var)
+ * @param {string}   opts.subject
+ * @param {string}   opts.text        — plain-text body
+ * @param {string}   [opts.html]      — HTML body (auto-generated from text if omitted)
+ * @param {string}   [opts.commId]    — Nuqe communication UUID (added as custom header
+ *                                      so Resend delivery webhooks can match back)
+ * @param {string}   [opts.messageId] — RFC Message-ID to set (enables reply threading)
  * @returns {Promise<{id?: string, skipped?: true}>}
  */
-export async function sendEmail({ to, from, subject, text, html }) {
+export async function sendEmail({ to, cc, bcc, from, subject, text, html, commId, messageId }) {
   const client = await getClient();
 
   if (!client) {
@@ -36,20 +34,26 @@ export async function sendEmail({ to, from, subject, text, html }) {
     return { skipped: true };
   }
 
-  const fromAddress = from
-    ?? process.env.FROM_EMAIL
-    ?? 'Nuqe Complaints <noreply@nuqe.io>';
+  const fromAddress = from ?? process.env.FROM_EMAIL ?? 'Nuqe Complaints <noreply@nuqe.io>';
+  const htmlBody    = html ?? text.replace(/\n/g, '<br>');
 
-  const htmlBody = html ?? text.replace(/\n/g, '<br>');
+  const headers = {};
+  if (commId)    headers['X-Nuqe-Comm-Id'] = commId;
+  if (messageId) headers['Message-ID']      = messageId;
 
   try {
-    const result = await client.emails.send({
+    const payload = {
       from:    fromAddress,
       to:      [to],
       subject,
       text,
       html:    htmlBody,
-    });
+      headers,
+    };
+    if (cc?.length)  payload.cc  = cc;
+    if (bcc?.length) payload.bcc = bcc;
+
+    const result = await client.emails.send(payload);
     logger.info({ to, subject, id: result.data?.id }, 'Email sent via Resend');
     return { id: result.data?.id };
   } catch (err) {

@@ -11,7 +11,7 @@
 **Stage:** Demo-ready — deployed on Render, all smoke tests passing
 **GitHub:** https://github.com/imvimalkumar007/nuqe
 **Founder:** Vimal Kumar
-**Date last updated:** 23 April 2026
+**Date last updated:** 27 April 2026
 
 **Live URLs:**
 - Web: https://nuqe-web.onrender.com
@@ -102,21 +102,29 @@ Note: DATABASE_URL uses localhost for running outside Docker. The docker-compose
 
 ## 7. Build Progress
 
-**Phase 0–10 complete as of 23 April 2026.**
+**Phase 0–11 complete as of 26 April 2026. Phase 12 (email omnichannel) in progress as of 27 April 2026.**
 
-- All 19 frontend components built and tested (142 Playwright e2e tests)
-- All API routes implemented and tested (142 Jest unit tests)
-- CI/CD: GitHub Actions (.github/workflows/ci.yml) runs lint, test, build on every push
-- Deployed to Render: nuqe-api (Node/Express) + nuqe-web (static) + nuqe-db (PostgreSQL) + nuqe-redis
-- Migrations run, demo seed populated (6 customers, 8 cases, 15 comms, 18 deadlines, 4 AI actions, 20 knowledge chunks)
-- Full demo rehearsed end to end — all smoke tests pass
-- Zero URGENT or High priority technical debt remaining
+- 183 tests defined and passing (20 components)
+- All API routes implemented and tested
+- Email omnichannel shipped 27 April 2026:
+  - `channels` table — named queues with nuqe_inbound routing addresses
+  - `user_channel_assignments` — many-to-many staff-to-channel
+  - Inbound email webhook (Mailgun) — thread matching via In-Reply-To + subject case ref
+  - Resend delivery status webhook — `delivery_status` updated on communications
+  - Tiptap rich text composer — Bold, Italic, lists, blockquote, CC/BCC, internal notes
+  - Internal notes — `is_internal=true`, amber styling, never sent to customer
+  - Delivery status dots on comm cards — sent/delivered/opened/bounced
+
+**Pending (to go live):**
+- Register `inbound.nuqe.io` domain and set MX records to Mailgun
+- Set `MAILGUN_WEBHOOK_SIGNING_KEY` in Render env
+- Set `RESEND_WEBHOOK_SECRET` in Render env
 
 ---
 
-## 8. Database Schema (14 Tables)
+## 8. Database Schema (17 Tables)
 
-customers, cases, communications, deadlines, ruleset, ai_actions, audit_log, organisation_ai_config, tokeniser_additions, knowledge_chunks, knowledge_documents, regulatory_sources, regulatory_monitoring_log, notifications.
+customers, cases, communications, deadlines, ruleset, ai_actions, audit_log, organisation_ai_config, tokeniser_additions, knowledge_chunks, knowledge_documents, regulatory_sources, regulatory_monitoring_log, notifications, users, channels, user_channel_assignments.
 
 Migration files: 001_initial_schema.sql, 002_ai_config_and_review_layer.sql, 003_knowledge_base.sql, 005_regulatory_monitoring.sql (requires pgvector, will work in Docker).
 

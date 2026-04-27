@@ -557,6 +557,7 @@ Run the complete Playwright smoke test suite against the deployed Render instanc
 | Phase 9 | Push code and it deploys automatically |
 | Phase 10 | Have a customer discovery conversation backed by a working product |
 | Phase 11 | Switch regulatory jurisdictions live; RAG retrieves FCA guidance; email responses sent via Resend |
+| Phase 12 | Email omnichannel: channels table, inbound Mailgun webhook, Tiptap composer, delivery tracking, internal notes |
 
 ---
 
@@ -576,6 +577,7 @@ Run the complete Playwright smoke test suite against the deployed Render instanc
 | Phase 9 | CI pipeline counts as infrastructure | 142 |
 | Phase 10 | Smoke tests (Playwright, already counted in Phase 7) | 142 |
 | Phase 11 | 10 (DB:2 + COMMS:2 + SET:3 + FE-SET:3) | 152 |
+| Phase 12 | 31 (DB:3 + COMMS:3 + HOOK:5 + FE-CASE:4 + CH:7) | 183 |
 
 ---
 
@@ -586,3 +588,4 @@ Run the complete Playwright smoke test suite against the deployed Render instanc
 | 22 April 2026 | Initial build plan created. 10 phases, 27 sessions, 142 tests. Based on confirmed demo screenshot and full system state assessment. |
 | 23 April 2026 | Phase 0 complete (e801c4f). Session 1.1 complete: migrations 006+007 added, 8 DB tests all PASS (3b397e9). All phases 1–10 completed same day. 142/142 tests PASS. Deployed to Render. |
 | 26 April 2026 | Phase 11 complete (f50ceea). Session 11.1: jurisdiction switching, RAG engine wired, email sending via Resend. 10 new tests. Total: 152/152 PASS. |
+| 27 April 2026 | Phase 12 started. Email omnichannel: channels + user_channel_assignments tables (migration 011), email metadata on communications (migration 012), channels API route, inbound Mailgun webhook with thread matching, Resend delivery webhook, Tiptap rich text composer, CC/BCC, internal notes, delivery status dots. 31 new tests. Total: 183/183 PASS. |

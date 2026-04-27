@@ -23,6 +23,7 @@ import knowledgeRouter           from './routes/knowledge.js';
 import knowledgeMonitoringRouter from './routes/knowledgeMonitoring.js';
 import regulatoryRouter          from './routes/regulatory.js';
 import settingsRouter            from './routes/settings.js';
+import channelsRouter            from './routes/channels.js';
 
 const app = express();
 
@@ -74,5 +75,6 @@ app.use('/api/v1/knowledge-chunks', knowledgeRouter);
 app.use('/api/v1/knowledge',        knowledgeMonitoringRouter);
 app.use('/api/v1/regulatory',       regulatoryRouter);
 app.use('/api/v1/settings',         settingsRouter);
+app.use('/api/v1/channels',         channelsRouter);
 
 export default app;

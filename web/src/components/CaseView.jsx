@@ -5,6 +5,7 @@ import { useCommunications } from '../hooks/useCommunications';
 import { useAiActions }      from '../hooks/useAiActions';
 import client                from '../api/client';
 import ErrorBanner           from './shared/ErrorBanner';
+import EmailComposer         from './EmailComposer';
 
 // ─── Data normalisers (API snake_case ↔ component camelCase) ─────────────────
 
@@ -111,16 +112,18 @@ function normalizeComm(raw, normalizedActions) {
   }
 
   return {
-    id:          raw.id,
-    direction:   raw.direction,
-    channel:     raw.channel,
-    sender:      raw.author_name   ?? raw.sender ?? (raw.direction === 'inbound' ? 'Customer' : 'Staff'),
-    time:        raw.sent_at ? relativeTime(raw.sent_at) : raw.created_at ? relativeTime(raw.created_at) : (raw.time ?? '—'),
-    subject:     raw.subject       ?? null,
-    body:        raw.body_plain    ?? raw.body ?? '',
+    id:             raw.id,
+    direction:      raw.direction,
+    channel:        raw.channel,
+    isInternal:     raw.is_internal ?? false,
+    sender:         raw.author_name   ?? raw.sender ?? (raw.direction === 'inbound' ? 'Customer' : 'Staff'),
+    time:           raw.sent_at ? relativeTime(raw.sent_at) : raw.created_at ? relativeTime(raw.created_at) : (raw.time ?? '—'),
+    subject:        raw.subject       ?? null,
+    body:           raw.body_plain    ?? raw.body ?? '',
+    deliveryStatus: raw.delivery_status ?? null,
     state,
-    aiModel:     raw.ai_model      ?? raw.aiModel      ?? null,
-    confidence:  raw.confidence    ?? null,
+    aiModel:        raw.ai_model      ?? raw.aiModel      ?? null,
+    confidence:     raw.confidence    ?? null,
     aiActionId,
   };
 }
@@ -198,20 +201,33 @@ function MilestoneItem({ milestone: m }) {
 
 const PREVIEW = 340;
 
+const DELIVERY_DOT = {
+  sent:      { cls: 'bg-nuqe-muted',    title: 'Sent' },
+  delivered: { cls: 'bg-blue-400',      title: 'Delivered' },
+  opened:    { cls: 'bg-nuqe-ok',       title: 'Opened' },
+  bounced:   { cls: 'bg-nuqe-danger',   title: 'Bounced' },
+  failed:    { cls: 'bg-nuqe-danger',   title: 'Failed' },
+};
+
 function CommCard({ comm, expanded, onToggle, onApprove, onReject, onEdit, submitting }) {
   const isPending  = comm.state === 'pending_ai';
   const isApproved = comm.state === 'approved_ai';
   const isRejected = comm.state === 'rejected_ai';
+  const isInternal = comm.isInternal;
 
   const chColour = { email: 'text-blue-400', chat: 'text-emerald-400', postal: 'text-amber-400' }[comm.channel];
   const isLong   = comm.body.length > PREVIEW;
   const bodyText = isLong && !expanded ? comm.body.slice(0, PREVIEW) + '…' : comm.body;
 
-  const borderCls = isPending
+  const borderCls = isInternal
+    ? 'border-amber-500/20'
+    : isPending
     ? 'border-amber-500/30'
     : isRejected
     ? 'border-white/5 opacity-50'
     : 'border-white/5';
+
+  const deliveryDot = comm.deliveryStatus ? DELIVERY_DOT[comm.deliveryStatus] : null;
 
   return (
     <div className={`rounded-lg border ${borderCls} overflow-hidden bg-nuqe-surface`}>
@@ -219,7 +235,9 @@ function CommCard({ comm, expanded, onToggle, onApprove, onReject, onEdit, submi
       {/* Card header */}
       <div
         className={`flex items-start justify-between gap-4 px-4 py-3 border-b border-white/5 ${
-          isPending ? 'bg-amber-500/[0.04]' : 'bg-white/[0.02]'
+          isInternal ? 'bg-amber-500/[0.04]'
+          : isPending ? 'bg-amber-500/[0.04]'
+          : 'bg-white/[0.02]'
         }`}
         style={isPending ? { animation: 'pending-pulse 2.8s ease-in-out infinite' } : undefined}
       >
@@ -229,7 +247,12 @@ function CommCard({ comm, expanded, onToggle, onApprove, onReject, onEdit, submi
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-semibold text-nuqe-text leading-tight">{comm.sender}</span>
 
-              {isPending && (
+              {isInternal && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                  🔒 Internal note
+                </span>
+              )}
+              {isPending && !isInternal && (
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                   Pending review
@@ -266,7 +289,15 @@ function CommCard({ comm, expanded, onToggle, onApprove, onReject, onEdit, submi
             </div>
           </div>
         </div>
-        <span className="text-[11px] text-nuqe-muted shrink-0 tabular-nums">{comm.time}</span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {deliveryDot && (
+            <span
+              title={deliveryDot.title}
+              className={`w-1.5 h-1.5 rounded-full shrink-0 ${deliveryDot.cls}`}
+            />
+          )}
+          <span className="text-[11px] text-nuqe-muted tabular-nums">{comm.time}</span>
+        </div>
       </div>
 
       {/* Message body */}
@@ -468,6 +499,7 @@ export default function CaseView() {
   const [submittingId,   setSubmittingId]   = useState(null);
   const [isSending,      setIsSending]      = useState(false);
   const [sendError,      setSendError]      = useState(null);
+  const [isNoting,       setIsNoting]       = useState(false);
 
   // Normalise data
   const caseData   = useMemo(() => normalizeCase(rawCase),                              [rawCase]);
@@ -532,17 +564,24 @@ export default function CaseView() {
     }
   }
 
-  async function handleSend() {
-    if (!composeBody.trim() || hasPendingAI) return;
+  async function handleSend({ subject, htmlBody, plainBody, cc, bcc } = {}) {
+    const body    = htmlBody ?? composeBody;
+    const subj    = subject  ?? (composeChannel === 'email' ? composeSubject : undefined);
+    if (hasPendingAI) return;
+    if (!body?.trim() && !plainBody?.trim()) return;
     setIsSending(true);
     setSendError(null);
     try {
       await client.post('/api/v1/communications', {
-        caseId:    id,
-        channel:   composeChannel,
-        subject:   composeChannel === 'email' ? composeSubject : undefined,
-        body:      composeBody,
-        direction: 'outbound',
+        case_id:    id,
+        channel:    composeChannel,
+        subject:    subj ?? null,
+        body:       body,
+        direction:  'outbound',
+        author_type: 'staff',
+        cc:         cc ?? undefined,
+        bcc:        bcc ?? undefined,
+        is_internal: false,
       });
       setComposeSubject('');
       setComposeBody('');
@@ -551,6 +590,26 @@ export default function CaseView() {
       setSendError(err.response?.data?.error ?? err.message ?? 'Send failed');
     } finally {
       setIsSending(false);
+    }
+  }
+
+  async function handleNote({ body } = {}) {
+    if (!body?.trim()) return;
+    setIsNoting(true);
+    try {
+      await client.post('/api/v1/communications', {
+        case_id:     id,
+        channel:     'email',
+        body,
+        direction:   'internal',
+        author_type: 'staff',
+        is_internal: true,
+      });
+      await refetchComms();
+    } catch (err) {
+      console.error('[note]', err.message);
+    } finally {
+      setIsNoting(false);
     }
   }
 
@@ -674,74 +733,71 @@ export default function CaseView() {
           </div>
 
           {/* Compose area */}
-          <div className="shrink-0 border-t border-white/5 bg-nuqe-surface px-5 py-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex gap-1">
-                {['email', 'chat', 'postal'].map((ch) => (
-                  <button
-                    key={ch}
-                    onClick={() => setComposeChannel(ch)}
-                    className={[
-                      'px-3 py-1.5 text-xs font-medium rounded border transition-colors capitalize',
-                      composeChannel === ch
-                        ? 'bg-nuqe-purple/15 text-nuqe-purple border-nuqe-purple/30'
-                        : 'bg-transparent text-nuqe-muted border-white/10 hover:text-nuqe-text hover:border-white/20',
-                    ].join(' ')}
-                  >
-                    {ch.charAt(0).toUpperCase() + ch.slice(1)}
-                  </button>
-                ))}
-              </div>
-              <p className="text-[11px] text-nuqe-muted">Draft outbound</p>
+          <div className="shrink-0 border-t border-white/5 bg-nuqe-surface px-4 py-3">
+
+            {/* Channel selector — only for non-email channels */}
+            <div className="flex items-center gap-1 mb-3">
+              {['email', 'chat', 'postal'].map((ch) => (
+                <button
+                  key={ch}
+                  onClick={() => setComposeChannel(ch)}
+                  className={[
+                    'px-3 py-1 text-xs font-medium rounded border transition-colors capitalize',
+                    composeChannel === ch
+                      ? 'bg-nuqe-purple/15 text-nuqe-purple border-nuqe-purple/30'
+                      : 'bg-transparent text-nuqe-muted border-white/10 hover:text-nuqe-text hover:border-white/20',
+                  ].join(' ')}
+                >
+                  {ch.charAt(0).toUpperCase() + ch.slice(1)}
+                </button>
+              ))}
             </div>
 
+            {/* Email: full Tiptap composer with CC/BCC/subject/internal notes */}
             {composeChannel === 'email' && (
+              <EmailComposer
+                toEmail={caseData?.customer?.email ?? null}
+                subject={composeSubject}
+                onSubject={setComposeSubject}
+                onSend={handleSend}
+                onNote={handleNote}
+                onAiDraft={() => {}}
+                isSending={isSending || isNoting}
+                disabled={hasPendingAI}
+                disabledReason={hasPendingAI ? 'Review pending AI actions first' : null}
+              />
+            )}
+
+            {/* Chat / postal: plain textarea */}
+            {composeChannel !== 'email' && (
               <>
-                {caseData?.customer?.email && (
-                  <div className="flex items-center gap-2 mb-2 px-3 py-1.5 rounded text-xs border border-white/10 bg-nuqe-bg">
-                    <span className="text-nuqe-muted shrink-0">To:</span>
-                    <span className="text-nuqe-text truncate">{caseData.customer.email}</span>
-                  </div>
-                )}
-                <input
-                  value={composeSubject}
-                  onChange={(e) => setComposeSubject(e.target.value)}
-                  placeholder="Subject"
-                  className="w-full px-3 py-2 mb-2 text-xs bg-nuqe-bg border border-white/10 rounded text-nuqe-text placeholder-nuqe-muted focus:outline-none focus:border-nuqe-purple/40"
+                <textarea
+                  value={composeBody}
+                  onChange={(e) => setComposeBody(e.target.value)}
+                  placeholder={`Draft ${composeChannel} response…`}
+                  rows={4}
+                  className="w-full px-3 py-2 text-xs bg-nuqe-bg border border-white/10 rounded text-nuqe-text placeholder-nuqe-muted focus:outline-none focus:border-nuqe-purple/40 resize-none leading-relaxed"
                 />
+                <div className="flex items-center justify-between mt-2">
+                  <div />
+                  <button
+                    onClick={() => handleSend({ body: composeBody })}
+                    disabled={hasPendingAI || !composeBody.trim() || isSending}
+                    title={hasPendingAI ? 'Review all pending AI actions before sending' : undefined}
+                    className="px-4 py-1.5 text-xs font-medium rounded border border-white/15 bg-white/5 text-nuqe-text hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    {isSending ? 'Sending…' : 'Send'}
+                  </button>
+                </div>
+                {hasPendingAI && (
+                  <p className="text-[10px] text-amber-400 mt-2">
+                    Review all pending AI actions before sending.
+                  </p>
+                )}
+                {sendError && (
+                  <p className="text-[10px] text-nuqe-danger mt-2">{sendError}</p>
+                )}
               </>
-            )}
-
-            <textarea
-              value={composeBody}
-              onChange={(e) => setComposeBody(e.target.value)}
-              placeholder={`Draft ${composeChannel} response…`}
-              rows={4}
-              className="w-full px-3 py-2 text-xs bg-nuqe-bg border border-white/10 rounded text-nuqe-text placeholder-nuqe-muted focus:outline-none focus:border-nuqe-purple/40 resize-none leading-relaxed"
-            />
-
-            <div className="flex items-center justify-between mt-2">
-              <button className="px-3 py-1.5 text-xs font-medium rounded border border-nuqe-purple/30 bg-nuqe-purple/10 text-nuqe-purple hover:bg-nuqe-purple/20 transition-colors">
-                Request AI draft
-              </button>
-
-              <button
-                onClick={handleSend}
-                disabled={hasPendingAI || !composeBody.trim() || isSending}
-                title={hasPendingAI ? 'Review all pending AI actions before sending' : undefined}
-                className="px-4 py-1.5 text-xs font-medium rounded border border-white/15 bg-white/5 text-nuqe-text hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                {isSending ? 'Sending…' : 'Send'}
-              </button>
-            </div>
-
-            {hasPendingAI && (
-              <p className="text-[10px] text-amber-400 mt-2">
-                Review all pending AI actions before sending.
-              </p>
-            )}
-            {sendError && (
-              <p className="text-[10px] text-nuqe-danger mt-2">{sendError}</p>
             )}
           </div>
         </div>

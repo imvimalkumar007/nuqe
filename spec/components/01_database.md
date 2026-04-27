@@ -1,7 +1,7 @@
 # Component 01: Database Schema
 
 ## Status
-VERIFIED — all 15 required tables exist. DB-001 through DB-010 passing (26 April 2026).
+VERIFIED — all 17 required tables exist. DB-001 through DB-013 passing (27 April 2026).
 
 ## Purpose
 The foundation of the entire system. All other components depend on
@@ -9,20 +9,21 @@ the database schema being correct. Every table, column, constraint,
 index, and trigger must be exactly as specified before any other
 component can be verified.
 
-## Current Tables (confirmed 22 April 2026)
-_migrations, ai_actions, audit_log, cases, communications, customers,
+## Current Tables (confirmed 27 April 2026)
+_migrations, ai_actions, audit_log, cases, channels, communications, customers,
 deadlines, knowledge_chunks, knowledge_documents, notifications,
 organisation_ai_config, regulatory_monitoring_log, regulatory_sources,
-ruleset, tokeniser_additions
+ruleset, tokeniser_additions, user_channel_assignments, users
 
 ## Missing Tables
 None.
 
-## Required Tables (15 total)
+## Required Tables (17 total)
 customers, cases, communications, deadlines, ruleset, ai_actions,
 audit_log, organisation_ai_config, tokeniser_additions,
 knowledge_chunks, knowledge_documents, regulatory_sources,
-regulatory_monitoring_log, notifications, users (added by auth migration)
+regulatory_monitoring_log, notifications, users,
+channels, user_channel_assignments
 
 ## Critical Constraints
 - audit_log: UPDATE and DELETE must be blocked by rules
@@ -52,6 +53,9 @@ regulatory_monitoring_log, notifications, users (added by auth migration)
 | DB-008 | Foreign key constraints enforced (e.g. cases.customer_id) | PASS | 22 Apr 2026 |
 | DB-009 | knowledge_chunks.embedding column exists as vector(1536) with HNSW index | PASS | 26 Apr 2026 |
 | DB-010 | organisation_ai_config has UNIQUE constraint on organisation_id | PASS | 26 Apr 2026 |
+| DB-011 | channels table exists with nuqe_inbound UNIQUE constraint | PASS | 27 Apr 2026 |
+| DB-012 | user_channel_assignments has UNIQUE(user_id, channel_id) and cascade deletes | PASS | 27 Apr 2026 |
+| DB-013 | communications has message_id, in_reply_to, delivery_status, is_internal columns | PASS | 27 Apr 2026 |
 
 ## Known Issues
 None. All tables present and verified.

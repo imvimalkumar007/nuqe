@@ -1,7 +1,7 @@
 # Component 17: Frontend Case View
 
 ## Status
-VERIFIED — all 8 tests passing (23 April 2026)
+VERIFIED — all 12 tests passing (27 April 2026)
 
 ## Purpose
 Shows a single complaint case in full detail. Unified communication
@@ -28,13 +28,25 @@ Shows three milestones with traffic light status:
 - FOS_REFERRAL (56 days): greyed out until applicable
 
 ### Communication Timeline
-Unified thread ordered by sent_at ASC. Each entry shows:
+Unified thread ordered by COALESCE(sent_at, created_at) ASC. Each entry shows:
 - Channel icon (email/chat/postal)
 - Direction arrow (inbound/outbound)
 - Author (Customer name or Staff name or "AI Draft")
 - Timestamp
-- Message body (collapsed if > 200 chars)
+- Delivery status dot (sent/delivered/opened/bounced) for outbound email
+- Message body (collapsed if > 340 chars)
 - For pending AI drafts: greyed-out with Approve, Edit and Approve, Reject buttons
+- Internal notes: amber background, 🔒 badge, never sent to customer
+
+### Email Composer (Tiptap)
+Replaces the plain textarea for email channel. Features:
+- Reply / Internal note mode toggle
+- To: display (read-only), CC, BCC token inputs
+- Subject line input
+- Tiptap rich text editor: Bold, Italic, Strikethrough, Bullet list,
+  Numbered list, Blockquote, Divider, Undo, Redo
+- AI draft button
+- Send / Save note button
 
 ### AI Actions Panel
 Lists pending ai_actions for this case.
@@ -53,6 +65,10 @@ PendingActionCard component handles the review interaction.
 | FE-CASE-006 | Approve button calls PATCH /ai-actions/:id/approve | PASS | 23 Apr 2026 |
 | FE-CASE-007 | Edit and Approve pre-fills compose textarea | PASS | 23 Apr 2026 |
 | FE-CASE-008 | Reject button calls PATCH /ai-actions/:id/reject | PASS | 23 Apr 2026 |
+| FE-CASE-009 | Email composer shows Tiptap toolbar with Bold, Italic, Bullet list buttons | PASS | 27 Apr 2026 |
+| FE-CASE-010 | CC and BCC token inputs appear and accept comma-separated addresses | PASS | 27 Apr 2026 |
+| FE-CASE-011 | Internal note mode toggle renders amber background; saves with is_internal=true | PASS | 27 Apr 2026 |
+| FE-CASE-012 | Delivery status dot shown on outbound email comm (green=opened, blue=delivered) | PASS | 27 Apr 2026 |
 
 ## Claude Code Prompt
 ```

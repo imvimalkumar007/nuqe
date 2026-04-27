@@ -4,9 +4,9 @@
 > Status: PASS, FAIL, NOT RUN, SKIPPED
 > This file is the ground truth for build status.
 
-Last updated: 26 April 2026
-Total: 152
-PASS: 152
+Last updated: 27 April 2026
+Total: 183
+PASS: 183
 FAIL: 0
 NOT RUN: 0
 
@@ -26,6 +26,9 @@ NOT RUN: 0
 | DB-008 | Foreign key constraints are enforced | PASS | 22 Apr 2026 |
 | DB-009 | knowledge_chunks.embedding column exists as vector(1536) with HNSW index | PASS | 26 Apr 2026 |
 | DB-010 | organisation_ai_config has UNIQUE constraint on organisation_id | PASS | 26 Apr 2026 |
+| DB-011 | channels table exists with nuqe_inbound UNIQUE constraint | PASS | 27 Apr 2026 |
+| DB-012 | user_channel_assignments has UNIQUE(user_id, channel_id) and cascade deletes | PASS | 27 Apr 2026 |
+| DB-013 | communications has message_id, in_reply_to, delivery_status, is_internal columns | PASS | 27 Apr 2026 |
 
 ---
 
@@ -77,6 +80,9 @@ NOT RUN: 0
 | COMMS-008 | Communications from all three channels appear in unified timeline | PASS | 23 Apr 2026 |
 | COMMS-009 | POST outbound email triggers sendEmail for channel=email direction=outbound | PASS | 26 Apr 2026 |
 | COMMS-010 | Outbound email uses org from_email when set; falls back to FROM_EMAIL env var | PASS | 26 Apr 2026 |
+| COMMS-011 | POST with is_internal=true stores direction=internal, never triggers sendEmail | PASS | 27 Apr 2026 |
+| COMMS-012 | POST with cc/bcc arrays passes them to sendEmail and stores on the comm row | PASS | 27 Apr 2026 |
+| COMMS-013 | Outbound email comm gets message_id; inbound reply matched via in_reply_to | PASS | 27 Apr 2026 |
 
 ---
 
@@ -235,6 +241,11 @@ NOT RUN: 0
 | HOOK-004 | Webhook triggers classification for complaint reason | PASS | 23 Apr 2026 |
 | HOOK-005 | Webhook opens new case when complaint detected | PASS | 23 Apr 2026 |
 | HOOK-006 | Webhook returns case_id when case is opened | PASS | 23 Apr 2026 |
+| HOOK-007 | POST /webhooks/email-inbound routes to correct channel by nuqe_inbound address | PASS | 27 Apr 2026 |
+| HOOK-008 | email-inbound matches In-Reply-To header to existing case (no new case opened) | PASS | 27 Apr 2026 |
+| HOOK-009 | email-inbound matches subject case ref to existing case | PASS | 27 Apr 2026 |
+| HOOK-010 | email-inbound with no match creates new case and runs classification | PASS | 27 Apr 2026 |
+| HOOK-011 | POST /webhooks/resend email.delivered updates delivery_status on comm row | PASS | 27 Apr 2026 |
 
 ---
 
@@ -265,6 +276,10 @@ NOT RUN: 0
 | FE-CASE-006 | Approve button calls PATCH /ai-actions/:id/approve | PASS | 23 Apr 2026 |
 | FE-CASE-007 | Edit and Approve pre-fills compose textarea | PASS | 23 Apr 2026 |
 | FE-CASE-008 | Reject button calls PATCH /ai-actions/:id/reject | PASS | 23 Apr 2026 |
+| FE-CASE-009 | Email composer shows Tiptap toolbar with Bold, Italic, Bullet list buttons | PASS | 27 Apr 2026 |
+| FE-CASE-010 | CC and BCC token inputs appear and accept comma-separated addresses | PASS | 27 Apr 2026 |
+| FE-CASE-011 | Internal note mode toggle renders amber background; saves with is_internal=true | PASS | 27 Apr 2026 |
+| FE-CASE-012 | Delivery status dot shown on outbound email comm (green=opened, blue=delivered) | PASS | 27 Apr 2026 |
 
 ---
 
@@ -294,6 +309,20 @@ NOT RUN: 0
 | FE-SET-004 | Organisation Profile tab loads saved enabled_jurisdictions | PASS | 26 Apr 2026 |
 | FE-SET-005 | Toggling a jurisdiction and saving persists the new value | PASS | 26 Apr 2026 |
 | FE-SET-006 | From email field accepts and saves a valid email address | PASS | 26 Apr 2026 |
+
+---
+
+## 20 Channels and User Assignments
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| CH-001 | GET /channels returns empty array when no channels exist | PASS | 27 Apr 2026 |
+| CH-002 | POST /channels creates channel with generated nuqe_inbound address | PASS | 27 Apr 2026 |
+| CH-003 | POST /channels returns 409 when name already exists for org | PASS | 27 Apr 2026 |
+| CH-004 | POST /channels/:id/members assigns user with can_write=true | PASS | 27 Apr 2026 |
+| CH-005 | GET /channels/:id includes members array with user email and full_name | PASS | 27 Apr 2026 |
+| CH-006 | PATCH /channels/:id can deactivate channel (is_active=false) | PASS | 27 Apr 2026 |
+| CH-007 | DELETE /channels/:id/members/:userId removes assignment | PASS | 27 Apr 2026 |
 
 ---
 

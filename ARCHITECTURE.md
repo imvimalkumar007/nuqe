@@ -26,9 +26,9 @@ Three pillars:
 
 ## Test Registry Summary
 
-Last updated: 26 April 2026
-Total tests defined: 152
-Passing: 152
+Last updated: 27 April 2026
+Total tests defined: 183
+Passing: 183
 Failing: 0
 Not run: 0
 
@@ -40,10 +40,10 @@ Full registry: spec/test_registry.md
 
 | # | Component | File | Status | Tests passing |
 |---|---|---|---|---|
-| 01 | Database Schema | spec/components/01_database.md | VERIFIED | 10/10 |
+| 01 | Database Schema | spec/components/01_database.md | VERIFIED | 13/13 |
 | 02 | Auth System | spec/components/02_auth.md | VERIFIED | 10/10 |
 | 03 | Cases API | spec/components/03_cases_api.md | VERIFIED | 10/10 |
-| 04 | Communications API | spec/components/04_communications_api.md | VERIFIED | 10/10 |
+| 04 | Communications API | spec/components/04_communications_api.md | VERIFIED | 13/13 |
 | 05 | Deadlines API | spec/components/05_deadlines_api.md | VERIFIED | 7/7 |
 | 06 | Deadline Engine | spec/components/06_deadline_engine.md | VERIFIED | 8/8 |
 | 07 | Communication Engine | spec/components/07_communication_engine.md | VERIFIED | 8/8 |
@@ -54,11 +54,12 @@ Full registry: spec/test_registry.md
 | 12 | Regulatory Monitor | spec/components/12_regulatory_monitor.md | VERIFIED | 6/6 |
 | 13 | Metrics API | spec/components/13_metrics_api.md | VERIFIED | 8/8 |
 | 14 | Settings API | spec/components/14_settings_api.md | VERIFIED | 10/10 |
-| 15 | Webhooks | spec/components/15_webhooks.md | VERIFIED | 6/6 |
+| 15 | Webhooks | spec/components/15_webhooks.md | VERIFIED | 11/11 |
 | 16 | Frontend: Dashboard | spec/components/16_frontend_dashboard.md | VERIFIED | 8/8 |
-| 17 | Frontend: Case View | spec/components/17_frontend_case_view.md | VERIFIED | 8/8 |
+| 17 | Frontend: Case View | spec/components/17_frontend_case_view.md | VERIFIED | 12/12 |
 | 18 | Frontend: Analytics | spec/components/18_frontend_analytics.md | VERIFIED | 6/6 |
 | 19 | Frontend: Monitoring | spec/components/19_frontend_monitoring.md | VERIFIED | 9/9 |
+| 20 | Channels | spec/components/20_channels.md | VERIFIED | 7/7 |
 
 **Status key:**
 - NOT BUILT: code does not exist
@@ -204,5 +205,5 @@ The phased build plan is in NUQE_BUILD_PLAN.md at the repository root.
 It defines 10 phases, 27 sessions, and 142 tests.
 Always consult the build plan to know which phase you are in and what the exit criteria are.
 
-Current phase: Phase 10 complete — demo-ready, deployed on Render. Phase 11 features shipped 26 April 2026 (jurisdiction switching, RAG engine, email sending).
+Current phase: Phase 12 in progress — email omnichannel. Channels table, inbound Mailgun webhook, Tiptap composer, delivery tracking, internal notes shipped 27 April 2026.
 Live at: https://nuqe-web.onrender.com (admin@nuqe.io / NuqeAdmin2026!)

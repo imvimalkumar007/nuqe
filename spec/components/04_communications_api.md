@@ -1,7 +1,7 @@
 # Component 04: Communications API
 
 ## Status
-VERIFIED — all 10 tests passing (26 April 2026)
+VERIFIED — all 13 tests passing (27 April 2026)
 
 ## Purpose
 Returns all communications for a case in chronological order across
@@ -15,19 +15,25 @@ on this endpoint returning the correct fields.
 ## Endpoints
 
 ### GET /api/v1/communications
-Query params: case_id (required uuid), limit (default 50), offset (default 0)
+Query params: case_id (required uuid), limit (default 50), offset (default 0),
+              include_internal (default 'true')
 Response: { communications: Communication[], total: number }
 Each Communication includes:
   id, case_id, customer_id, channel, direction, subject,
-  body, author_type, author_id, ai_generated, ai_approved_by,
-  ai_approved_at, sent_at, external_ref, created_at
-Ordered by: sent_at ASC NULLS LAST
+  body, body_plain, author_type, author_id, ai_generated, ai_approved_by,
+  ai_approved_at, cc, bcc, message_id, in_reply_to, delivery_status,
+  is_internal, resend_id, sent_at, external_ref, created_at
+Ordered by: COALESCE(sent_at, created_at) ASC
 The ai_approved_at field is how the frontend determines if a draft
 is still pending (null = pending, has value = approved)
 
 ### POST /api/v1/communications
-Body: { case_id, channel, direction, subject?, body, author_type }
+Body: { case_id, channel, direction, subject?, body, author_type,
+        cc?: string[], bcc?: string[], is_internal?: boolean }
+direction = 'internal' is forced when is_internal = true (never emailed).
 customer_id is resolved automatically from the case.
+Outbound email: Resend fires in background; resend_id stored on success.
+Message-ID header generated for outbound emails to enable reply threading.
 Response: 201 with created communication
 
 ## Tests
@@ -44,3 +50,6 @@ Response: 201 with created communication
 | COMMS-008 | Communications from all three channels appear in unified timeline | PASS | 23 Apr 2026 |
 | COMMS-009 | POST outbound email communication triggers sendEmail for channel=email direction=outbound | PASS | 26 Apr 2026 |
 | COMMS-010 | Outbound email uses org from_email when set; falls back to FROM_EMAIL env var | PASS | 26 Apr 2026 |
+| COMMS-011 | POST with is_internal=true stores direction=internal, never triggers sendEmail | PASS | 27 Apr 2026 |
+| COMMS-012 | POST with cc/bcc arrays passes them to sendEmail and stores on the comm row | PASS | 27 Apr 2026 |
+| COMMS-013 | Outbound email comm gets message_id header; inbound reply matched via in_reply_to | PASS | 27 Apr 2026 |

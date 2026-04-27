@@ -12,6 +12,10 @@
 | 15 | Performance | pgvector index may need tuning at scale | Low | Apr 2026 | Revisit when chunks exceed 100,000 rows |
 | 18 | Reliability | No health check monitoring or alerting | Medium | Apr 2026 | Add UptimeRobot free tier |
 | 21 | Reliability | BullMQ dead letter queue not configured | Low | Apr 2026 | Configure failed job handler |
+| 50 | Infrastructure | inbound.nuqe.io domain not registered | Medium | Apr 2026 | Must register domain and set Mailgun MX records before first client onboarding |
+| 51 | Security | MAILGUN_WEBHOOK_SIGNING_KEY not set in Render | Medium | Apr 2026 | Signature verification skipped without it; set before processing real inbound emails |
+| 52 | Security | RESEND_WEBHOOK_SECRET not set in Render | Low | Apr 2026 | Delivery status events not verified without it; set before go-live |
+| 53 | Frontend | EmailComposer signature field not wired to Settings API | Low | Apr 2026 | Per-channel signature needs GET /settings/org-profile → channelSignature field |
 | 22 | Architecture | Multi-tenancy relies on application-level filtering only | Medium | Apr 2026 | Consider PostgreSQL row-level security |
 | 23 | Architecture | Express API is a monolith | Low | Apr 2026 | Plan to extract engines before scaling beyond 10 clients |
 | 24 | Architecture | No API versioning strategy | Low | Apr 2026 | Document before releasing public API |
