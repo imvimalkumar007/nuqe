@@ -128,6 +128,18 @@ Note: DATABASE_URL uses localhost for running outside Docker. The docker-compose
 - Configure IMAP/SMTP credentials per channel in the Channels settings screen
 - Consider upgrading Render dyno from free to paid for reliable IMAP polling (gap #55)
 
+**Next action decided (27 April 2026):**
+Validate the full pipeline with a real Gmail account before fixing any UI gaps.
+Steps: create free Gmail → enable IMAP → generate App Password → configure as Nuqe channel → send real email → observe what breaks.
+Do NOT buy Google Workspace until pipeline is proven end-to-end.
+
+**Known UI gaps to address after pipeline validation (gaps 57–61):**
+- AI draft button is a no-op — needs `POST /api/v1/ai-actions/generate` endpoint
+- No case status transition UI — staff cannot change case status from the UI
+- CC/BCC hidden behind toggle buttons — not discoverable
+- File attachments not implemented
+- Sidebar active state (inset ribbon) looks AI-generated — replace with less generic pattern
+
 ---
 
 ## 8. Database Schema (17 Tables)
