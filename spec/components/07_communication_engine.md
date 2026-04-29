@@ -1,7 +1,7 @@
 # Component 07: Communication Engine
 
 ## Status
-VERIFIED — all 8 tests passing (23 April 2026)
+VERIFIED — all 8 tests passing (23 April 2026); pipeline enhancements added 29 April 2026 (no test changes)
 
 ## Purpose
 Ingests inbound communications, classifies them (complaint vs query
@@ -25,11 +25,13 @@ any human interaction occurs. Nothing is ever sent without approval.
 ### classifyCommunication(communicationId)
 - Retrieves communication and customer context
 - Calls PII tokeniser on the communication body
-- Calls model router with classification prompt
-- Writes result to ai_actions with action_type=complaint_classification,
-  status=pending
-- If classification is complaint or implicit_complaint and no case
-  exists: calls cases API to open a new case
+- Calls RAG knowledge layer (retrieveContext, limit=3) to append regulatory context
+- Calls Anthropic Claude directly with classification prompt + RAG context
+- Writes result to ai_actions with action_type=complaint_classification
+- Confidence threshold: >= 0.75 → status=approved, reviewed_at=NOW();
+  below threshold → status=pending for human review
+- If classification is complaint or implicit_complaint, confidence meets threshold,
+  and no case exists: opens new case and links ai_action.case_id
 - Never modifies the communications table directly
 
 ### draftResponse(caseId, instructionNotes?)

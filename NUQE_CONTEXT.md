@@ -8,10 +8,10 @@
 
 **Product name:** Nuqe
 **Tagline:** Compliance-native communication and case management for digital lenders
-**Stage:** Demo-ready — deployed on Render, all smoke tests passing
+**Stage:** Production-hardened — pipeline validated with real data (29 April 2026)
 **GitHub:** https://github.com/imvimalkumar007/nuqe
 **Founder:** Vimal Kumar
-**Date last updated:** 27 April 2026
+**Date last updated:** 29 April 2026
 
 **Live URLs:**
 - Web: https://nuqe-web.onrender.com
@@ -71,13 +71,17 @@ docker compose up -d
 
 Login at https://nuqe-web.onrender.com with admin@nuqe.io / NuqeAdmin2026!
 
-1. **Complaints dashboard** — 8 cases, metric cards (Breach Risk 2, Under Review 3, Open 3, FOS Referred 1)
-2. **Open NQ-2026-0001** (Sarah Okonkwo, irresponsible lending) — 1 day to FINAL_RESPONSE deadline, breach risk
-3. **AI actions tab** — pending response draft from Claude, review the generated text
-4. Click **Approve** — badge flips from Pending to Approved
-5. **Performance** (Analytics) — AI volume chart, case status breakdown
-6. **Reg monitoring** — 5 monitored sources (FCA, FOS, EBA, RBI), manual Check buttons
-7. **Settings → AI Configuration** — primary/challenger model, encrypted API key display
+Note: demo cases were cleared 29 April 2026. Only real cases exist. Re-seed if needed.
+
+1. **Submit complaint via webhook** — POST /api/v1/webhooks/contact with Bearer token; system tokenises PII, classifies via Claude, opens case automatically
+2. **Complaints dashboard** — real cases, metric cards
+3. **Open a case** — timeline shows tokenised body (PII masked in storage)
+4. **Show PII toggle** (🔓) — inbound comms only; calls detokenise endpoint; shows original values to staff
+5. **Status dropdown** — change case from Open → Under review → Closed; persisted via PATCH /api/v1/cases/:id
+6. **AI actions tab** — classification at 97% confidence, auto-approved; response drafts pending human review
+7. **Performance** (Analytics) — AI volume chart, case status breakdown
+8. **Reg monitoring** — 5 monitored sources (FCA, FOS, EBA, RBI), manual Check buttons
+9. **Settings → AI Configuration** — primary/challenger model, encrypted API key display
 
 ---
 
@@ -102,9 +106,9 @@ Note: DATABASE_URL uses localhost for running outside Docker. The docker-compose
 
 ## 7. Build Progress
 
-**Phase 0–12 complete as of 27 April 2026.**
+**Phase 0–13 complete as of 29 April 2026.**
 
-- 186 tests defined, 182 passing, 4 skipped (removed Mailgun inbound route)
+- 187 tests defined, 183 passing, 4 skipped (removed Mailgun inbound route)
 - All API routes implemented and tested
 - Frontend production-grade redesign shipped 27 April 2026 (eb3895f):
   - Geist Variable + Geist Mono fonts (replaces Inter)
@@ -128,17 +132,22 @@ Note: DATABASE_URL uses localhost for running outside Docker. The docker-compose
 - Configure IMAP/SMTP credentials per channel in the Channels settings screen
 - Consider upgrading Render dyno from free to paid for reliable IMAP polling (gap #55)
 
-**Next action decided (27 April 2026):**
-Validate the full pipeline with a real Gmail account before fixing any UI gaps.
-Steps: create free Gmail → enable IMAP → generate App Password → configure as Nuqe channel → send real email → observe what breaks.
-Do NOT buy Google Workspace until pipeline is proven end-to-end.
+**Pipeline validation status (29 April 2026):**
+Webhook path confirmed working end-to-end with real data:
+- PII tokenised in DB: [NI-0], [EMAIL-1], [SORTCODE-2]
+- Claude classifies at 97% confidence, auto-approved
+- Case opened, linked to comm and ai_action
+- Detokenise restores originals via GET /communications/:id/detokenise
+- Status updates via PATCH /cases/:id
 
-**Known UI gaps to address after pipeline validation (gaps 57–61):**
-- AI draft button is a no-op — needs `POST /api/v1/ai-actions/generate` endpoint
-- No case status transition UI — staff cannot change case status from the UI
-- CC/BCC hidden behind toggle buttons — not discoverable
-- File attachments not implemented
-- Sidebar active state (inset ribbon) looks AI-generated — replace with less generic pattern
+IMAP inbound path still untested — validate with real Gmail channel as next step.
+
+**Immediate action required:**
+Fix gap 63: QUIDO_WEBHOOK_SECRET on Render is auto-generated (render.yaml: generateValue: true) and was never shared with the Quido platform. Go to Render dashboard → nuqe-api → Environment → copy QUIDO_WEBHOOK_SECRET → paste into Quido webhook settings.
+
+**Next actions after Quido fix:**
+1. Validate IMAP inbound path: create free Gmail → enable IMAP → generate App Password → configure as Nuqe channel → send real email
+2. Address remaining UI gaps (57, 59–61)
 
 ---
 

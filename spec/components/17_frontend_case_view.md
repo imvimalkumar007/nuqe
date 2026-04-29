@@ -1,7 +1,7 @@
 # Component 17: Frontend Case View
 
 ## Status
-VERIFIED — all 12 tests passing (27 April 2026)
+VERIFIED — all 12 tests passing (27 April 2026); PII toggle + status dropdown added 29 April 2026 (no test changes)
 
 ## Purpose
 Shows a single complaint case in full detail. Unified communication
@@ -19,7 +19,14 @@ tracking. Pending AI actions in greyed-out state awaiting review.
 
 ### Case Header
 Shows: case_ref, customer full_name, category badge,
-jurisdiction badge (UK/FCA), status badge, back arrow
+jurisdiction badge (UK/FCA), status badge, back arrow.
+Status dropdown (select) calls PATCH /api/v1/cases/:id on change.
+
+### PII Toggle (inbound communications)
+Each inbound CommCard has a "Show PII / Hide PII" button.
+Clicking calls GET /api/v1/communications/:id/detokenise (staff/admin only).
+Displays original values in place of tokens; clicking again reverts.
+Only works where tokenMap is stored (communications ingested after 29 April 2026).
 
 ### DISP Deadline Panel
 Shows three milestones with traffic light status:

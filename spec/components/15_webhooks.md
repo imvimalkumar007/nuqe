@@ -24,7 +24,8 @@ Body (Quido camelCase format):
     customerName?, customerEmail, customerPhone?, loanId?,
     customerType?, subject?, body, _quido? }
 Channel mapping: web_contact_form → email, live_chat → chat, post → postal
-Processing: upsert customer, create communication, run AI classification
+Processing: upsert customer, tokenise body (PII masked before INSERT),
+  store tokenMap in metadata._tokenMap, create communication, run AI classification
 On valid token: 200 { communication_id, case_id }
 On invalid token: 401
 

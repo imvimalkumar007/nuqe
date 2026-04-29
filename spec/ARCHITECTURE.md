@@ -26,7 +26,7 @@ Three pillars:
 
 ## Test Registry Summary
 
-Last updated: 27 April 2026
+Last updated: 29 April 2026
 Total tests defined: 187
 Passing: 183
 Failing: 0

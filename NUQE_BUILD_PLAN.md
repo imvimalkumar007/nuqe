@@ -37,6 +37,8 @@
 | 9 | CI/CD and Deployment | 2 | Pipeline live, deployed to Render | DONE |
 | 10 | Demo Ready | 1 | All smoke tests passing, demo rehearsed | DONE |
 | 11 | Feature Expansion | 1 | Jurisdiction switching, RAG engine, email sending | DONE |
+| 12 | Email Omnichannel | 1 | IMAP polling, SMTP, Tiptap composer, delivery tracking, internal notes | DONE |
+| 13 | Production Hardening | 1 | Pipeline validated with real data, PII confirmed, status/detokenise APIs wired | DONE |
 
 Total sessions: approximately 27
 Each session: 1 to 2 hours in Claude Code
@@ -541,6 +543,45 @@ Run the complete Playwright smoke test suite against the deployed Render instanc
 
 ---
 
+## Phase 13: Production Hardening
+**Goal:** Pipeline validated with real data. All gaps from pipeline review session wired.
+
+### Session 13.1: Production pipeline validation and wiring
+**What was built:**
+- Demo cases cleared from production; case_ref_seq advanced past NQ-2026-0003
+- render.yaml buildCommand: `npm install && npm run migrate` (auto-migrate on every deploy)
+- webhooks.js: PII tokenisation in both /quido and /contact routes; tokenMap stored in metadata._tokenMap
+- communicationEngine.js: removed cache_control; added RAG context (retrieveContext, limit=3); added confidence threshold (0.75); auto-approve classification on meeting threshold
+- deadlineEngine.js: escalation on breach — case moved to under_review when deadline breached
+- cases.js: PATCH /:id endpoint (status, assigned_to, category, notes, fos_ref); audit log entry
+- communications.js: GET /:id/detokenise endpoint (staff/admin only); restores PII from metadata._tokenMap
+- CaseView.jsx: PII toggle on inbound comms (Show PII / Hide PII); status dropdown in case header
+- PendingActionsContext.jsx: fixed pendingCount = pendingActions.length (was bloating badge with knowledge chunks)
+- api/src/db/seeds/clear_demo_cases.js: script to delete demo data and advance sequence
+
+**Validated in production:**
+- tokenise-check-001: stored body shows [NI-0], [EMAIL-1], [SORTCODE-2]
+- detokenise endpoint returns original NJ 47 23 85 C, tokentest@example.com, 20-14-53
+- PATCH /cases/:id confirmed working
+- AI classification at 97% confidence with auto-approval
+
+**Exit criteria:**
+- [x] PII tokenisation stores tokens (not raw PII) in production DB
+- [x] Detokenise endpoint restores original values
+- [x] PATCH /cases/:id changes status and writes audit_log
+- [x] confidence threshold routes classification correctly (>= 0.75 → auto-approved)
+- [x] Status dropdown works in CaseView
+- [x] PII toggle works on new cases (comms with tokenMap in metadata)
+- [x] Migration 012 applied to Render
+- [x] 99+ badge fixed
+
+**Gap identified (not yet resolved):**
+- QUIDO_WEBHOOK_SECRET on Render is auto-generated and was never shared with Quido platform — every Quido webhook delivery is silently rejected (gap 63)
+
+**Date completed:** 29 April 2026
+
+---
+
 ## Summary: What Done Looks Like at Each Phase
 
 | After phase | What you can do |
@@ -558,6 +599,7 @@ Run the complete Playwright smoke test suite against the deployed Render instanc
 | Phase 10 | Have a customer discovery conversation backed by a working product |
 | Phase 11 | Switch regulatory jurisdictions live; RAG retrieves FCA guidance; email responses sent via Resend |
 | Phase 12 | Email omnichannel: per-channel IMAP polling + SMTP sending, Tiptap composer, delivery tracking, internal notes |
+| Phase 13 | Production-validated pipeline: webhook → PII tokenise → RAG classify → case created with correct confidence threshold; status and detokenise APIs wired; Quido secret config gap identified |
 
 ---
 
@@ -578,6 +620,7 @@ Run the complete Playwright smoke test suite against the deployed Render instanc
 | Phase 10 | Smoke tests (Playwright, already counted in Phase 7) | 142 |
 | Phase 11 | 10 (DB:2 + COMMS:2 + SET:3 + FE-SET:3) | 152 |
 | Phase 12 | 34 (DB:4 + COMMS:3 + HOOK:5 + FE-CASE:4 + CH:9; 4 SKIPPED for removed Mailgun route) | 186 |
+| Phase 13 | 1 (HOOK-012 contact webhook; contact form already verified in production) | 187 |
 
 ---
 
@@ -592,3 +635,4 @@ Run the complete Playwright smoke test suite against the deployed Render instanc
 | 27 April 2026 | Frontend production-grade redesign (eb3895f). Geist Variable + Geist Mono fonts. Complete CSS design system: 3-tier elevation (--nuqe-bg, --nuqe-surface, --nuqe-surface-hi), semantic colours (danger #FC8181, ok #68D391, warn #F6AD55, info #63B3ED), global component classes (.btn, .badge, .card, .data-table, .input, .skeleton). LoginPage, Sidebar, ComplaintsDashboard fully redesigned. AnalyticsDashboard, SettingsScreen, RegulatoryMonitoringScreen updated to new design tokens. Build: ✓ 5.31s. |
 | 27 April 2026 | Pipeline review and gap triage. Root cause identified: pipeline has never run with real data — all testing used seeded data. 6 new gaps logged (57–62). Decision: validate with real Gmail channel before any further UI work. Google Workspace purchase deferred until pipeline proven. |
 | 27 April 2026 | Quido contact form webhook wired up. New POST /api/v1/webhooks/contact endpoint: Bearer auth, camelCase payload, channel mapping (web_contact_form→email), phone stored in metadata, always runs AI classification. 187 total tests (183 PASS, 4 SKIPPED). |
+| 29 April 2026 | Phase 13 complete. Production pipeline hardening: demo cases cleared, case_ref_seq advanced. PII tokenisation wired into both webhook routes; confirmed in production DB (tokenise-check-001 stored [NI-0] [EMAIL-1] [SORTCODE-2]). RAG context + 0.75 confidence threshold added to classifyCommunication; auto-approval on meeting threshold. Escalation on breach detection in deadlineEngine. PATCH /cases/:id + GET /communications/:id/detokenise added. Status dropdown + PII toggle in CaseView. render.yaml buildCommand includes npm run migrate. 187 tests (183 PASS, 4 SKIPPED). |

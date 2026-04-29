@@ -17,11 +17,11 @@
 | 56 | Feature | Per-channel email signature not wired to Settings API | Low | Apr 2026 | EmailComposer accepts signature prop but no GET /settings/org-profile channel-level signature field yet |
 | 52 | Security | RESEND_WEBHOOK_SECRET not set in Render | Low | Apr 2026 | Delivery status events not verified without it; set before go-live |
 | 57 | Frontend | AI draft button is a no-op | High | Apr 2026 | `onAiDraft={() => {}}` in CaseView.jsx:766 — no POST /api/v1/ai-actions/generate endpoint exists; AI generation is pipeline-only, not user-triggerable from UI |
-| 58 | Frontend | No case status transition UI | High | Apr 2026 | No way for staff to move a case through open → under_review → breach_risk → fos_referred → closed; status was seeded and never exposed for editing |
+| 63 | Infrastructure | QUIDO_WEBHOOK_SECRET not shared with Quido platform | High | Apr 2026 | render.yaml generates the secret randomly; Quido was never configured with the actual value; every webhook delivery silently 401s — go to Render dashboard, copy QUIDO_WEBHOOK_SECRET value, paste into Quido webhook settings |
 | 59 | Frontend | CC and BCC not discoverable | Low | Apr 2026 | Hidden behind toggle buttons in EmailComposer; users don't find them without guidance |
 | 60 | Frontend | File attachments not implemented | Medium | Apr 2026 | Not in any spec; EmailComposer has no file input; needed before real client pilots |
 | 61 | Frontend | Sidebar active state looks AI-generated | Low | Apr 2026 | Inset left-border ribbon (`inset 2px 0 0 var(--nuqe-purple)`) flagged as telltale AI pattern; replace with less generic active indicator |
-| 62 | Validation | Pipeline never run end-to-end with real data | High | Apr 2026 | All testing used seeded data; IMAP → comm → AI → approve → SMTP send flow has never executed; validate with real Gmail channel before any further UI work |
+| 62 | Validation | IMAP inbound path not yet validated with real data | Medium | Apr 2026 | Webhook path (contact → tokenise → classify → case) validated 29 Apr with real data (tokenise-check-001, 97% confidence). Remaining: IMAP → comm → AI → approve → SMTP send path still untested with real Gmail channel |
 | 22 | Architecture | Multi-tenancy relies on application-level filtering only | Medium | Apr 2026 | Consider PostgreSQL row-level security |
 | 23 | Architecture | Express API is a monolith | Low | Apr 2026 | Plan to extract engines before scaling beyond 10 clients |
 | 24 | Architecture | No API versioning strategy | Low | Apr 2026 | Document before releasing public API |
@@ -72,6 +72,7 @@
 | 50 | Infrastructure | inbound.nuqe.io domain not registered | 27 Apr 2026 | No longer needed. Nuqe is provider-agnostic; client's own IMAP/SMTP used directly. |
 | 51 | Security | MAILGUN_WEBHOOK_SIGNING_KEY not set in Render | 27 Apr 2026 | Mailgun inbound webhook removed entirely. IMAP polling replaces it; no Mailgun dependency. |
 | 53 | Frontend | EmailComposer signature field not wired to Settings API | 27 Apr 2026 | Replaced by gap 56 (per-channel signature) in Open Gaps. |
+| 58 | Frontend | No case status transition UI | 29 Apr 2026 | PATCH /api/v1/cases/:id added (status, assigned_to, category, notes, fos_ref); status dropdown in CaseView header calls it on change; confirmed working in production. |
 
 ---
 
@@ -98,3 +99,4 @@
 | 27 April 2026 | IMAP/SMTP architectural rework. Resolved gaps 50 (inbound.nuqe.io no longer needed), 51 (Mailgun inbound removed), 53 (superseded by gap 56). Added gaps 54 (OAuth2 deferred), 55 (IMAP polling on Render free dyno), 56 (per-channel email signature). |
 | 27 April 2026 | Frontend production-grade redesign. Gap 35 (no network error handling) and gap 36 (no mobile responsiveness) remain open. No new gaps introduced. |
 | 27 April 2026 | End-to-end pipeline review session. Added gaps 57 (AI draft no-op), 58 (no case status UI), 59 (CC/BCC not discoverable), 60 (no file attachments), 61 (sidebar active state), 62 (pipeline never validated with real data). Decision: validate pipeline with real Gmail channel before any UI fixes. |
+| 29 April 2026 | Production pipeline hardening. PII tokenisation confirmed working in production (tokenise-check-001: [NI-0] [EMAIL-1] [SORTCODE-2] stored in DB). Added RAG context + confidence threshold (0.75) to classifyCommunication; auto-approval on meeting threshold. Added PATCH /cases/:id, GET /communications/:id/detokenise. Status dropdown + PII toggle wired in CaseView. Fixed 99+ badge (pendingCount formula). Migration 012 applied to Render via render.yaml buildCommand. Resolved gap 58 (status UI). Added gap 63 (QUIDO_WEBHOOK_SECRET not shared with Quido). Downgraded gap 62 to Medium (webhook path validated; IMAP path still pending). |
