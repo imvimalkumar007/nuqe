@@ -168,6 +168,11 @@ router.post('/quido', requireQuidoSecret, validate(quidoSchema), async (req, res
       }
     } catch (err) {
       logger.error({ err }, 'webhooks/quido classification error');
+      return res.status(200).json({
+        communication_id: comm.id,
+        case_id: null,
+        _classification_error: err.message,
+      });
     }
   }
 
@@ -274,6 +279,11 @@ router.post('/contact', requireBearerSecret, validate(contactSchema), async (req
     }
   } catch (err) {
     logger.error({ err }, 'webhooks/contact classification error');
+    return res.status(200).json({
+      communication_id: comm.id,
+      case_id: null,
+      _classification_error: err.message,
+    });
   }
 
   return res.status(200).json({ communication_id: comm.id, case_id: caseId });

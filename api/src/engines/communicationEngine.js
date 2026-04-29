@@ -213,13 +213,7 @@ export async function classifyCommunication(communicationId) {
   const response = await anthropic.messages.create({
     model: MODEL,
     max_tokens: 256,
-    system: [
-      {
-        type: 'text',
-        text: CLASSIFY_SYSTEM,
-        cache_control: { type: 'ephemeral' }, // reused across every inbound message
-      },
-    ],
+    system: CLASSIFY_SYSTEM,
     messages: [{ role: 'user', content: inputText }],
   });
 
@@ -373,13 +367,7 @@ export async function draftResponse(caseId, communicationId) {
   const response = await anthropic.messages.create({
     model: MODEL,
     max_tokens: 1024,
-    system: [
-      {
-        type: 'text',
-        text: DRAFT_SYSTEM,
-        cache_control: { type: 'ephemeral' },
-      },
-    ],
+    system: DRAFT_SYSTEM,
     messages: [{ role: 'user', content: inputText }],
   });
 
