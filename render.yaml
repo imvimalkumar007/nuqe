@@ -3,7 +3,7 @@ services:
     name: nuqe-api
     runtime: node
     rootDir: api
-    buildCommand: npm install
+    buildCommand: npm install && npm run migrate
     startCommand: node src/index.js
     healthCheckPath: /health
     envVars:
