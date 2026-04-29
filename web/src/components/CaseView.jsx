@@ -215,9 +215,22 @@ function CommCard({ comm, expanded, onToggle, onApprove, onReject, onEdit, submi
   const isRejected = comm.state === 'rejected_ai';
   const isInternal = comm.isInternal;
 
+  const [detokenised, setDetokenised] = useState(null);
+  const [detokenising, setDetokenising] = useState(false);
+  async function handleDetokenise() {
+    if (detokenised) { setDetokenised(null); return; }
+    setDetokenising(true);
+    try {
+      const { data } = await client.get(`/api/v1/communications/${comm.id}/detokenise`);
+      setDetokenised(data.body_plain ?? data.body ?? '');
+    } catch { /* silently ignore — user sees tokenised version */ }
+    finally { setDetokenising(false); }
+  }
+
   const chColour = { email: 'text-blue-400', chat: 'text-emerald-400', postal: 'text-amber-400' }[comm.channel];
-  const isLong   = comm.body.length > PREVIEW;
-  const bodyText = isLong && !expanded ? comm.body.slice(0, PREVIEW) + '…' : comm.body;
+  const displayBody = detokenised ?? comm.body;
+  const isLong   = displayBody.length > PREVIEW;
+  const bodyText = isLong && !expanded ? displayBody.slice(0, PREVIEW) + '…' : displayBody;
 
   const borderCls = isInternal
     ? 'border-amber-500/20'
@@ -308,11 +321,22 @@ function CommCard({ comm, expanded, onToggle, onApprove, onReject, onEdit, submi
         <pre className="text-xs text-nuqe-text whitespace-pre-wrap leading-relaxed font-sans">
           {bodyText}
         </pre>
-        {isLong && (
-          <button onClick={onToggle} className="mt-2 text-[11px] text-nuqe-purple hover:underline">
-            {expanded ? 'Show less' : 'Show more'}
-          </button>
-        )}
+        <div className="flex items-center gap-3 mt-2">
+          {isLong && (
+            <button onClick={onToggle} className="text-[11px] text-nuqe-purple hover:underline">
+              {expanded ? 'Show less' : 'Show more'}
+            </button>
+          )}
+          {comm.direction === 'inbound' && (
+            <button
+              onClick={handleDetokenise}
+              disabled={detokenising}
+              className="text-[11px] text-nuqe-muted hover:text-nuqe-text transition-colors disabled:opacity-40"
+            >
+              {detokenising ? 'Restoring…' : detokenised ? '🔒 Hide PII' : '🔓 Show PII'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Pending AI action row */}
@@ -676,6 +700,27 @@ export default function CaseView() {
           {caseData?.customer.vulnerableFlag && (
             <Badge cls="border-amber-600/30 bg-amber-500/10 text-amber-400">⚠ Vulnerable</Badge>
           )}
+        </div>
+
+        <div className="ml-auto flex items-center gap-2 shrink-0">
+          <select
+            value={caseData?.status ?? ''}
+            onChange={async (e) => {
+              try {
+                await client.patch(`/api/v1/cases/${id}`, { status: e.target.value });
+                await refetchCase();
+              } catch (err) { console.error('[status]', err.message); }
+            }}
+            className="text-[11px] rounded px-2 py-1 border"
+            style={{ background: 'var(--nuqe-surface-hi)', borderColor: 'var(--nuqe-border)', color: 'var(--nuqe-text-muted)' }}
+          >
+            <option value="open">Open</option>
+            <option value="under_review">Under review</option>
+            <option value="pending_closure">Pending closure</option>
+            <option value="closed_upheld">Closed — upheld</option>
+            <option value="closed_not_upheld">Closed — not upheld</option>
+            <option value="fos_referred">FOS referred</option>
+          </select>
         </div>
       </header>
 

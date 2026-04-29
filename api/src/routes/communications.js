@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { pool } from '../db/pool.js';
 import { validate } from '../middleware/validate.js';
 import { sendViaChannel } from '../services/smtpService.js';
+import { detokenise } from '../engines/piiTokeniser.js';
 import logger from '../logger.js';
 
 const ORG_ID = '10000000-0000-0000-0000-000000000001';
@@ -132,6 +133,36 @@ router.post('/', validate(createCommSchema), async (req, res) => {
   } catch (err) {
     logger.error({ err }, 'POST /communications failed');
     res.status(500).json({ error: 'Failed to create communication' });
+  }
+});
+
+// ─── GET /:id/detokenise ──────────────────────────────────────────────────────
+// Returns the communication with PII restored. Requires staff/admin role.
+// The tokenMap is stored in metadata._tokenMap at ingest time.
+
+router.get('/:id/detokenise', async (req, res) => {
+  const { id } = req.params;
+  if (!req.user || !['staff', 'admin'].includes(req.user.role)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, body, body_plain, subject, metadata FROM communications WHERE id = $1`,
+      [id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Communication not found' });
+
+    const comm = rows[0];
+    const tokenMap = comm.metadata?._tokenMap ?? {};
+    return res.json({
+      id: comm.id,
+      subject:    detokenise(comm.subject   ?? '', tokenMap),
+      body:       detokenise(comm.body      ?? '', tokenMap),
+      body_plain: detokenise(comm.body_plain ?? '', tokenMap),
+    });
+  } catch (err) {
+    logger.error({ err }, 'GET /communications/:id/detokenise failed');
+    return res.status(500).json({ error: 'Failed to detokenise communication' });
   }
 });
 

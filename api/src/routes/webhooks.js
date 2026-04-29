@@ -3,6 +3,7 @@ import { createHmac } from 'crypto';
 import { z } from 'zod';
 import { pool } from '../db/pool.js';
 import { classifyCommunication } from '../engines/communicationEngine.js';
+import { tokenise } from '../engines/piiTokeniser.js';
 import { validate } from '../middleware/validate.js';
 import logger from '../logger.js';
 
@@ -129,12 +130,18 @@ router.post('/quido', requireQuidoSecret, validate(quidoSchema), async (req, res
     }
 
     const body_plain = message_body.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const { tokenisedText, tokenMap, lowConfidenceFlags } = tokenise(body_plain);
+    const commMetadata = {
+      ...(metadata ?? {}),
+      _tokenMap: tokenMap,
+      _lowConfidenceFlags: lowConfidenceFlags,
+    };
     const { rows } = await client.query(
       `INSERT INTO communications
          (customer_id, channel, direction, body, body_plain, author_type, external_ref, metadata)
        VALUES ($1, $2, 'inbound', $3, $4, 'customer', $5, $6::jsonb) RETURNING *`,
-      [customer.id, channel, message_body, body_plain, external_ref ?? null,
-       metadata != null ? JSON.stringify(metadata) : null]
+      [customer.id, channel, tokenisedText, tokenisedText, external_ref ?? null,
+       JSON.stringify(commMetadata)]
     );
     comm = rows[0];
 
@@ -233,14 +240,17 @@ router.post('/contact', requireBearerSecret, validate(contactSchema), async (req
       );
     }
 
-    // Build communication body
+    // Build communication body — tokenise before storing
     const body_plain = body.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const { tokenisedText, tokenMap, lowConfidenceFlags } = tokenise(body_plain);
     const metadata = {
       source,
       priority,
       customer_type: customerType,
       phone: customerPhone ?? null,
       quido: _quido ?? null,
+      _tokenMap: tokenMap,
+      _lowConfidenceFlags: lowConfidenceFlags,
     };
 
     const { rows } = await client.query(
@@ -248,7 +258,7 @@ router.post('/contact', requireBearerSecret, validate(contactSchema), async (req
          (customer_id, channel, direction, subject, body, body_plain,
           author_type, external_ref, metadata)
        VALUES ($1, $2, 'inbound', $3, $4, $5, 'customer', $6, $7::jsonb) RETURNING *`,
-      [customer.id, channel, subject ?? null, body, body_plain,
+      [customer.id, channel, subject ?? null, tokenisedText, tokenisedText,
        externalId, JSON.stringify(metadata)]
     );
     comm = rows[0];

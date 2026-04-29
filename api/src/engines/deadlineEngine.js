@@ -169,6 +169,27 @@ export async function checkDeadlines() {
         previousValue: JSON.stringify({ breached: false }),
         newValue: JSON.stringify({ breached: true, deadline_type: row.deadline_type, due_at: row.due_at }),
       });
+
+      // Escalate: move case to under_review if still open
+      if (row.case_id) {
+        await client.query(
+          `UPDATE cases
+           SET status = 'under_review', updated_at = NOW()
+           WHERE id = $1 AND status = 'open'`,
+          [row.case_id]
+        );
+        await writeAudit(client, {
+          entityId: row.case_id,
+          action: 'escalated',
+          newValue: JSON.stringify({
+            reason: 'deadline_breached',
+            deadline_type: row.deadline_type,
+            due_at: row.due_at,
+          }),
+        });
+        logger.warn({ caseId: row.case_id, deadline_type: row.deadline_type },
+          'Case escalated — deadline breached');
+      }
     }
 
     const summary = {

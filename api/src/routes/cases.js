@@ -151,4 +151,44 @@ router.post('/', validate(createCaseSchema), async (req, res) => {
   }
 });
 
+const updateCaseSchema = z.object({
+  status:      z.enum(['open','under_review','pending_closure','closed_upheld',
+                       'closed_not_upheld','fos_referred']).optional(),
+  assigned_to: z.string().uuid().nullable().optional(),
+  category:    z.string().min(1).optional(),
+  notes:       z.string().nullable().optional(),
+  fos_ref:     z.string().nullable().optional(),
+});
+
+router.patch('/:id', validate(updateCaseSchema), async (req, res) => {
+  const { id } = req.params;
+  const fields = req.body;
+  const allowed = ['status', 'assigned_to', 'category', 'notes', 'fos_ref'];
+  const updates = Object.entries(fields).filter(([k]) => allowed.includes(k));
+  if (!updates.length) return res.status(400).json({ error: 'No valid fields to update' });
+
+  const setClauses = updates.map(([k], i) => `${k} = $${i + 2}`).join(', ');
+  const values     = updates.map(([, v]) => v);
+
+  try {
+    const { rows } = await pool.query(
+      `UPDATE cases SET ${setClauses}, updated_at = NOW()
+       WHERE id = $1 RETURNING *`,
+      [id, ...values]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Case not found' });
+
+    await pool.query(
+      `INSERT INTO audit_log (entity_type, entity_id, action, actor_type, new_value)
+       VALUES ('case', $1, 'updated', 'staff', $2)`,
+      [id, JSON.stringify(fields)]
+    );
+
+    return res.json(rows[0]);
+  } catch (err) {
+    logger.error({ err }, 'PATCH /cases/:id failed');
+    return res.status(500).json({ error: 'Failed to update case' });
+  }
+});
+
 export default router;

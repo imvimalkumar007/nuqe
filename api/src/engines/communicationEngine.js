@@ -210,11 +210,23 @@ export async function classifyCommunication(communicationId) {
 
   const inputText = (comm.body_plain || comm.body).slice(0, 4000); // guard token budget
 
+  // RAG: fetch relevant regulatory context to inform classification
+  let knowledgeContext = '';
+  try {
+    const chunks = await retrieveContext(inputText, { limit: 3, jurisdiction: comm.jurisdiction });
+    if (chunks?.length) {
+      knowledgeContext = '\n\nRelevant regulatory context:\n' +
+        chunks.map((c) => `- ${c.content}`).join('\n');
+    }
+  } catch {
+    // best-effort — never block classification on knowledge layer failure
+  }
+
   const response = await anthropic.messages.create({
     model: MODEL,
     max_tokens: 256,
     system: CLASSIFY_SYSTEM,
-    messages: [{ role: 'user', content: inputText }],
+    messages: [{ role: 'user', content: inputText + knowledgeContext }],
   });
 
   const rawOutput = response.content[0]?.text ?? '';
@@ -225,14 +237,19 @@ export async function classifyCommunication(communicationId) {
     throw new Error(`Claude returned non-JSON classification: ${rawOutput}`);
   }
 
+  const CONFIDENCE_THRESHOLD = 0.75;
   const { classification, confidence, reason } = parsed;
   const isComplaint =
     classification === 'complaint' || classification === 'implicit_complaint';
+  const meetsThreshold = confidence >= CONFIDENCE_THRESHOLD;
 
   const actionType =
     classification === 'implicit_complaint'
       ? 'implicit_complaint_detection'
       : 'complaint_classification';
+
+  // Below threshold: keep as pending for human review; don't auto-open a case.
+  const actionStatus = meetsThreshold ? 'approved' : 'pending';
 
   const client = await pool.connect();
   try {
@@ -241,7 +258,7 @@ export async function classifyCommunication(communicationId) {
          (case_id, communication_id, action_type, ai_input, ai_output,
           ai_model, confidence_score, status, ai_classification,
           reviewed_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'approved', $8, NOW())
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING id`,
       [
         comm.case_id ?? null,
@@ -251,7 +268,9 @@ export async function classifyCommunication(communicationId) {
         rawOutput,
         MODEL,
         confidence,
+        actionStatus,
         classification,
+        meetsThreshold ? new Date() : null,
       ]
     );
     const aiActionId = actionRows[0].id;
@@ -260,21 +279,20 @@ export async function classifyCommunication(communicationId) {
       entityType: 'ai_action',
       entityId: aiActionId,
       action: 'created',
-      newValue: { action_type: actionType, classification, confidence, reason },
+      newValue: { action_type: actionType, classification, confidence, reason, meetsThreshold },
     });
 
-    // Auto-open case when a complaint is detected and none exists yet
-    if (isComplaint && !comm.case_id) {
+    // Auto-open case only when confidence meets threshold
+    if (isComplaint && meetsThreshold && !comm.case_id) {
       const newCase = await openCaseForCommunication(client, comm, classification);
 
-      // Backfill case_id on the ai_action row
       await client.query(
         `UPDATE ai_actions SET case_id = $1 WHERE id = $2`,
         [newCase.id, aiActionId]
       );
     }
 
-    return { classification, confidence, reason, aiActionId };
+    return { classification, confidence, reason, aiActionId, meetsThreshold };
   } finally {
     client.release();
   }
