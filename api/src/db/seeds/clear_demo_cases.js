@@ -56,6 +56,20 @@ async function clearDemo() {
     );
     console.log(`  deleted ${custDel} customers`);
 
+    // Advance sequence past any manually-inserted case_refs so the trigger
+    // never collides with old demo rows if they're re-examined later.
+    const { rows: seqRows } = await db.query(
+      `SELECT setval('case_ref_seq',
+         GREATEST(
+           (SELECT COALESCE(MAX(CAST(SPLIT_PART(case_ref, '-', 3) AS INT)), 0)
+            FROM cases
+            WHERE case_ref ~ '^NQ-[0-9]{4}-[0-9]+$'),
+           nextval('case_ref_seq') - 1
+         )
+       ) AS new_val`
+    );
+    console.log(`  case_ref_seq advanced to ${seqRows[0].new_val}`);
+
     await db.query('COMMIT');
     console.log('\nDemo data cleared. Database is clean for real cases.');
   } catch (err) {
