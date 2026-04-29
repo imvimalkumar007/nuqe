@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 import client from '../api/client';
 
 const PendingActionsContext = createContext({
-  pendingCount:        0,   // total: AI actions + pending_review chunks
+  pendingCount:        0,   // ai_actions with status=pending only
   pendingActions:      [],  // ai_actions with status=pending
   pendingChunksCount:  0,   // knowledge_chunks with status=pending_review
   refresh:             () => {},
@@ -35,7 +35,7 @@ export function PendingActionsProvider({ children }) {
     return () => clearInterval(id);
   }, [refresh]);
 
-  const pendingCount = pendingActions.length + pendingChunksCount;
+  const pendingCount = pendingActions.length;
 
   return (
     <PendingActionsContext.Provider
