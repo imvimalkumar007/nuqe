@@ -239,8 +239,9 @@ export async function classifyCommunication(communicationId) {
     const { rows: actionRows } = await client.query(
       `INSERT INTO ai_actions
          (case_id, communication_id, action_type, ai_input, ai_output,
-          ai_model, confidence_score, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
+          ai_model, confidence_score, status, ai_classification,
+          reviewed_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'approved', $8, NOW())
        RETURNING id`,
       [
         comm.case_id ?? null,
@@ -250,6 +251,7 @@ export async function classifyCommunication(communicationId) {
         rawOutput,
         MODEL,
         confidence,
+        classification,
       ]
     );
     const aiActionId = actionRows[0].id;
