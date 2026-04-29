@@ -4,7 +4,10 @@ import { calculateDeadlines } from './deadlineEngine.js';
 import { retrieveContext } from './knowledgeLayer.js';
 import logger from '../logger.js';
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  defaultHeaders: { 'anthropic-beta': 'prompt-caching-2024-07-31' },
+});
 const MODEL = 'claude-sonnet-4-6';
 
 // ─── Prompts ──────────────────────────────────────────────────────────────────
