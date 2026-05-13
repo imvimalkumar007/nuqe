@@ -1,0 +1,61 @@
+[project]
+name = "nuqe-engine"
+version = "0.1.0"
+description = "Nuqe deterministic obligation engine. Consumes the v1 obligation library."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Proprietary" }
+authors = [{ name = "Vimal Kumar" }]
+
+dependencies = [
+    "openpyxl>=3.1.5",
+    "pydantic>=2.8.0",
+    "psycopg[binary]>=3.2.0",
+    "python-dateutil>=2.9.0",
+    "holidays>=0.57",
+    "click>=8.1.7",
+    "rich>=13.7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-cov>=5.0.0",
+    "pytest-asyncio>=0.24.0",
+    "mypy>=1.11.0",
+    "ruff>=0.6.0",
+    "freezegun>=1.5.0",
+]
+
+[project.scripts]
+nuqe-engine = "nuqe_engine.cli:cli"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["nuqe_engine*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+addopts = "-ra --strict-markers --tb=short"
+markers = [
+    "integration: marks tests that require a live Postgres database",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_ignores = true

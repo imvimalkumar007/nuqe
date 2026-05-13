@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: nuqe_engine_postgres
+    environment:
+      POSTGRES_USER: nuqe
+      POSTGRES_PASSWORD: nuqe_secret
+      POSTGRES_DB: nuqe_engine
+    ports:
+      - "5433:5432"
+    volumes:
+      - nuqe_engine_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nuqe -d nuqe_engine"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  nuqe_engine_pgdata:
