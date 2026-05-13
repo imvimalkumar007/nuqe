@@ -12,8 +12,9 @@ DSL grammar supported:
     term         := "NOT" term | "(" expression ")" | comparison
     comparison   := operand [operator operand]
     operator     := "==" | "!=" | "<" | "<=" | ">" | ">=" | "IN" | "NOT IN"
-    operand      := dotted_path | string | number | "true" | "false" | "null"
+    operand      := dotted_path | string | number | date | "true" | "false" | "null"
     dotted_path  := identifier ("." identifier)*
+    date         := YYYY-MM-DD  (ISO 8601 date literal, no quotes required)
 
 IN lists accept both "[a, b]" (bracket) and "(a, b)" (paren) notation,
 matching actual library usage.
@@ -25,13 +26,25 @@ exclusion applies), per the Method specification.
 
 Short-circuit evaluation applies: AND stops on the first False, OR stops on
 the first True.
+
+Date literal semantics:
+    - ``YYYY-MM-DD`` in the expression text is lexed as a single DATE_LITERAL
+      token and evaluates to a ``datetime.date`` object.
+    - Comparing a date literal against a ``datetime.datetime`` value uses the
+      datetime's ``.date()`` component.
+    - A context path that resolves to an ISO-format string (``"YYYY-MM-DD"``)
+      is auto-coerced to ``datetime.date`` when the other operand is a date.
+    - This supports library conditions such as:
+        ``complaint.received_at >= 2014-04-01``
 """
 
 from __future__ import annotations
 
+import contextlib
 import logging
+import re
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from enum import Enum, auto
 from typing import Any
 from uuid import UUID
@@ -74,6 +87,7 @@ class _TT(Enum):
     EOF = auto()
     STRING = auto()
     NUMBER = auto()
+    DATE_LITERAL = auto()  # ISO 8601: YYYY-MM-DD
     IDENT = auto()    # dotted path, e.g. case.type
     LPAREN = auto()
     RPAREN = auto()
@@ -99,6 +113,12 @@ class _TT(Enum):
 class _Token:
     type: _TT
     value: Any = None
+
+
+# Regex for ISO 8601 date literals: YYYY-MM-DD.
+# Must be checked *before* the general number rule so that the `-` separators
+# are not mistaken for subtraction or negative-number prefixes.
+_DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 
 _KEYWORDS: dict[str, _TT] = {
@@ -193,6 +213,20 @@ def _tokenise(expr: str) -> list[_Token]:
             tokens.append(_Token(_TT.COMMA))
             pos += 1
             continue
+
+        # ISO date literals: YYYY-MM-DD — must be checked before general numbers
+        # so the hyphens are not consumed as subtraction or negative-number signs.
+        if ch.isdigit():
+            m = _DATE_RE.match(expr, pos)
+            if m and len(m.group()) == 10:
+                raw_date = m.group()
+                try:
+                    val_date = date.fromisoformat(raw_date)
+                    tokens.append(_Token(_TT.DATE_LITERAL, val_date))
+                    pos = m.end()
+                    continue
+                except ValueError:
+                    pass  # Not a valid calendar date — fall through to number
 
         # Numbers (integer or float, optionally negative)
         if ch.isdigit() or (ch == "-" and pos + 1 < length and expr[pos + 1].isdigit()):
@@ -393,6 +427,9 @@ class _Parser:
         if tok.type == _TT.NUMBER:
             self._advance()
             return _LiteralNode(tok.value)
+        if tok.type == _TT.DATE_LITERAL:
+            self._advance()
+            return _LiteralNode(tok.value)
         if tok.type == _TT.TRUE:
             self._advance()
             return _LiteralNode(True)
@@ -424,7 +461,7 @@ class _Parser:
         items: list[Any] = []
         while not self._at(close_t, _TT.EOF):
             tok = self._peek()
-            if tok.type in (_TT.STRING, _TT.NUMBER, _TT.TRUE, _TT.FALSE, _TT.NULL, _TT.IDENT):
+            if tok.type in (_TT.STRING, _TT.NUMBER, _TT.DATE_LITERAL, _TT.TRUE, _TT.FALSE, _TT.NULL, _TT.IDENT):
                 self._advance()
                 if tok.type == _TT.TRUE:
                     items.append(True)
@@ -469,7 +506,35 @@ def _resolve_path(path: str, context: dict[str, Any]) -> Any:
     return current
 
 
+def _coerce_dates(left: Any, right: Any) -> tuple[Any, Any]:
+    """
+    Normalise operands so that date comparisons are type-compatible.
+
+    Rules:
+    - ``datetime`` vs ``date``: convert datetime to its .date() component.
+    - ``str`` vs ``date``: try parsing the string as ISO date; if it fails,
+      leave the string as-is (the comparison will then raise or return False
+      as appropriate for the operator).
+    """
+    if isinstance(left, datetime) and isinstance(right, date):
+        left = left.date()
+    elif isinstance(left, date) and isinstance(right, datetime):
+        right = right.date()
+
+    if isinstance(left, str) and isinstance(right, date):
+        with contextlib.suppress(ValueError):
+            left = date.fromisoformat(left)
+    elif isinstance(left, date) and isinstance(right, str):
+        with contextlib.suppress(ValueError):
+            right = date.fromisoformat(right)
+
+    return left, right
+
+
 def _compare(op: str, left: Any, right: Any) -> bool:
+    # Normalise date/datetime/string operands before comparison
+    left, right = _coerce_dates(left, right)
+
     if op == "==":
         if left is None and right is None:
             return True

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import copy
-from datetime import date
 from pathlib import Path
 
 import pytest
@@ -11,21 +9,15 @@ import pytest
 from nuqe_engine.loader import load_library
 from nuqe_engine.schema import (
     CustomerSegment,
-    DeadlineAnchor,
     DeadlineUnit,
     Evidence,
-    EvidenceLocation,
-    EvidenceType,
     ObligationRow,
     ProductType,
     RawObligationRow,
     Requirement,
-    RequirementAction,
     TriggerCondition,
-    TriggerEvent,
 )
-from nuqe_engine.validator import ValidationDefect, ValidationResult, validate
-
+from nuqe_engine.validator import validate
 
 # ── Fixtures ─────────────────────────────────────────────────────────────
 
@@ -312,3 +304,35 @@ def test_row_with_error_defect_excluded_from_valid(
     result = validate([bad])
     assert len(result.valid) == 0
     assert len(result.defects) > 0
+
+
+# ── Library-wide regression guard ─────────────────────────────────────────
+
+LIBRARY_FIXTURE = Path(__file__).parent / "fixtures" / "Nuqe_Obligation_Library.xlsx"
+
+
+@pytest.mark.skipif(
+    not LIBRARY_FIXTURE.exists(),
+    reason="Obligation library fixture not present",
+)
+def test_every_approved_row_parses_in_full() -> None:
+    """
+    Every approved row in the obligation library must parse without any
+    error-level defect.
+
+    This is the library-wide regression guard: if any obligation's
+    trigger_condition, deadline expression, or structured field causes a
+    parse failure, this test catches it before the engine ever sees the row.
+    """
+    raw_rows = load_library(LIBRARY_FIXTURE, approved_only=True)
+    result = validate(raw_rows)
+
+    errors = [d for d in result.defects if d.severity == "error"]
+    if errors:
+        lines = "\n".join(
+            f"  Row {d.row_number} [{d.obligation_id}] {d.column}: {d.message}"
+            for d in errors
+        )
+        pytest.fail(
+            f"{len(errors)} obligation(s) have parse/validation errors:\n{lines}"
+        )

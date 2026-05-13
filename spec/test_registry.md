@@ -4,12 +4,14 @@
 > Status: PASS, FAIL, NOT RUN, SKIPPED
 > This file is the ground truth for build status.
 
-Last updated: 29 April 2026
-Total: 187
-PASS: 183
+Last updated: 13 May 2026
+Total: 388
+PASS: 351
 FAIL: 0
-NOT RUN: 0
+NOT RUN: 37
 SKIPPED: 4
+
+Note: NOT RUN = nuqe_engine integration tests (require live Postgres via Docker; run with `pytest -m integration`).
 
 ---
 
@@ -328,6 +330,276 @@ SKIPPED: 4
 | CH-007 | DELETE /channels/:id/members/:userId removes assignment | PASS | 27 Apr 2026 |
 | CH-008 | POST /channels/:id/test validates connectivity and updates connection_status | PASS | 27 Apr 2026 |
 | CH-009 | GET /channels masks imap_password and smtp_password with •••••••• | PASS | 27 Apr 2026 |
+
+---
+
+## 21 Obligation Engine — Loader (nuqe_engine)
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| OBL-LOAD-001 | load_library returns only approved rows by default | PASS | 13 May 2026 |
+| OBL-LOAD-002 | load_library can return all statuses when approved_only=False | PASS | 13 May 2026 |
+| OBL-LOAD-003 | load_library loads expected count (141 approved) | PASS | 13 May 2026 |
+| OBL-LOAD-004 | load_library obligation_id format matches XX-YYYY-NNN pattern | PASS | 13 May 2026 |
+| OBL-LOAD-005 | load_library stashes _source_row_number on each row | PASS | 13 May 2026 |
+| OBL-LOAD-006 | load_library raises LoaderError for missing file | PASS | 13 May 2026 |
+| OBL-LOAD-007 | load_library raises LoaderError for bad sheet name | PASS | 13 May 2026 |
+| OBL-LOAD-008 | load_all_statuses groups rows by review_status | PASS | 13 May 2026 |
+| OBL-LOAD-009 | load_library review_status breakdown sums to total row count | PASS | 13 May 2026 |
+
+---
+
+## 22 Obligation Engine — Validator (nuqe_engine)
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| OBL-VAL-001 | All 141 approved rows validate with zero error-level defects | PASS | 13 May 2026 |
+| OBL-VAL-002 | Valid row produces correctly typed sub-fields (TriggerCondition, Requirement, etc.) | PASS | 13 May 2026 |
+| OBL-VAL-003 | Defect carries source spreadsheet row number | PASS | 13 May 2026 |
+| OBL-VAL-004 | Malformed trigger_condition produces error defect on trigger_condition column | PASS | 13 May 2026 |
+| OBL-VAL-005 | deadline_value present when deadline_unit=none raises error | PASS | 13 May 2026 |
+| OBL-VAL-006 | deadline_value missing when deadline_unit=calendar_days raises error | PASS | 13 May 2026 |
+| OBL-VAL-007 | deadline_value=0 when deadline_unit=business_days raises error | PASS | 13 May 2026 |
+| OBL-VAL-008 | overlay_of pointing to nonexistent obligation_id raises error | PASS | 13 May 2026 |
+| OBL-VAL-009 | overlay_of pointing to existing obligation_id is valid | PASS | 13 May 2026 |
+| OBL-VAL-010 | framework not matching obligation_id prefix raises error | PASS | 13 May 2026 |
+| OBL-VAL-011 | Single valid row produces ObligationRow in result.valid | PASS | 13 May 2026 |
+| OBL-VAL-012 | Empty input returns empty valid and empty defects | PASS | 13 May 2026 |
+| OBL-VAL-013 | Row with error defect excluded from valid list | PASS | 13 May 2026 |
+| OBL-VAL-014 | test_every_approved_row_parses_in_full regression guard — all 141 rows parse cleanly | PASS | 13 May 2026 |
+
+---
+
+## 23 Obligation Engine — Trigger DSL (nuqe_engine)
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| OBL-TRIG-001 | null sentinel evaluates to False | PASS | 13 May 2026 |
+| OBL-TRIG-002 | false sentinel evaluates to False | PASS | 13 May 2026 |
+| OBL-TRIG-003 | empty string evaluates to False | PASS | 13 May 2026 |
+| OBL-TRIG-004 | whitespace-only string evaluates to False | PASS | 13 May 2026 |
+| OBL-TRIG-005 | true literal evaluates to True | PASS | 13 May 2026 |
+| OBL-TRIG-006 | string equality match | PASS | 13 May 2026 |
+| OBL-TRIG-007 | string equality no match | PASS | 13 May 2026 |
+| OBL-TRIG-008 | string inequality | PASS | 13 May 2026 |
+| OBL-TRIG-009 | double-quoted string | PASS | 13 May 2026 |
+| OBL-TRIG-010 | numeric equality | PASS | 13 May 2026 |
+| OBL-TRIG-011 | numeric less than | PASS | 13 May 2026 |
+| OBL-TRIG-012 | numeric less than or equal | PASS | 13 May 2026 |
+| OBL-TRIG-013 | numeric greater than | PASS | 13 May 2026 |
+| OBL-TRIG-014 | numeric greater than or equal | PASS | 13 May 2026 |
+| OBL-TRIG-015 | numeric less than false | PASS | 13 May 2026 |
+| OBL-TRIG-016 | dotted path two levels | PASS | 13 May 2026 |
+| OBL-TRIG-017 | dotted path three levels | PASS | 13 May 2026 |
+| OBL-TRIG-018 | missing path returns False for equality | PASS | 13 May 2026 |
+| OBL-TRIG-019 | missing path returns True for inequality | PASS | 13 May 2026 |
+| OBL-TRIG-020 | missing path with ordering raises ExpressionError | PASS | 13 May 2026 |
+| OBL-TRIG-021 | IN with bracket list | PASS | 13 May 2026 |
+| OBL-TRIG-022 | IN with paren list | PASS | 13 May 2026 |
+| OBL-TRIG-023 | IN no match | PASS | 13 May 2026 |
+| OBL-TRIG-024 | NOT IN | PASS | 13 May 2026 |
+| OBL-TRIG-025 | NOT IN match returns False | PASS | 13 May 2026 |
+| OBL-TRIG-026 | IN with null path returns False | PASS | 13 May 2026 |
+| OBL-TRIG-027 | NOT IN with null path returns True | PASS | 13 May 2026 |
+| OBL-TRIG-028 | AND both true | PASS | 13 May 2026 |
+| OBL-TRIG-029 | AND one false | PASS | 13 May 2026 |
+| OBL-TRIG-030 | OR first true | PASS | 13 May 2026 |
+| OBL-TRIG-031 | OR second true | PASS | 13 May 2026 |
+| OBL-TRIG-032 | OR both false | PASS | 13 May 2026 |
+| OBL-TRIG-033 | NOT negates | PASS | 13 May 2026 |
+| OBL-TRIG-034 | NOT false gives true | PASS | 13 May 2026 |
+| OBL-TRIG-035 | complex AND/OR expression | PASS | 13 May 2026 |
+| OBL-TRIG-036 | AND short-circuits on false | PASS | 13 May 2026 |
+| OBL-TRIG-037 | OR short-circuits on true | PASS | 13 May 2026 |
+| OBL-TRIG-038 | parentheses change precedence | PASS | 13 May 2026 |
+| OBL-TRIG-039 | unterminated string raises ExpressionError | PASS | 13 May 2026 |
+| OBL-TRIG-040 | unexpected character raises ExpressionError | PASS | 13 May 2026 |
+| OBL-TRIG-041 | incomplete expression raises ExpressionError | PASS | 13 May 2026 |
+| OBL-TRIG-042 | matching event fires obligation | PASS | 13 May 2026 |
+| OBL-TRIG-043 | wrong event does not fire | PASS | 13 May 2026 |
+| OBL-TRIG-044 | empty obligations returns empty | PASS | 13 May 2026 |
+| OBL-TRIG-045 | conditions false does not fire | PASS | 13 May 2026 |
+| OBL-TRIG-046 | conditions true with context fires | PASS | 13 May 2026 |
+| OBL-TRIG-047 | exclusions true suppresses obligation | PASS | 13 May 2026 |
+| OBL-TRIG-048 | exclusions false does not suppress | PASS | 13 May 2026 |
+| OBL-TRIG-049 | exclusions null sentinel does not suppress | PASS | 13 May 2026 |
+| OBL-TRIG-050 | multiple obligations fires correct subset | PASS | 13 May 2026 |
+| OBL-TRIG-051 | all matching obligations fire | PASS | 13 May 2026 |
+| OBL-TRIG-052 | fired obligation matched_at equals event occurred_at | PASS | 13 May 2026 |
+| OBL-TRIG-053 | fired obligation trigger_event field set correctly | PASS | 13 May 2026 |
+| OBL-TRIG-054 | bad conditions expression skipped with warning | PASS | 13 May 2026 |
+| OBL-TRIG-055 | bad exclusions expression skipped with warning | PASS | 13 May 2026 |
+| OBL-TRIG-056 | null == null is true | PASS | 13 May 2026 |
+| OBL-TRIG-057 | null != string is true | PASS | 13 May 2026 |
+| OBL-TRIG-058 | null == string is false | PASS | 13 May 2026 |
+| OBL-TRIG-059 | float comparison | PASS | 13 May 2026 |
+| OBL-TRIG-060 | float equality | PASS | 13 May 2026 |
+| OBL-TRIG-061 | ISO date literal lexes as single token (not three number tokens) | PASS | 13 May 2026 — NEW |
+| OBL-TRIG-062 | date literal equality true | PASS | 13 May 2026 — NEW |
+| OBL-TRIG-063 | date literal equality false | PASS | 13 May 2026 — NEW |
+| OBL-TRIG-064 | date literal less than true | PASS | 13 May 2026 — NEW |
+| OBL-TRIG-065 | date literal less than false | PASS | 13 May 2026 — NEW |
+| OBL-TRIG-066 | date literal >= true | PASS | 13 May 2026 — NEW |
+| OBL-TRIG-067 | date literal >= false | PASS | 13 May 2026 — NEW |
+| OBL-TRIG-068 | ISO string path value vs date literal coercion (true) | PASS | 13 May 2026 — NEW |
+| OBL-TRIG-069 | ISO string path value vs date literal coercion (false) | PASS | 13 May 2026 — NEW |
+| OBL-TRIG-070 | datetime path value coerced to date for comparison | PASS | 13 May 2026 — NEW |
+| OBL-TRIG-071 | UK-DISP-018 condition fires for received_at='2025-06-15' | PASS | 13 May 2026 — NEW |
+| OBL-TRIG-072 | UK-DISP-018 condition does NOT fire for received_at='2013-01-01' | PASS | 13 May 2026 — NEW |
+
+---
+
+## 24 Obligation Engine — Deadline (nuqe_engine)
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| OBL-DEAD-001 | calendar_days: 3 days from Wednesday | PASS | 13 May 2026 |
+| OBL-DEAD-002 | business_days: 3 from Wednesday skips weekend | PASS | 13 May 2026 |
+| OBL-DEAD-003 | business_days: 56 from 2026-01-02 accounts for no holidays before April | PASS | 13 May 2026 |
+| OBL-DEAD-004 | hours: 8 from morning | PASS | 13 May 2026 |
+| OBL-DEAD-005 | add_business_days(0) returns start unchanged | PASS | 13 May 2026 |
+| OBL-DEAD-006 | add_business_days requires timezone-aware datetime | PASS | 13 May 2026 |
+| OBL-DEAD-007 | add_business_days negative value raises | PASS | 13 May 2026 |
+| OBL-DEAD-008 | Good Friday 2026 is skipped by business day calc | PASS | 13 May 2026 |
+| OBL-DEAD-009 | Good Friday is recognised as bank holiday | PASS | 13 May 2026 |
+| OBL-DEAD-010 | deadline_unit=none returns no due_at | PASS | 13 May 2026 |
+| OBL-DEAD-011 | real business_days obligation computes correctly | PASS | 13 May 2026 |
+| OBL-DEAD-012 | calculate_deadline for calendar_days | PASS | 13 May 2026 |
+| OBL-DEAD-013 | calculate_deadline requires timezone-aware anchor | PASS | 13 May 2026 |
+| OBL-DEAD-014 | calculate_deadline result is timezone-aware | PASS | 13 May 2026 |
+| OBL-DEAD-015 | deadline_status is irrelevant when due_at is None | PASS | 13 May 2026 |
+| OBL-DEAD-016 | deadline_status is met when satisfied before due | PASS | 13 May 2026 |
+| OBL-DEAD-017 | deadline_status is met when satisfied exactly on due | PASS | 13 May 2026 |
+| OBL-DEAD-018 | deadline_status is breached when satisfied one second after due | PASS | 13 May 2026 |
+| OBL-DEAD-019 | deadline_status is pending when as_of equals due and not satisfied | PASS | 13 May 2026 |
+| OBL-DEAD-020 | deadline_status is breached when as_of one second after due and not satisfied | PASS | 13 May 2026 |
+| OBL-DEAD-021 | deadline_status is pending when due is in future | PASS | 13 May 2026 |
+
+---
+
+## 25 Obligation Engine — Requirement (nuqe_engine)
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| OBL-REQ-001 | register_requirement returns correct action | PASS | 13 May 2026 |
+| OBL-REQ-002 | register_requirement returns correct assertion | PASS | 13 May 2026 |
+| OBL-REQ-003 | register_requirement returns action_parameters | PASS | 13 May 2026 |
+| OBL-REQ-004 | register_requirement generates UUID when id not supplied | PASS | 13 May 2026 |
+| OBL-REQ-005 | register_requirement uses supplied fired_obligation_id | PASS | 13 May 2026 |
+| OBL-REQ-006 | register_requirement returns RequirementRegistration model | PASS | 13 May 2026 |
+| OBL-REQ-007 | check_assertion satisfied returns True | PASS | 13 May 2026 |
+| OBL-REQ-008 | check_assertion satisfied result has evaluated_at | PASS | 13 May 2026 |
+| OBL-REQ-009 | check_assertion not satisfied returns False | PASS | 13 May 2026 |
+| OBL-REQ-010 | check_assertion failed_clause is whole expression for single clause | PASS | 13 May 2026 |
+| OBL-REQ-011 | check_assertion identifies failing conjunct in AND expression | PASS | 13 May 2026 |
+| OBL-REQ-012 | check_assertion first conjunct fails | PASS | 13 May 2026 |
+| OBL-REQ-013 | check_assertion natural language returns False with manual note | PASS | 13 May 2026 |
+| OBL-REQ-014 | check_assertion result is AssertionResult model | PASS | 13 May 2026 |
+| OBL-REQ-015 | real DISP-001 obligation registers and checks correctly | PASS | 13 May 2026 |
+
+---
+
+## 26 Obligation Engine — Evidence (nuqe_engine)
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| OBL-EV-001 | empty backend returns zero | PASS | 13 May 2026 |
+| OBL-EV-002 | add and find matching record | PASS | 13 May 2026 |
+| OBL-EV-003 | find no match returns zero | PASS | 13 May 2026 |
+| OBL-EV-004 | find counts multiple matching records | PASS | 13 May 2026 |
+| OBL-EV-005 | find only counts matching records not all | PASS | 13 May 2026 |
+| OBL-EV-006 | find is location-scoped | PASS | 13 May 2026 |
+| OBL-EV-007 | find with AND expression | PASS | 13 May 2026 |
+| OBL-EV-008 | find injects case_id into context | PASS | 13 May 2026 |
+| OBL-EV-009 | find with case_id mismatch returns zero | PASS | 13 May 2026 |
+| OBL-EV-010 | check_evidence found returns True | PASS | 13 May 2026 |
+| OBL-EV-011 | check_evidence not found returns False | PASS | 13 May 2026 |
+| OBL-EV-012 | check_evidence result carries location | PASS | 13 May 2026 |
+| OBL-EV-013 | check_evidence result carries selector | PASS | 13 May 2026 |
+| OBL-EV-014 | check_evidence result is EvidenceResult model | PASS | 13 May 2026 |
+| OBL-EV-015 | check_evidence malformed selector raises ExpressionError | PASS | 13 May 2026 |
+| OBL-EV-016 | check_evidence empty selector returns False | PASS | 13 May 2026 |
+| OBL-EV-017 | InMemoryEvidenceBackend satisfies EvidenceBackend protocol | PASS | 13 May 2026 |
+| OBL-EV-018 | real evidence spec from library evaluates correctly | PASS | 13 May 2026 |
+
+---
+
+## 27 Obligation Engine — CLI (nuqe_engine)
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| OBL-CLI-001 | nuqe-engine --help exits 0 | PASS | 13 May 2026 — NEW |
+| OBL-CLI-002 | nuqe-engine load --help exits 0 | PASS | 13 May 2026 — NEW |
+| OBL-CLI-003 | nuqe-engine validate --help exits 0 | PASS | 13 May 2026 — NEW |
+| OBL-CLI-004 | nuqe-engine sync --help exits 0 | PASS | 13 May 2026 — NEW |
+| OBL-CLI-005 | nuqe-engine migrate --help exits 0 | PASS | 13 May 2026 — NEW |
+| OBL-CLI-006 | nuqe-engine status --help exits 0 | PASS | 13 May 2026 — NEW |
+| OBL-CLI-007 | load with real library reports valid rows and exits 0 | PASS | 13 May 2026 — NEW |
+| OBL-CLI-008 | load --all flag loads more rows than approved-only | PASS | 13 May 2026 — NEW |
+| OBL-CLI-009 | load with missing file exits non-zero | PASS | 13 May 2026 — NEW |
+| OBL-CLI-010 | load with malformed xlsx exits non-zero | PASS | 13 May 2026 — NEW |
+| OBL-CLI-011 | validate with real library finds no errors and exits 0 | PASS | 13 May 2026 — NEW |
+| OBL-CLI-012 | validate with malformed file exits non-zero | PASS | 13 May 2026 — NEW |
+| OBL-CLI-013 | status with unreachable database exits non-zero | PASS | 13 May 2026 — NEW |
+| OBL-CLI-014 | -v verbose flag does not crash load command | PASS | 13 May 2026 — NEW |
+
+---
+
+## 28 Obligation Engine — Audit (integration, requires DB)
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| OBL-AUD-001 | append_audit_entry returns AuditEntry | NOT RUN | Requires live Postgres |
+| OBL-AUD-002 | audit entry has auto-generated id | NOT RUN | Requires live Postgres |
+| OBL-AUD-003 | audit entry has created_at timestamp | NOT RUN | Requires live Postgres |
+| OBL-AUD-004 | audit entry has HMAC signature | NOT RUN | Requires live Postgres |
+| OBL-AUD-005 | append and retrieve round-trip | NOT RUN | Requires live Postgres |
+| OBL-AUD-006 | signature verifies for untampered entry | NOT RUN | Requires live Postgres |
+| OBL-AUD-007 | signature fails for tampered payload | NOT RUN | Requires live Postgres |
+| OBL-AUD-008 | verify_signature direct call | NOT RUN | Requires live Postgres |
+| OBL-AUD-009 | verify_signature wrong key fails | NOT RUN | Requires live Postgres |
+| OBL-AUD-010 | filter by entity_id | NOT RUN | Requires live Postgres |
+| OBL-AUD-011 | filter by entity_type | NOT RUN | Requires live Postgres |
+| OBL-AUD-012 | filter by event_type | NOT RUN | Requires live Postgres |
+| OBL-AUD-013 | results ordered chronologically | NOT RUN | Requires live Postgres |
+| OBL-AUD-014 | get_audit_trail without verify does not set signature_valid | NOT RUN | Requires live Postgres |
+| OBL-AUD-015 | get_audit_trail verify requires signing_key | NOT RUN | Requires live Postgres |
+| OBL-AUD-016 | UPDATE on audit_log raises DatabaseError | NOT RUN | Requires live Postgres |
+| OBL-AUD-017 | DELETE on audit_log raises DatabaseError | NOT RUN | Requires live Postgres |
+
+---
+
+## 29 Obligation Engine — Sync (integration, requires DB)
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| OBL-SYNC-001 | migrations apply to fresh database | NOT RUN | Requires live Postgres |
+| OBL-SYNC-002 | migrations are idempotent | NOT RUN | Requires live Postgres |
+| OBL-SYNC-003 | sync_to_database inserts all library rows | NOT RUN | Requires live Postgres |
+| OBL-SYNC-004 | sync_to_database is idempotent on second run | NOT RUN | Requires live Postgres |
+| OBL-SYNC-005 | sync raises on version/content conflict | NOT RUN | Requires live Postgres |
+| OBL-SYNC-006 | audit_log rejects UPDATE | NOT RUN | Requires live Postgres |
+| OBL-SYNC-007 | audit_log rejects DELETE | NOT RUN | Requires live Postgres |
+
+---
+
+## 30 Obligation Engine — Integration (requires DB, pytest -m integration)
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| OBL-INT-001 | refresh_library syncs all 141 approved obligations | NOT RUN | Requires live Postgres |
+| OBL-INT-002 | refresh_library is idempotent (second run: 0 inserted, 141 unchanged) | NOT RUN | Requires live Postgres |
+| OBL-INT-003 | process_event fires UK-DISP-001 and UK-DISP-009 on COMPLAINT_RECEIVED | NOT RUN | Requires live Postgres |
+| OBL-INT-004 | process_event returns deadlines; UK-DISP-009 deadline = +56 calendar days | NOT RUN | Requires live Postgres |
+| OBL-INT-005 | process_event creates one requirement per fired obligation | NOT RUN | Requires live Postgres |
+| OBL-INT-006 | process_event creates OBLIGATION_FIRED audit entries | NOT RUN | Requires live Postgres |
+| OBL-INT-007 | all audit entries from process_event have valid HMAC signatures | NOT RUN | Requires live Postgres |
+| OBL-INT-008 | re-processing same event is a no-op (idempotent) | NOT RUN | Requires live Postgres |
+| OBL-INT-009 | due_obligations returns one ObligationStatus per fired obligation | NOT RUN | Requires live Postgres |
+| OBL-INT-010 | UK-DISP-009 has deadline_status=pending one day after event | NOT RUN | Requires live Postgres |
+| OBL-INT-011 | audit_trail returns all entries for case in chronological order | NOT RUN | Requires live Postgres |
+| OBL-INT-012 | audit_trail retrieval: all signatures valid | NOT RUN | Requires live Postgres |
+| OBL-INT-013 | DEADLINE_SET audit entries match count of timed deadlines | NOT RUN | Requires live Postgres |
 
 ---
 

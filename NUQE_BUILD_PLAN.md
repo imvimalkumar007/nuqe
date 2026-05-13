@@ -39,6 +39,7 @@
 | 11 | Feature Expansion | 1 | Jurisdiction switching, RAG engine, email sending | DONE |
 | 12 | Email Omnichannel | 1 | IMAP polling, SMTP, Tiptap composer, delivery tracking, internal notes | DONE |
 | 13 | Production Hardening | 1 | Pipeline validated with real data, PII confirmed, status/detokenise APIs wired | DONE |
+| F1 | Obligation Engine | 3 | All 8 engine modules built; 164 unit tests PASS; 83% coverage gate; 13 integration tests written | DONE |
 
 Total sessions: approximately 27
 Each session: 1 to 2 hours in Claude Code
@@ -635,4 +636,5 @@ Run the complete Playwright smoke test suite against the deployed Render instanc
 | 27 April 2026 | Frontend production-grade redesign (eb3895f). Geist Variable + Geist Mono fonts. Complete CSS design system: 3-tier elevation (--nuqe-bg, --nuqe-surface, --nuqe-surface-hi), semantic colours (danger #FC8181, ok #68D391, warn #F6AD55, info #63B3ED), global component classes (.btn, .badge, .card, .data-table, .input, .skeleton). LoginPage, Sidebar, ComplaintsDashboard fully redesigned. AnalyticsDashboard, SettingsScreen, RegulatoryMonitoringScreen updated to new design tokens. Build: ✓ 5.31s. |
 | 27 April 2026 | Pipeline review and gap triage. Root cause identified: pipeline has never run with real data — all testing used seeded data. 6 new gaps logged (57–62). Decision: validate with real Gmail channel before any further UI work. Google Workspace purchase deferred until pipeline proven. |
 | 27 April 2026 | Quido contact form webhook wired up. New POST /api/v1/webhooks/contact endpoint: Bearer auth, camelCase payload, channel mapping (web_contact_form→email), phone stored in metadata, always runs AI classification. 187 total tests (183 PASS, 4 SKIPPED). |
+| 13 May 2026 | Phase F1 complete. Obligation engine (nuqe_engine Python package): all 8 modules built and verified. F1 Hardening: DSL date literals (UK-DISP-018 fix), library regression guard, CLI tests (14), coverage gate 83% ≥ 80%. 164 unit tests PASS, 37 integration tests written (NOT RUN — require Docker Postgres). F2_PLAN.md created. |
 | 29 April 2026 | Phase 13 complete. Production pipeline hardening: demo cases cleared, case_ref_seq advanced. PII tokenisation wired into both webhook routes; confirmed in production DB (tokenise-check-001 stored [NI-0] [EMAIL-1] [SORTCODE-2]). RAG context + 0.75 confidence threshold added to classifyCommunication; auto-approval on meeting threshold. Escalation on breach detection in deadlineEngine. PATCH /cases/:id + GET /communications/:id/detokenise added. Status dropdown + PII toggle in CaseView. render.yaml buildCommand includes npm run migrate. 187 tests (183 PASS, 4 SKIPPED). |

@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime, timezone
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
+from uuid import UUID
 
 import pytest
 
@@ -31,13 +31,9 @@ from nuqe_engine.schema import (
 from nuqe_engine.trigger import (
     Event,
     ExpressionError,
-    FiredObligation,
     evaluate_expression,
     find_fired_obligations,
 )
-
-UTC = timezone.utc
-
 
 # ── Fixtures ───────────────────────────────────────────────────────────────
 
@@ -608,3 +604,67 @@ def test_float_comparison() -> None:
 
 def test_float_equality() -> None:
     assert evaluate_expression("score == 1.0", {"score": 1.0}) is True
+
+
+# ── evaluate_expression: ISO date literals ────────────────────────────────
+
+
+def test_date_literal_lexes_as_single_token() -> None:
+    """2026-01-07 is treated as a single DATE_LITERAL token, not three number tokens."""
+    # If the date were mis-lexed, the expression would fail to parse or evaluate wrong.
+    assert evaluate_expression("ts == 2026-01-07", {"ts": date(2026, 1, 7)}) is True
+
+
+def test_date_literal_equality_true() -> None:
+    d = date(2024, 3, 15)
+    assert evaluate_expression("d == 2024-03-15", {"d": d}) is True
+
+
+def test_date_literal_equality_false() -> None:
+    d = date(2024, 3, 14)
+    assert evaluate_expression("d == 2024-03-15", {"d": d}) is False
+
+
+def test_date_literal_less_than_true() -> None:
+    assert evaluate_expression("d < 2024-06-01", {"d": date(2024, 1, 1)}) is True
+
+
+def test_date_literal_less_than_false() -> None:
+    assert evaluate_expression("d < 2024-06-01", {"d": date(2025, 1, 1)}) is False
+
+
+def test_date_literal_greater_than_or_equal_true() -> None:
+    assert evaluate_expression("d >= 2014-04-01", {"d": date(2014, 4, 1)}) is True
+
+
+def test_date_literal_greater_than_or_equal_false() -> None:
+    assert evaluate_expression("d >= 2014-04-01", {"d": date(2014, 3, 31)}) is False
+
+
+def test_date_literal_iso_string_coercion() -> None:
+    """A path value that is an ISO date string should compare correctly to a date literal."""
+    assert evaluate_expression("received_at >= 2014-04-01", {"received_at": "2025-06-15"}) is True
+
+
+def test_date_literal_iso_string_coercion_false() -> None:
+    assert evaluate_expression("received_at >= 2014-04-01", {"received_at": "2013-01-01"}) is False
+
+
+def test_date_literal_datetime_coercion() -> None:
+    """A path value that is a datetime should be coerced to date for comparison."""
+    dt = datetime(2026, 3, 4, 12, 0, 0, tzinfo=UTC)
+    assert evaluate_expression("ts == 2026-03-04", {"ts": dt}) is True
+
+
+def test_uk_disp_018_fires_after_cutoff() -> None:
+    """UK-DISP-018 condition: complaint.received_at >= 2014-04-01 fires for 2025-06-15."""
+    condition = "complaint.received_at >= 2014-04-01"
+    ctx = {"complaint": {"received_at": "2025-06-15"}}
+    assert evaluate_expression(condition, ctx) is True
+
+
+def test_uk_disp_018_does_not_fire_before_cutoff() -> None:
+    """UK-DISP-018 condition does NOT fire when received_at predates the cutoff."""
+    condition = "complaint.received_at >= 2014-04-01"
+    ctx = {"complaint": {"received_at": "2013-01-01"}}
+    assert evaluate_expression(condition, ctx) is False

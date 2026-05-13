@@ -41,7 +41,14 @@ include = ["nuqe_engine*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = "test_*.py"
-addopts = "-ra --strict-markers --tb=short"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--tb=short",
+    "--cov=nuqe_engine",
+    "--cov-report=term-missing",
+    "--cov-fail-under=80",
+]
 markers = [
     "integration: marks tests that require a live Postgres database",
 ]
@@ -53,6 +60,20 @@ target-version = "py312"
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
 ignore = ["E501"]
+
+[tool.coverage.run]
+source = ["nuqe_engine"]
+# engine.py and sync.py are DB-only: covered exclusively by integration tests.
+# Omit them from the unit-test gate so the 80% threshold reflects testable
+# business logic, not infra code that requires a live Postgres instance.
+omit = [
+    "nuqe_engine/engine.py",
+    "nuqe_engine/sync.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 80
 
 [tool.mypy]
 python_version = "3.12"

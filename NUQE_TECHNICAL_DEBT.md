@@ -8,6 +8,11 @@
 
 | # | Area | Description | Priority | Added | Notes |
 |---|---|---|---|---|---|
+| 64 | Testing | nuqe_engine audit.py unit coverage 46% | Medium | 13 May 2026 | DB-level append/verify logic not unit-tested; needs psycopg mock or SQLite fixture |
+| 65 | Testing | nuqe_engine cli.py unit coverage 52% | Medium | 13 May 2026 | migrate/sync/status commands need psycopg.connect mocked to remove DB dependency |
+| 66 | Testing | nuqe_engine integration tests NOT RUN | Medium | 13 May 2026 | 37 integration tests (audit, sync, engine) require Docker Postgres on port 5433; run with `pytest -m integration` |
+| 67 | Architecture | nuqe_engine F2 REST API not yet started | High | 13 May 2026 | F2_PLAN.md created; FastAPI app shell is next — see F2.1 in F2_PLAN.md |
+| 68 | Testing | test_status_without_db_exits_nonzero takes 2s | Low | 13 May 2026 | connect_timeout=2 in URL reduces from 4min to 2s; still slow — mock psycopg.connect in F2 hardening |
 | 12 | Testing | Seed script not tested for idempotency | Medium | Apr 2026 | Confirm delete order is correct |
 | 15 | Performance | pgvector index may need tuning at scale | Low | Apr 2026 | Revisit when chunks exceed 100,000 rows |
 | 18 | Reliability | No health check monitoring or alerting | Medium | Apr 2026 | Add UptimeRobot free tier |
@@ -99,4 +104,5 @@
 | 27 April 2026 | IMAP/SMTP architectural rework. Resolved gaps 50 (inbound.nuqe.io no longer needed), 51 (Mailgun inbound removed), 53 (superseded by gap 56). Added gaps 54 (OAuth2 deferred), 55 (IMAP polling on Render free dyno), 56 (per-channel email signature). |
 | 27 April 2026 | Frontend production-grade redesign. Gap 35 (no network error handling) and gap 36 (no mobile responsiveness) remain open. No new gaps introduced. |
 | 27 April 2026 | End-to-end pipeline review session. Added gaps 57 (AI draft no-op), 58 (no case status UI), 59 (CC/BCC not discoverable), 60 (no file attachments), 61 (sidebar active state), 62 (pipeline never validated with real data). Decision: validate pipeline with real Gmail channel before any UI fixes. |
+| 13 May 2026 | F1 Hardening session. DSL date literal bug fixed (UK-DISP-018 now fires). Library regression guard added. 14 CLI tests added. Coverage gate 83% ≥ 80% enforced in pyproject.toml. F2_PLAN.md drafted. Added gaps 64–68 (engine testing gaps and F2 REST API). |
 | 29 April 2026 | Production pipeline hardening. PII tokenisation confirmed working in production (tokenise-check-001: [NI-0] [EMAIL-1] [SORTCODE-2] stored in DB). Added RAG context + confidence threshold (0.75) to classifyCommunication; auto-approval on meeting threshold. Added PATCH /cases/:id, GET /communications/:id/detokenise. Status dropdown + PII toggle wired in CaseView. Fixed 99+ badge (pendingCount formula). Migration 012 applied to Render via render.yaml buildCommand. Resolved gap 58 (status UI). Added gap 63 (QUIDO_WEBHOOK_SECRET not shared with Quido). Downgraded gap 62 to Medium (webhook path validated; IMAP path still pending). |

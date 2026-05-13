@@ -26,11 +26,11 @@ Three pillars:
 
 ## Test Registry Summary
 
-Last updated: 29 April 2026
-Total tests defined: 187
-Passing: 183
+Last updated: 13 May 2026
+Total tests defined: 388
+Passing: 351
 Failing: 0
-Not run: 0
+Not run: 37
 Skipped: 4
 
 Full registry: spec/test_registry.md
@@ -61,6 +61,7 @@ Full registry: spec/test_registry.md
 | 18 | Frontend: Analytics | spec/components/18_frontend_analytics.md | VERIFIED | 6/6 |
 | 19 | Frontend: Monitoring | spec/components/19_frontend_monitoring.md | VERIFIED | 9/9 |
 | 20 | Channels | spec/components/20_channels.md | VERIFIED | 9/9 |
+| 21–30 | Obligation Engine (nuqe_engine) | nuqe_engine/ | VERIFIED (unit); NOT RUN (integration) | 164/164 unit PASS; 37 integration NOT RUN |
 
 **Status key:**
 - NOT BUILT: code does not exist

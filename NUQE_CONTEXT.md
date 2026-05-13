@@ -8,10 +8,10 @@
 
 **Product name:** Nuqe
 **Tagline:** Compliance-native communication and case management for digital lenders
-**Stage:** Production-hardened — pipeline validated with real data (29 April 2026)
+**Stage:** Production-hardened + F1 Obligation Engine complete (13 May 2026)
 **GitHub:** https://github.com/imvimalkumar007/nuqe
 **Founder:** Vimal Kumar
-**Date last updated:** 29 April 2026
+**Date last updated:** 13 May 2026
 
 **Live URLs:**
 - Web: https://nuqe-web.onrender.com
@@ -106,8 +106,17 @@ Note: DATABASE_URL uses localhost for running outside Docker. The docker-compose
 
 ## 7. Build Progress
 
-**Phase 0–13 complete as of 29 April 2026.**
+**Phase 0–13 complete as of 29 April 2026. Phase F1 (Obligation Engine) complete as of 13 May 2026.**
 
+**Obligation Engine (nuqe_engine — Python package at E:\Nuqe\nuqe_engine):**
+- All 8 modules built: loader, validator, sync, trigger (DSL), requirement, evidence, deadline, audit
+- Engine API: process_event, due_obligations, evidence_for, audit_trail
+- CLI: nuqe-engine load/validate/sync/migrate/status
+- F1 Hardening: DSL date literals (fixes UK-DISP-018 silently dropped), library regression guard, CLI tests
+- 164 unit tests PASS, 83% coverage gate (enforced by pytest), 37 integration tests written
+- F2 plan: REST API layer — see nuqe_engine/F2_PLAN.md
+
+**Main Nuqe platform:**
 - 187 tests defined, 183 passing, 4 skipped (removed Mailgun inbound route)
 - All API routes implemented and tested
 - Frontend production-grade redesign shipped 27 April 2026 (eb3895f):

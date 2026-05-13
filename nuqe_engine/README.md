@@ -6,6 +6,18 @@ Deterministic obligation engine for the Nuqe platform. Consumes the v1 obligatio
 
 F1 milestone, May 2026. Active development.
 
+## Test coverage
+
+Coverage is measured over all modules except the two that require a live Postgres instance (`engine.py`, `sync.py`). Those modules are exercised by `pytest -m integration` against a Docker database.
+
+| Scope | Tests | Coverage |
+|---|---|---|
+| Unit (no DB) | 164 | **83%** |
+| Integration (`-m integration`) | 13 | engine.py + sync.py |
+| Combined | 177 | ~90% est. |
+
+The 80% gate applies to unit tests and is enforced automatically on every `pytest` run via `pyproject.toml`.
+
 ## Architecture
 
 Eight modules, each with a single responsibility. The public API is in `nuqe_engine/engine.py`.
