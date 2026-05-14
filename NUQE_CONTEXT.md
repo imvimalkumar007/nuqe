@@ -8,10 +8,10 @@
 
 **Product name:** Nuqe
 **Tagline:** Compliance-native communication and case management for digital lenders
-**Stage:** Production-hardened — pipeline validated with real data (29 April 2026)
+**Stage:** Production-hardened — pipeline validated with real data (29 April 2026). nuqe_engine F2.1 FastAPI shell + per-module coverage gate live (14 May 2026).
 **GitHub:** https://github.com/imvimalkumar007/nuqe
 **Founder:** Vimal Kumar
-**Date last updated:** 29 April 2026
+**Date last updated:** 14 May 2026
 
 **Live URLs:**
 - Web: https://nuqe-web.onrender.com
@@ -106,9 +106,11 @@ Note: DATABASE_URL uses localhost for running outside Docker. The docker-compose
 
 ## 7. Build Progress
 
-**Phase 0–13 complete as of 29 April 2026.**
+**Phase 0–13 complete as of 29 April 2026. nuqe_engine F2.1 complete as of 14 May 2026.**
 
-- 187 tests defined, 183 passing, 4 skipped (removed Mailgun inbound route)
+- Main product: 187 tests defined, 183 passing, 4 skipped (removed Mailgun inbound route)
+- nuqe_engine: 350 Python unit tests total — 305 F1 (97% cov) + 45 F2.1 API (95% cov, branch coverage)
+- Coverage gate: bare `pytest` gates both nuqe_engine + nuqe_api; `scripts/check_coverage.py` enforces per-module ≥80%; CI stub in `.github/workflows/ci.yml`
 - All API routes implemented and tested
 - Frontend production-grade redesign shipped 27 April 2026 (eb3895f):
   - Geist Variable + Geist Mono fonts (replaces Inter)

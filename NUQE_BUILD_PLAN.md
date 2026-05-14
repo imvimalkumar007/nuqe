@@ -621,6 +621,8 @@ Run the complete Playwright smoke test suite against the deployed Render instanc
 | Phase 11 | 10 (DB:2 + COMMS:2 + SET:3 + FE-SET:3) | 152 |
 | Phase 12 | 34 (DB:4 + COMMS:3 + HOOK:5 + FE-CASE:4 + CH:9; 4 SKIPPED for removed Mailgun route) | 186 |
 | Phase 13 | 1 (HOOK-012 contact webhook; contact form already verified in production) | 187 |
+| nuqe_engine F1 | 305 Python unit tests (pytest) — obligation engine core | 305 (separate suite) |
+| nuqe_engine F2.1 | 45 Python unit tests (pytest) — FastAPI application shell | 45 (separate suite) |
 
 ---
 
@@ -636,3 +638,5 @@ Run the complete Playwright smoke test suite against the deployed Render instanc
 | 27 April 2026 | Pipeline review and gap triage. Root cause identified: pipeline has never run with real data — all testing used seeded data. 6 new gaps logged (57–62). Decision: validate with real Gmail channel before any further UI work. Google Workspace purchase deferred until pipeline proven. |
 | 27 April 2026 | Quido contact form webhook wired up. New POST /api/v1/webhooks/contact endpoint: Bearer auth, camelCase payload, channel mapping (web_contact_form→email), phone stored in metadata, always runs AI classification. 187 total tests (183 PASS, 4 SKIPPED). |
 | 29 April 2026 | Phase 13 complete. Production pipeline hardening: demo cases cleared, case_ref_seq advanced. PII tokenisation wired into both webhook routes; confirmed in production DB (tokenise-check-001 stored [NI-0] [EMAIL-1] [SORTCODE-2]). RAG context + 0.75 confidence threshold added to classifyCommunication; auto-approval on meeting threshold. Escalation on breach detection in deadlineEngine. PATCH /cases/:id + GET /communications/:id/detokenise added. Status dropdown + PII toggle in CaseView. render.yaml buildCommand includes npm run migrate. 187 tests (183 PASS, 4 SKIPPED). |
+| 14 May 2026 | nuqe_engine F2 Prompt 0: Closed all 6 F1 carry-forward debt items (audit.py 100%, cli.py 99%, validator.py 93%, jsparser.py 99%, FK-safe TRUNCATE…CASCADE, status latency <100ms). 305 unit tests, 97% coverage, ruff+mypy clean. F2 Prompt 1: FastAPI application shell — nuqe_api/ package (app.py, deps.py, settings.py, middleware/request_id.py, routers/health+events+cases+errors). 45 API unit tests (API-001 to API-045), all PASS. nuqe_api coverage 93% (all modules ≥80%). Total cross-project tests: 232 (ENG: 305 unit, API: 45 unit). ruff clean, mypy clean. |
+| 14 May 2026 | Gap 65 closed: per-module coverage gate enforced. pyproject.toml: --cov=nuqe_api added, branch=true, coverage.json output. scripts/check_coverage.py: per-module gate (fails if any module <80%). .github/workflows/ci.yml: minimal CI stub wired with pytest + check_coverage.py. Sanity-check verified. 350 unit tests, 95% aggregate coverage, all 14 measured modules ≥80%. |

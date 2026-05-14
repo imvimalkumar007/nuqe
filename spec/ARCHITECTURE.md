@@ -26,12 +26,13 @@ Three pillars:
 
 ## Test Registry Summary
 
-Last updated: 29 April 2026
-Total tests defined: 187
-Passing: 183
+Last updated: 14 May 2026
+Total tests defined: 232 (187 JS/Playwright + 45 Python API unit)
+nuqe_engine Python suite: 350 unit tests (305 F1 + 45 F2.1 API), 95% coverage
+Passing: 228 (183 JS + 45 Python API)
 Failing: 0
 Not run: 0
-Skipped: 4
+Skipped: 4 (removed Mailgun route)
 
 Full registry: spec/test_registry.md
 
@@ -61,6 +62,8 @@ Full registry: spec/test_registry.md
 | 18 | Frontend: Analytics | spec/components/18_frontend_analytics.md | VERIFIED | 6/6 |
 | 19 | Frontend: Monitoring | spec/components/19_frontend_monitoring.md | VERIFIED | 9/9 |
 | 20 | Channels | spec/components/20_channels.md | VERIFIED | 9/9 |
+| 21 | nuqe_engine F1 (Python) | nuqe_engine/ — obligation engine core | VERIFIED | 305/305 (97% cov) |
+| 22 | nuqe_engine F2.1 API (Python) | nuqe_engine/nuqe_api/ — FastAPI shell | VERIFIED | 45/45 (95% cov) |
 
 **Status key:**
 - NOT BUILT: code does not exist
@@ -130,9 +133,10 @@ Do not move to the next component until all tests for this one pass.
 
 ---
 
-## Known Issues (27 April 2026)
+## Known Issues (14 May 2026)
 
-No open HIGH severity issues. See NUQE_TECHNICAL_DEBT.md for the full gap list.
+No open HIGH severity issues in the main Nuqe product. See NUQE_TECHNICAL_DEBT.md for the full gap list.
+nuqe_engine open gaps: 64 (engine private attr access in cases.py — Low), 66 (static Bearer token, no rotation — Medium, F3 scope).
 
 | Issue | Component | Severity | Notes |
 |---|---|---|---|
@@ -215,4 +219,18 @@ nuqe/
 ├── docker-compose.yml
 ├── render.yaml
 └── README.md
+nuqe_engine/               (Python obligation engine — separate package)
+├── nuqe_engine/           (core engine modules)
+├── nuqe_api/              (FastAPI REST layer — F2.1 complete)
+│   ├── app.py             (create_app factory, lifespan)
+│   ├── deps.py            (Bearer auth, get_engine)
+│   ├── settings.py        (pydantic-settings)
+│   ├── middleware/        (X-Request-ID)
+│   └── routers/           (health, events, cases, errors)
+├── scripts/
+│   └── check_coverage.py  (per-module coverage gate)
+├── tests/
+│   ├── api/               (45 unit tests, no DB)
+│   └── (350 unit tests total)
+└── .github/workflows/ci.yml
 ```

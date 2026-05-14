@@ -4,9 +4,9 @@
 > Status: PASS, FAIL, NOT RUN, SKIPPED
 > This file is the ground truth for build status.
 
-Last updated: 29 April 2026
-Total: 187
-PASS: 183
+Last updated: 14 May 2026
+Total: 232
+PASS: 228
 FAIL: 0
 NOT RUN: 0
 SKIPPED: 4
@@ -328,6 +328,74 @@ SKIPPED: 4
 | CH-007 | DELETE /channels/:id/members/:userId removes assignment | PASS | 27 Apr 2026 |
 | CH-008 | POST /channels/:id/test validates connectivity and updates connection_status | PASS | 27 Apr 2026 |
 | CH-009 | GET /channels masks imap_password and smtp_password with •••••••• | PASS | 27 Apr 2026 |
+
+---
+
+## 21 nuqe_engine — Obligation Engine Unit Tests (Python/pytest)
+
+> 350 Python unit tests covering the obligation engine core. Separate pytest suite in nuqe_engine/.
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| ENG-001 | audit.py unit coverage ≥80% | PASS | 14 May 2026 — test_audit_unit.py, 54 tests, 100% coverage |
+| ENG-002 | cli.py unit coverage ≥80% | PASS | 14 May 2026 — test_cli_unit.py, 17 tests, 99% coverage |
+| ENG-003 | validator.py cross-field coverage ≥80% | PASS | 14 May 2026 — test_validator_crossfield.py, 17 tests, 93% coverage |
+| ENG-004 | jsparser.py coverage ≥80% | PASS | 14 May 2026 — test_jsparser_unit.py, 99% coverage |
+| ENG-005 | Integration DB TRUNCATE…CASCADE safe (no FK violations) | PASS | 14 May 2026 — conftest.py refactored |
+| ENG-006 | test_status_without_db_exits_nonzero runs in <100ms | PASS | 14 May 2026 — psycopg.connect patched |
+| ENG-007 | Total nuqe_engine unit test coverage ≥80% | PASS | 14 May 2026 — 350 unit tests, 97% coverage |
+
+## 22 nuqe_engine — F2.1 FastAPI Application Shell (Python/pytest)
+
+> 45 Python unit tests covering the nuqe_api REST API layer. No DB dependency.
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| API-001 | GET /health returns 200 when engine healthy | PASS | 14 May 2026 |
+| API-002 | GET /health returns 503 when DB unreachable | PASS | 14 May 2026 |
+| API-003 | GET /health requires no auth header | PASS | 14 May 2026 |
+| API-004 | GET /health body has db_reachable, approved_count, library_synced_at | PASS | 14 May 2026 |
+| API-005 | GET /health library_synced_at=None serialises as null | PASS | 14 May 2026 |
+| API-006 | GET /health shape consistent | PASS | 14 May 2026 |
+| API-007 | POST /events no auth header → 403 AUTH_MISSING | PASS | 14 May 2026 |
+| API-008 | POST /events no auth error_code=AUTH_MISSING | PASS | 14 May 2026 |
+| API-009 | GET /health unauthenticated → not 403 | PASS | 14 May 2026 |
+| API-010 | POST /events wrong token → 401 AUTH_INVALID | PASS | 14 May 2026 |
+| API-011 | POST /events wrong token error_code=AUTH_INVALID | PASS | 14 May 2026 |
+| API-012 | POST /events empty token → 401 or 403 | PASS | 14 May 2026 |
+| API-013 | POST /events correct token → 200 | PASS | 14 May 2026 |
+| API-014 | hmac.compare_digest called for token comparison | PASS | 14 May 2026 |
+| API-015 | POST /events valid payload → 200 | PASS | 14 May 2026 |
+| API-016 | POST /events calls engine.process_event with parsed Event | PASS | 14 May 2026 |
+| API-017 | POST /events response has fired_obligations, deadlines, requirements, audit_entries | PASS | 14 May 2026 |
+| API-018 | POST /events X-Request-ID present in response | PASS | 14 May 2026 |
+| API-019 | POST /events X-Request-ID echoed if sent | PASS | 14 May 2026 |
+| API-020 | POST /events generated request_id is valid UUID | PASS | 14 May 2026 |
+| API-021 | POST /events missing event field → 422 | PASS | 14 May 2026 |
+| API-022 | POST /events invalid event type → 422 | PASS | 14 May 2026 |
+| API-023 | POST /events missing case_id → 422 | PASS | 14 May 2026 |
+| API-024 | POST /events engine raises → 500 | PASS | 14 May 2026 |
+| API-025 | POST /events engine error body has error_code=ENGINE_ERROR | PASS | 14 May 2026 |
+| API-026 | POST /events engine error body has request_id | PASS | 14 May 2026 |
+| API-027 | X-Request-ID client value echoed back | PASS | 14 May 2026 |
+| API-028 | X-Request-ID UUID generated when no header | PASS | 14 May 2026 |
+| API-029 | Different requests get different X-Request-IDs | PASS | 14 May 2026 |
+| API-030 | X-Request-ID present on health response | PASS | 14 May 2026 |
+| API-031 | X-Request-ID present on error response | PASS | 14 May 2026 |
+| API-032 | X-Request-ID in 500 error body matches header | PASS | 14 May 2026 |
+| API-033 | GET /cases/{id}/obligations unknown case → 404 | PASS | 14 May 2026 |
+| API-034 | GET /cases/{id}/obligations 404 body has error_code=CASE_NOT_FOUND | PASS | 14 May 2026 |
+| API-035 | GET /cases/{id}/obligations known case → 200 | PASS | 14 May 2026 |
+| API-036 | GET /cases/{id}/obligations empty list returned | PASS | 14 May 2026 |
+| API-037 | GET /cases/{id}/obligations calls engine.due_obligations with case_id | PASS | 14 May 2026 |
+| API-038 | GET /cases/{id}/obligations?as_of=... as_of forwarded to engine | PASS | 14 May 2026 |
+| API-039 | GET /cases/{id}/obligations no auth → 403 | PASS | 14 May 2026 |
+| API-040 | GET /cases/{id}/audit unknown case → 404 | PASS | 14 May 2026 |
+| API-041 | GET /cases/{id}/audit known case → 200 | PASS | 14 May 2026 |
+| API-042 | GET /cases/{id}/audit response has entries and has_more | PASS | 14 May 2026 |
+| API-043 | GET /cases/{id}/audit invalid event_type → 422 | PASS | 14 May 2026 |
+| API-044 | GET /cases/{id}/audit valid event_type → 200 | PASS | 14 May 2026 |
+| API-045 | GET /cases/{id}/audit no auth → 403 | PASS | 14 May 2026 |
 
 ---
 
