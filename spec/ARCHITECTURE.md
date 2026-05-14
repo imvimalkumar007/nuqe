@@ -26,12 +26,12 @@ Three pillars:
 
 ## Test Registry Summary
 
-Last updated: 13 May 2026
-Total tests defined: 388
-Passing: 351
+Last updated: 14 May 2026
+Total tests defined: 661
+Passing: 604
 Failing: 0
-Not run: 37
-Skipped: 4
+Not run: 56
+Skipped: 5
 
 Full registry: spec/test_registry.md
 
@@ -61,7 +61,11 @@ Full registry: spec/test_registry.md
 | 18 | Frontend: Analytics | spec/components/18_frontend_analytics.md | VERIFIED | 6/6 |
 | 19 | Frontend: Monitoring | spec/components/19_frontend_monitoring.md | VERIFIED | 9/9 |
 | 20 | Channels | spec/components/20_channels.md | VERIFIED | 9/9 |
-| 21–30 | Obligation Engine (nuqe_engine) | nuqe_engine/ | VERIFIED (unit); NOT RUN (integration) | 164/164 unit PASS; 37 integration NOT RUN |
+| 21–40 | Obligation Engine (nuqe_engine) | nuqe_engine/ | VERIFIED (unit); NOT RUN (integration) | 305/305 unit PASS; 3 integration NOT RUN; 13 integration NOT RUN (engine) |
+| 31 | F2 Agent Tokeniser (nuqe_agent) | nuqe_agent/ | VERIFIED | 24/24 PASS |
+| 32 | F2 Agent Dictionary (nuqe_agent) | nuqe_agent/ | VERIFIED (unit); NOT RUN (integration) | 34/34 unit PASS; 9 integration NOT RUN |
+| 33 | F2 Agent Drafter/Prompts/Seed (nuqe_agent) | nuqe_agent/ | VERIFIED (unit); NOT RUN (integration) | 31/31 unit PASS; 1 integration NOT RUN |
+| 34 | F2 Agent API/CLI (nuqe_agent) | nuqe_agent/ | VERIFIED (unit); NOT RUN (integration) | 23/23 unit PASS; 6 integration NOT RUN; 1 SKIPPED |
 
 **Status key:**
 - NOT BUILT: code does not exist

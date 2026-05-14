@@ -4,12 +4,12 @@
 > Status: PASS, FAIL, NOT RUN, SKIPPED
 > This file is the ground truth for build status.
 
-Last updated: 13 May 2026
-Total: 388
-PASS: 351
+Last updated: 14 May 2026
+Total: 661
+PASS: 604
 FAIL: 0
-NOT RUN: 37
-SKIPPED: 4
+NOT RUN: 56
+SKIPPED: 5
 
 Note: NOT RUN = nuqe_engine integration tests (require live Postgres via Docker; run with `pytest -m integration`).
 
@@ -600,6 +600,359 @@ Note: NOT RUN = nuqe_engine integration tests (require live Postgres via Docker;
 | OBL-INT-011 | audit_trail returns all entries for case in chronological order | NOT RUN | Requires live Postgres |
 | OBL-INT-012 | audit_trail retrieval: all signatures valid | NOT RUN | Requires live Postgres |
 | OBL-INT-013 | DEADLINE_SET audit entries match count of timed deadlines | NOT RUN | Requires live Postgres |
+
+---
+
+## 31 F2 Agent — Tokeniser (nuqe_agent)
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| AGT-TOK-001 | email address is tokenised | PASS | 14 May 2026 |
+| AGT-TOK-002 | same email twice produces same token | PASS | 14 May 2026 |
+| AGT-TOK-003 | UK postcode tokenised as personal_identifier | PASS | 14 May 2026 |
+| AGT-TOK-004 | postcode without space tokenised | PASS | 14 May 2026 |
+| AGT-TOK-005 | NI number tokenised as special_category | PASS | 14 May 2026 |
+| AGT-TOK-006 | DISP reference not tokenised | PASS | 14 May 2026 |
+| AGT-TOK-007 | FCA handbook reference not tokenised | PASS | 14 May 2026 |
+| AGT-TOK-008 | Financial Ombudsman Service not tokenised | PASS | 14 May 2026 |
+| AGT-TOK-009 | ISO date not tokenised | PASS | 14 May 2026 |
+| AGT-TOK-010 | account number tokenised | PASS | 14 May 2026 |
+| AGT-TOK-011 | multiple account numbers get sequential tokens | PASS | 14 May 2026 |
+| AGT-TOK-012 | dictionary keyword takes priority over regex | PASS | 14 May 2026 |
+| AGT-TOK-013 | shared baseline keyword applies to all firms | PASS | 14 May 2026 |
+| AGT-TOK-014 | detokenise round-trip restores original | PASS | 14 May 2026 |
+| AGT-TOK-015 | detokenise unknown token raises UnknownTokenError | PASS | 14 May 2026 |
+| AGT-TOK-016 | detokenise no tokens returns unchanged | PASS | 14 May 2026 |
+| AGT-TOK-017 | cross-firm dictionary isolation | PASS | 14 May 2026 |
+| AGT-TOK-018 | tokenisation event created per unique value | PASS | 14 May 2026 |
+| AGT-TOK-019 | repeated value does not create duplicate event | PASS | 14 May 2026 |
+| AGT-TOK-020 | event carries correct case and firm IDs | PASS | 14 May 2026 |
+| AGT-TOK-021 | empty text returns unchanged | PASS | 14 May 2026 |
+| AGT-TOK-022 | no PII text unchanged | PASS | 14 May 2026 |
+| AGT-TOK-023 | sort code tokenised | PASS | 14 May 2026 |
+| AGT-TOK-024 | pattern dictionary entry applied | PASS | 14 May 2026 |
+
+---
+
+## 32 F2 Agent — Dictionary (nuqe_agent)
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| AGT-DICT-001 | FCA is reserved | PASS | 14 May 2026 |
+| AGT-DICT-002 | fca (lowercase) is reserved | PASS | 14 May 2026 |
+| AGT-DICT-003 | FOS is reserved | PASS | 14 May 2026 |
+| AGT-DICT-004 | DISP is reserved | PASS | 14 May 2026 |
+| AGT-DICT-005 | Financial Ombudsman is reserved | PASS | 14 May 2026 |
+| AGT-DICT-006 | ordinary word not reserved | PASS | 14 May 2026 |
+| AGT-DICT-007 | empty string not reserved | PASS | 14 May 2026 |
+| AGT-DICT-008 | partial match not reserved (FCAUK) | PASS | 14 May 2026 |
+| AGT-DICT-009 | add_keyword returns DictionaryEntry with status=active | PASS | 14 May 2026 |
+| AGT-DICT-010 | add_keyword empty keyword raises ValueError | PASS | 14 May 2026 |
+| AGT-DICT-011 | add reserved keyword raises ValueError | PASS | 14 May 2026 |
+| AGT-DICT-012 | add invalid regex pattern raises ValueError | PASS | 14 May 2026 |
+| AGT-DICT-013 | add duplicate is idempotent (no INSERT) | PASS | 14 May 2026 |
+| AGT-DICT-014 | add valid pattern succeeds | PASS | 14 May 2026 |
+| AGT-DICT-015 | remove_keyword success | PASS | 14 May 2026 |
+| AGT-DICT-016 | remove_keyword not found raises LookupError | PASS | 14 May 2026 |
+| AGT-DICT-017 | list_active firm_id=None returns shared baseline only | PASS | 14 May 2026 |
+| AGT-DICT-018 | list_active with firm returns firm + shared | PASS | 14 May 2026 |
+| AGT-DICT-019 | reclassify creates new entry and deprecates old | PASS | 14 May 2026 |
+| AGT-DICT-020 | reclassify not found raises LookupError | PASS | 14 May 2026 |
+| AGT-DICT-021 | find_by_keyword returns None when missing | PASS | 14 May 2026 |
+| AGT-DICT-022 | find_by_keyword returns entry | PASS | 14 May 2026 |
+| AGT-DICT-023 | _row_to_entry with string UUIDs | PASS | 14 May 2026 |
+| AGT-DICT-024 | _row_to_entry with null firm | PASS | 14 May 2026 |
+| AGT-DICT-025 | CLI dictionary list — no entries | PASS | 14 May 2026 |
+| AGT-DICT-026 | CLI dictionary list — with entries | PASS | 14 May 2026 |
+| AGT-DICT-027 | CLI dictionary add — success | PASS | 14 May 2026 |
+| AGT-DICT-028 | CLI dictionary add — invalid category | PASS | 14 May 2026 |
+| AGT-DICT-029 | CLI dictionary add — reserved word error | PASS | 14 May 2026 |
+| AGT-DICT-030 | CLI dictionary remove — success | PASS | 14 May 2026 |
+| AGT-DICT-031 | CLI dictionary remove — not found | PASS | 14 May 2026 |
+| AGT-DICT-032 | CLI dictionary reclassify — success | PASS | 14 May 2026 |
+| AGT-DICT-033 | CLI dictionary reclassify — invalid category | PASS | 14 May 2026 |
+| AGT-DICT-034 | CLI dictionary list with --firm-id | PASS | 14 May 2026 |
+| AGT-DICT-INT-001 | add_keyword creates active entry (live DB) | NOT RUN | Requires live Postgres |
+| AGT-DICT-INT-002 | add_keyword idempotent on duplicate (live DB) | NOT RUN | Requires live Postgres |
+| AGT-DICT-INT-003 | add reserved word raises (live DB) | NOT RUN | Requires live Postgres |
+| AGT-DICT-INT-004 | add invalid regex raises (live DB) | NOT RUN | Requires live Postgres |
+| AGT-DICT-INT-005 | remove deprecates entry; deprecated_at set (live DB) | NOT RUN | Requires live Postgres |
+| AGT-DICT-INT-006 | list_active returns firm + shared entries (live DB) | NOT RUN | Requires live Postgres |
+| AGT-DICT-INT-007 | list_active excludes other firm entries (live DB) | NOT RUN | Requires live Postgres |
+| AGT-DICT-INT-008 | list_active(None) returns shared baseline only (live DB) | NOT RUN | Requires live Postgres |
+| AGT-DICT-INT-009 | reclassify creates new and deprecates old (live DB) | NOT RUN | Requires live Postgres |
+
+---
+
+## 33 F2 Agent — Drafter / Prompts / Seed (nuqe_agent)
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| AGT-DFT-001 | render_prompt substitutes known variable | PASS | 14 May 2026 |
+| AGT-DFT-002 | render_prompt leaves missing variables as placeholders | PASS | 14 May 2026 |
+| AGT-DFT-003 | render_prompt empty context returns template unchanged | PASS | 14 May 2026 |
+| AGT-DFT-004 | render_prompt coerces numeric values to string | PASS | 14 May 2026 |
+| AGT-DFT-005 | PromptManager.get_active returns PromptTemplate | PASS | 14 May 2026 |
+| AGT-DFT-006 | PromptManager.get_active raises NoActivePromptError when missing | PASS | 14 May 2026 |
+| AGT-DFT-007 | NoActivePromptError carries obligation_id and obligation_version | PASS | 14 May 2026 |
+| AGT-DFT-008 | PromptManager.list_for_obligation returns all versions | PASS | 14 May 2026 |
+| AGT-DFT-009 | seed_uk_disp_001_prompt returns "created" when new | PASS | 14 May 2026 |
+| AGT-DFT-010 | seed_uk_disp_001_prompt returns "exists" when duplicate | PASS | 14 May 2026 |
+| AGT-DFT-011 | UK_DISP_001_TEMPLATE contains DISP 1.6.2R and required placeholders | PASS | 14 May 2026 |
+| AGT-DFT-012 | UK_DISP_001_SYSTEM mentions compliance and DISP | PASS | 14 May 2026 |
+| AGT-DFT-013 | _check_assertion None assertion always passes | PASS | 14 May 2026 |
+| AGT-DFT-014 | _check_assertion substring passes | PASS | 14 May 2026 |
+| AGT-DFT-015 | _check_assertion substring case-insensitive | PASS | 14 May 2026 |
+| AGT-DFT-016 | _check_assertion substring fails | PASS | 14 May 2026 |
+| AGT-DFT-017 | _check_assertion regex: prefix passes | PASS | 14 May 2026 |
+| AGT-DFT-018 | _check_assertion regex: prefix fails | PASS | 14 May 2026 |
+| AGT-DFT-019 | _check_assertion invalid regex fails gracefully | PASS | 14 May 2026 |
+| AGT-DFT-020 | MockAnthropicClient returns fixed response text | PASS | 14 May 2026 |
+| AGT-DFT-021 | MockAnthropicClient auto-response includes tokens from prompt | PASS | 14 May 2026 |
+| AGT-DFT-022 | MockAnthropicClient echoes model name | PASS | 14 May 2026 |
+| AGT-DFT-023 | Drafter.draft returns Draft object | PASS | 14 May 2026 |
+| AGT-DFT-024 | Draft status=draft when no assertion | PASS | 14 May 2026 |
+| AGT-DFT-025 | Draft status=rejected when assertion fails | PASS | 14 May 2026 |
+| AGT-DFT-026 | Draft status=draft when assertion passes | PASS | 14 May 2026 |
+| AGT-DFT-027 | Drafter persists draft row to DB | PASS | 14 May 2026 |
+| AGT-DFT-028 | Drafter raises NoActivePromptError when no prompt | PASS | 14 May 2026 |
+| AGT-DFT-029 | Draft llm_usage captured with input/output tokens | PASS | 14 May 2026 |
+| AGT-DFT-030 | Draft IDs are unique across calls | PASS | 14 May 2026 |
+| AGT-DFT-031 | Audit event constants defined | PASS | 14 May 2026 |
+| AGT-DFT-INT-001 | Full pipeline with MockAnthropicClient (live DB) | NOT RUN | Requires live Postgres |
+
+---
+
+## 34 F2 Agent — API / CLI (nuqe_agent)
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| AGT-API-001 | _row_to_draft converts DB row to Draft | PASS | 14 May 2026 |
+| AGT-API-002 | _row_to_draft parses llm_usage from JSON string | PASS | 14 May 2026 |
+| AGT-API-003 | _row_to_draft accepts llm_usage already as dict | PASS | 14 May 2026 |
+| AGT-API-004 | _row_to_draft falls back to {} for invalid llm_usage | PASS | 14 May 2026 |
+| AGT-API-005 | _row_to_draft makes naive created_at tz-aware | PASS | 14 May 2026 |
+| AGT-API-006 | Agent constructor stores default_firm_id | PASS | 14 May 2026 |
+| AGT-API-007 | Agent constructor allows no firm_id | PASS | 14 May 2026 |
+| AGT-API-008 | Agent.get_draft returns Draft for known ID | PASS | 14 May 2026 |
+| AGT-API-009 | Agent.get_draft raises LookupError when not found | PASS | 14 May 2026 |
+| AGT-API-010 | Agent.list_drafts returns list of Draft | PASS | 14 May 2026 |
+| AGT-API-011 | Agent.list_drafts returns empty list | PASS | 14 May 2026 |
+| AGT-API-012 | Agent.list_drafts with case_id and status filters issues query | PASS | 14 May 2026 |
+| AGT-API-013 | Agent.draft_for_obligation raises ValueError when no firm_id | PASS | 14 May 2026 |
+| AGT-API-014 | Agent.draft_for_obligation raises LookupError when obligation not found | PASS | 14 May 2026 |
+| AGT-API-015 | Agent.add_dictionary_keyword delegates to DictionaryManager | PASS | 14 May 2026 |
+| AGT-API-016 | Agent.add_dictionary_keyword uses default_firm_id | PASS | 14 May 2026 |
+| AGT-API-017 | Agent.remove_dictionary_keyword delegates without error | PASS | 14 May 2026 |
+| AGT-API-018 | Agent.list_dictionary returns empty list | PASS | 14 May 2026 |
+| AGT-API-019 | CLI draft show — not found exits non-zero | PASS | 14 May 2026 |
+| AGT-API-020 | CLI draft show — success prints final text | PASS | 14 May 2026 |
+| AGT-API-021 | CLI draft list — no results prints message | PASS | 14 May 2026 |
+| AGT-API-022 | CLI draft generate — invalid UUID exits non-zero | PASS | 14 May 2026 |
+| AGT-API-023 | CLI draft show — invalid UUID exits non-zero | PASS | 14 May 2026 |
+
+---
+
+## 35 F2 Agent — E2E Integration (nuqe_agent, requires live DB)
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| AGT-E2E-001 | Full pipeline: complaint text → tokenise → mock LLM → detokenise → persist | NOT RUN | Requires live Postgres with migrations applied |
+| AGT-E2E-002 | Assertion failure sets draft status to rejected | NOT RUN | Requires live Postgres |
+| AGT-E2E-003 | Firm-specific dictionary keyword tokenised in prompt and restored in final text | NOT RUN | Requires live Postgres |
+| AGT-E2E-004 | Agent.list_drafts returns empty list for new case | NOT RUN | Requires live Postgres |
+| AGT-E2E-005 | Agent.get_draft round-trip: persist via Drafter, retrieve via Agent | NOT RUN | Requires live Postgres |
+| AGT-E2E-006 | Agent.add_dictionary_keyword / list / remove round-trip | NOT RUN | Requires live Postgres |
+| AGT-E2E-007 | Real LLM smoke: full pipeline with Anthropic API; tokens not in final text | SKIPPED | Set NUQE_E2E_REAL_LLM=1 and ANTHROPIC_API_KEY to enable |
+
+---
+
+## 36 Obligation Engine — Audit Unit (nuqe_engine, no DB)
+
+> Added 14 May 2026 — F2 Prompt 0. Covers audit.py to 100% with mocked psycopg.
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| OBL-AUD-U-001 | _canonical_message returns bytes | PASS | 14 May 2026 |
+| OBL-AUD-U-002 | _canonical_message output is valid JSON | PASS | 14 May 2026 |
+| OBL-AUD-U-003 | _canonical_message keys are sorted for determinism | PASS | 14 May 2026 |
+| OBL-AUD-U-004 | _canonical_message is deterministic for same inputs | PASS | 14 May 2026 |
+| OBL-AUD-U-005 | _canonical_message different payloads produce different messages | PASS | 14 May 2026 |
+| OBL-AUD-U-006 | _sign returns 64-char hex string | PASS | 14 May 2026 |
+| OBL-AUD-U-007 | _sign matches expected HMAC-SHA256 | PASS | 14 May 2026 |
+| OBL-AUD-U-008 | _sign different keys produce different signatures | PASS | 14 May 2026 |
+| OBL-AUD-U-009 | _sign different messages produce different signatures | PASS | 14 May 2026 |
+| OBL-AUD-U-010 | verify_signature returns True for valid signature | PASS | 14 May 2026 |
+| OBL-AUD-U-011 | verify_signature returns False for wrong key | PASS | 14 May 2026 |
+| OBL-AUD-U-012 | verify_signature returns False for tampered payload | PASS | 14 May 2026 |
+| OBL-AUD-U-013 | verify_signature returns False for tampered actor | PASS | 14 May 2026 |
+| OBL-AUD-U-014 | verify_signature returns False for tampered event_type | PASS | 14 May 2026 |
+| OBL-AUD-U-015 | append_audit_entry returns AuditEntry | PASS | 14 May 2026 |
+| OBL-AUD-U-016 | append_audit_entry entry has UUID id | PASS | 14 May 2026 |
+| OBL-AUD-U-017 | append_audit_entry entry has tz-aware created_at | PASS | 14 May 2026 |
+| OBL-AUD-U-018 | append_audit_entry HMAC signature is 64 chars | PASS | 14 May 2026 |
+| OBL-AUD-U-019 | append_audit_entry signature verifies immediately | PASS | 14 May 2026 |
+| OBL-AUD-U-020 | append_audit_entry signature_valid is None on append | PASS | 14 May 2026 |
+| OBL-AUD-U-021 | append_audit_entry fields match inputs | PASS | 14 May 2026 |
+| OBL-AUD-U-022 | append_audit_entry cursor execute called once | PASS | 14 May 2026 |
+| OBL-AUD-U-023 | append_audit_entry SQL contains INSERT | PASS | 14 May 2026 |
+| OBL-AUD-U-024 | event_type obligation_fired survives append round-trip | PASS | 14 May 2026 |
+| OBL-AUD-U-025 | event_type deadline_set survives append round-trip | PASS | 14 May 2026 |
+| OBL-AUD-U-026 | event_type deadline_met survives append round-trip | PASS | 14 May 2026 |
+| OBL-AUD-U-027 | event_type deadline_breached survives append round-trip | PASS | 14 May 2026 |
+| OBL-AUD-U-028 | event_type evidence_found survives append round-trip | PASS | 14 May 2026 |
+| OBL-AUD-U-029 | event_type evidence_missing survives append round-trip | PASS | 14 May 2026 |
+| OBL-AUD-U-030 | event_type requirement_registered survives append round-trip | PASS | 14 May 2026 |
+| OBL-AUD-U-031 | event_type requirement_satisfied survives append round-trip | PASS | 14 May 2026 |
+| OBL-AUD-U-032 | event_type library_synced survives append round-trip | PASS | 14 May 2026 |
+| OBL-AUD-U-033 | event_type case_opened survives append round-trip | PASS | 14 May 2026 |
+| OBL-AUD-U-034 | event_type case_closed survives append round-trip | PASS | 14 May 2026 |
+| OBL-AUD-U-035 | event_type obligation_fired in signature scope | PASS | 14 May 2026 |
+| OBL-AUD-U-036 | event_type deadline_set in signature scope | PASS | 14 May 2026 |
+| OBL-AUD-U-037 | event_type deadline_met in signature scope | PASS | 14 May 2026 |
+| OBL-AUD-U-038 | event_type deadline_breached in signature scope | PASS | 14 May 2026 |
+| OBL-AUD-U-039 | event_type evidence_found in signature scope | PASS | 14 May 2026 |
+| OBL-AUD-U-040 | event_type evidence_missing in signature scope | PASS | 14 May 2026 |
+| OBL-AUD-U-041 | event_type requirement_registered in signature scope | PASS | 14 May 2026 |
+| OBL-AUD-U-042 | event_type requirement_satisfied in signature scope | PASS | 14 May 2026 |
+| OBL-AUD-U-043 | event_type library_synced in signature scope | PASS | 14 May 2026 |
+| OBL-AUD-U-044 | event_type case_opened in signature scope | PASS | 14 May 2026 |
+| OBL-AUD-U-045 | event_type case_closed in signature scope | PASS | 14 May 2026 |
+| OBL-AUD-U-046 | get_audit_trail returns list of AuditEntry | PASS | 14 May 2026 |
+| OBL-AUD-U-047 | get_audit_trail empty result | PASS | 14 May 2026 |
+| OBL-AUD-U-048 | get_audit_trail verify_signatures=False leaves signature_valid None | PASS | 14 May 2026 |
+| OBL-AUD-U-049 | get_audit_trail verify_signatures=True requires signing_key | PASS | 14 May 2026 |
+| OBL-AUD-U-050 | get_audit_trail verify_signatures=True populates signature_valid | PASS | 14 May 2026 |
+| OBL-AUD-U-051 | get_audit_trail entity_id filter added to SQL | PASS | 14 May 2026 |
+| OBL-AUD-U-052 | get_audit_trail entity_type filter added to SQL | PASS | 14 May 2026 |
+| OBL-AUD-U-053 | get_audit_trail event_type filter added to SQL | PASS | 14 May 2026 |
+| OBL-AUD-U-054 | get_audit_trail since filter added to SQL | PASS | 14 May 2026 |
+| OBL-AUD-U-055 | get_audit_trail payload as string is parsed | PASS | 14 May 2026 |
+| OBL-AUD-U-056 | get_audit_trail multiple filters all applied | PASS | 14 May 2026 |
+
+---
+
+## 37 Obligation Engine — jsparser Unit (nuqe_engine, no DB)
+
+> Added 14 May 2026 — F2 Prompt 0. Covers jsparser.py to 99%.
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| OBL-JSP-001 | ParseError has position attribute | PASS | 14 May 2026 |
+| OBL-JSP-002 | ParseError has source attribute | PASS | 14 May 2026 |
+| OBL-JSP-003 | ParseError message contains position hint | PASS | 14 May 2026 |
+| OBL-JSP-004 | ParseError context window appears in message | PASS | 14 May 2026 |
+| OBL-JSP-005 | single-quoted unterminated string raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-006 | double-quoted unterminated string raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-007 | unterminated string in array raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-008 | unterminated escape sequence raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-009 | missing closing brace raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-010 | missing closing bracket raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-011 | extra closing brace triggers trailing content error | PASS | 14 May 2026 |
+| OBL-JSP-012 | extra closing bracket raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-013 | trailing content after object raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-014 | trailing content after array raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-015 | trailing content after number raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-016 | missing key after opening brace raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-017 | missing colon after key raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-018 | missing comma or brace between key-value pairs raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-019 | missing comma between array elements raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-020 | unexpected character in array raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-021 | bare minus is invalid number — raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-022 | negative integer is valid | PASS | 14 May 2026 |
+| OBL-JSP-023 | float is valid | PASS | 14 May 2026 |
+| OBL-JSP-024 | negative float is valid | PASS | 14 May 2026 |
+| OBL-JSP-025 | unexpected at-sign raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-026 | unexpected hash raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-027 | EOF as value raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-028 | parse_array on object input raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-029 | parse_object on array input raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-030 | parse_array on string input raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-031 | parse_object on number input raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-032 | empty string raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-033 | whitespace-only string raises ParseError | PASS | 14 May 2026 |
+| OBL-JSP-034 | None handled by empty check | PASS | 14 May 2026 |
+| OBL-JSP-035 | empty object {} parses to empty dict | PASS | 14 May 2026 |
+| OBL-JSP-036 | empty array [] parses to empty list | PASS | 14 May 2026 |
+| OBL-JSP-037 | nested object parses correctly | PASS | 14 May 2026 |
+| OBL-JSP-038 | trailing comma in object tolerated | PASS | 14 May 2026 |
+| OBL-JSP-039 | trailing comma in array tolerated | PASS | 14 May 2026 |
+| OBL-JSP-040 | boolean true keyword parsed | PASS | 14 May 2026 |
+| OBL-JSP-041 | boolean false keyword parsed | PASS | 14 May 2026 |
+| OBL-JSP-042 | null keyword parsed | PASS | 14 May 2026 |
+| OBL-JSP-043 | bare word value parsed as string | PASS | 14 May 2026 |
+| OBL-JSP-044 | escape sequences in string parsed correctly | PASS | 14 May 2026 |
+| OBL-JSP-045 | double-quoted string parsed | PASS | 14 May 2026 |
+| OBL-JSP-046 | quoted key parsed | PASS | 14 May 2026 |
+
+---
+
+## 38 Obligation Engine — Validator Crossfield Unit (nuqe_engine, no DB)
+
+> Added 14 May 2026 — F2 Prompt 0. Covers uncovered validator.py branches; synthetic rows only.
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| OBL-VALX-001 | _parse_requirement: parse error produces error defect | PASS | 14 May 2026 |
+| OBL-VALX-002 | _parse_requirement: schema error (wrong fields) produces error defect | PASS | 14 May 2026 |
+| OBL-VALX-003 | _parse_evidence_required: parse error produces defect | PASS | 14 May 2026 |
+| OBL-VALX-004 | _parse_evidence_required: non-dict item produces defect | PASS | 14 May 2026 |
+| OBL-VALX-005 | _parse_evidence_required: schema error produces defect | PASS | 14 May 2026 |
+| OBL-VALX-006 | _parse_exceptions: parse error produces defect | PASS | 14 May 2026 |
+| OBL-VALX-007 | _parse_exceptions: non-dict item produces defect | PASS | 14 May 2026 |
+| OBL-VALX-008 | _parse_exceptions: schema error produces defect | PASS | 14 May 2026 |
+| OBL-VALX-009 | _parse_list_column: malformed product_types produces defect | PASS | 14 May 2026 |
+| OBL-VALX-010 | _parse_list_column: malformed customer_segments produces defect | PASS | 14 May 2026 |
+| OBL-VALX-011 | supersedes missing ID produces error defect | PASS | 14 May 2026 |
+| OBL-VALX-012 | supersedes valid when target in same batch | PASS | 14 May 2026 |
+| OBL-VALX-013 | effective_to < effective_from produces error defect | PASS | 14 May 2026 |
+| OBL-VALX-014 | effective_to == effective_from is valid | PASS | 14 May 2026 |
+| OBL-VALX-015 | effective_to None is valid | PASS | 14 May 2026 |
+| OBL-VALX-016 | row with no error defects ends up in valid | PASS | 14 May 2026 |
+| OBL-VALX-017 | row excluded from valid on error but not on warning | PASS | 14 May 2026 |
+
+---
+
+## 39 Obligation Engine — CLI Unit (nuqe_engine, no DB)
+
+> Added 14 May 2026 — F2 Prompt 0. Covers cli.py to 99% using Click CliRunner with patched psycopg.
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| OBL-CLI-U-001 | migrate: success prints "Applied 3 migration(s)" | PASS | 14 May 2026 |
+| OBL-CLI-U-002 | migrate: already up-to-date prints "up to date" | PASS | 14 May 2026 |
+| OBL-CLI-U-003 | migrate: failure exits non-zero | PASS | 14 May 2026 |
+| OBL-CLI-U-004 | load: missing file exits non-zero | PASS | 14 May 2026 |
+| OBL-CLI-U-005 | load: malformed xlsx exits non-zero | PASS | 14 May 2026 |
+| OBL-CLI-U-006 | load: real library shows "Valid:" and exits 0 | PASS | 14 May 2026 |
+| OBL-CLI-U-007 | load: injected error defects prints ERROR block exits non-zero | PASS | 14 May 2026 |
+| OBL-CLI-U-008 | load: injected warning defects prints WARNING block exits 0 | PASS | 14 May 2026 |
+| OBL-CLI-U-009 | validate: real library exits 0 and shows "Valid:" | PASS | 14 May 2026 |
+| OBL-CLI-U-010 | validate: malformed file exits non-zero | PASS | 14 May 2026 |
+| OBL-CLI-U-011 | validate: injected errors exits non-zero with ERROR in output | PASS | 14 May 2026 |
+| OBL-CLI-U-012 | validate: injected warning exits 0 with WARN in output | PASS | 14 May 2026 |
+| OBL-CLI-U-013 | sync: real library calls psycopg.connect | PASS | 14 May 2026 |
+| OBL-CLI-U-014 | sync: validation errors abort before connect | PASS | 14 May 2026 |
+| OBL-CLI-U-015 | sync: psycopg.connect raises exits non-zero | PASS | 14 May 2026 |
+| OBL-CLI-U-016 | sync: warnings after successful sync reported | PASS | 14 May 2026 |
+| OBL-CLI-U-017 | status: DB failure exits non-zero in <100 ms | PASS | 14 May 2026 |
+| OBL-CLI-U-018 | status: zero rows prints hint to sync | PASS | 14 May 2026 |
+| OBL-CLI-U-019 | status: fetchone returns None treated as no obligations | PASS | 14 May 2026 |
+| OBL-CLI-U-020 | status: obligations present shows count and year | PASS | 14 May 2026 |
+| OBL-CLI-U-021 | status: last_synced=None shows "never" | PASS | 14 May 2026 |
+| OBL-CLI-U-022 | status: DB failure message mentions connection | PASS | 14 May 2026 |
+
+---
+
+## 40 Obligation Engine — Integration Stability (nuqe_engine, requires DB)
+
+> Added 14 May 2026 — F2 Prompt 0. Regression guard for FK-safe TRUNCATE … CASCADE cleanup between tests.
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| OBL-STAB-001 | first operation inserts one case; count == 1 | NOT RUN | Requires live Postgres |
+| OBL-STAB-002 | second operation starts with zero cases; no leakage from test 1 | NOT RUN | Requires live Postgres |
+| OBL-STAB-003 | third operation also starts clean; pattern holds across three consecutive tests | NOT RUN | Requires live Postgres |
 
 ---
 

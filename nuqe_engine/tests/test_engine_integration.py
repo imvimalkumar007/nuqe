@@ -105,17 +105,11 @@ def engine() -> Engine:
 
 @pytest.fixture(autouse=True)
 def _clean_tables(engine: Engine) -> Generator[None, None, None]:
-    """Truncate all data tables before each test for isolation."""
+    """Truncate all data tables before each test for isolation (FK-safe CASCADE)."""
+    from tests.conftest import clean_all_tables
+
     with psycopg.connect(TEST_DATABASE_URL, autocommit=True) as conn:
-        with conn.cursor() as cur:
-            # Disable triggers to allow truncation of audit_log and FK-linked tables
-            cur.execute("ALTER TABLE nuqe_engine.audit_log DISABLE TRIGGER ALL")
-            cur.execute(
-                "TRUNCATE nuqe_engine.audit_log, nuqe_engine.evidence_checks, "
-                "nuqe_engine.deadlines, nuqe_engine.fired_obligations, "
-                "nuqe_engine.cases, nuqe_engine.obligations CASCADE"
-            )
-            cur.execute("ALTER TABLE nuqe_engine.audit_log ENABLE TRIGGER ALL")
+        clean_all_tables(conn)
     yield
 
 

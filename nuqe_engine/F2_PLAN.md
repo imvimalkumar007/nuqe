@@ -7,16 +7,16 @@
 
 ## Outstanding F1 items (carry-forward)
 
-These are known gaps deferred from F1. Address before shipping F2.
+All six F1 carry-forward items were closed in F2 Prompt 0 (2026-05-14).
 
-| # | Item | Owner | Notes |
-|---|------|-------|-------|
-| 1 | `audit.py` unit coverage 46% | Eng | DB-level append/verify logic needs mocks or in-memory sqlite fixture |
-| 2 | `cli.py` unit coverage 52% | Eng | `migrate`, `sync`, `status` commands require DB; mock psycopg.connect |
-| 3 | `validator.py` coverage 73% | Eng | Warning-path branches untested |
-| 4 | `jsparser.py` coverage 77% | Eng | Error recovery branches unreached |
-| 5 | Integration test DB stability | Eng | `_clean_tables` truncates on every test — verify FK ordering is safe under concurrent fixture runs |
-| 6 | `test_status_without_db_exits_nonzero` latency | Eng | Still waits 2 s for TCP timeout; consider patching psycopg.connect directly |
+| # | Item | Status | Closed |
+|---|------|--------|--------|
+| 1 | `audit.py` unit coverage 46% | **Closed** | `tests/test_audit_unit.py` — 100% coverage, 54 tests, zero DB dependency |
+| 2 | `cli.py` unit coverage 52% | **Closed** | `tests/test_cli_unit.py` — 99% coverage, 17 tests, psycopg.connect patched |
+| 3 | `validator.py` coverage 73% | **Closed** | `tests/test_validator_crossfield.py` — 93% coverage, 17 tests, all sub-parser error paths |
+| 4 | `jsparser.py` coverage 77% | **Closed** | `tests/test_jsparser_unit.py` — 99% coverage, error recovery and ParseError position-hints |
+| 5 | Integration test DB stability | **Closed** | `conftest.py` refactored with `TRUNCATE … CASCADE` + `test_integration_stability.py` leakage regression |
+| 6 | `test_status_without_db_exits_nonzero` latency | **Closed** | `test_cli.py` patched `psycopg.connect` directly; asserts <100 ms |
 
 ---
 
@@ -66,10 +66,10 @@ F2 introduces the **REST API layer** that exposes the engine to external consume
 
 ## F2 exit criteria
 
-- [ ] `POST /events` end-to-end: receive webhook → fire obligations → return result
-- [ ] `GET /cases/{id}/obligations` returns live statuses
-- [ ] Auth gate rejects requests without valid Bearer token
-- [ ] Unit test coverage ≥ 80% (gate enforced)
+- [x] `POST /events` end-to-end: receive webhook → fire obligations → return result
+- [x] `GET /cases/{id}/obligations` returns live statuses
+- [x] Auth gate rejects requests without valid Bearer token
+- [x] Unit test coverage ≥ 80% (gate enforced — 93% nuqe_api, 97% nuqe_engine)
 - [ ] Integration tests pass against Docker DB in CI
 - [ ] `nuqe-engine migrate` runs cleanly in Docker entrypoint
 
@@ -91,3 +91,5 @@ F2 introduces the **REST API layer** that exposes the engine to external consume
 | Date | Change |
 |------|--------|
 | 2026-05-13 | F2_PLAN.md created at end of F1 hardening session |
+| 2026-05-14 | Prompt 0: closed all 6 F1 carry-forward items; 305 unit tests, 97% coverage, ruff+mypy clean |
+| 2026-05-14 | Prompt 1: F2.1 FastAPI application shell complete. nuqe_api/ package: app.py (lifespan factory), deps.py (hmac.compare_digest auth), settings.py (pydantic-settings), middleware/request_id.py (X-Request-ID), routers/health+events+cases+errors. 45 unit tests (API-001–API-045), all PASS. 93% coverage (all modules ≥80%). ruff clean, mypy clean. |

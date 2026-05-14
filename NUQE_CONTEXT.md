@@ -8,10 +8,10 @@
 
 **Product name:** Nuqe
 **Tagline:** Compliance-native communication and case management for digital lenders
-**Stage:** Production-hardened + F1 Obligation Engine complete (13 May 2026)
+**Stage:** Production-hardened + F1 complete + F2 Stage 1a complete (14 May 2026)
 **GitHub:** https://github.com/imvimalkumar007/nuqe
 **Founder:** Vimal Kumar
-**Date last updated:** 13 May 2026
+**Date last updated:** 14 May 2026
 
 **Live URLs:**
 - Web: https://nuqe-web.onrender.com
@@ -106,15 +106,24 @@ Note: DATABASE_URL uses localhost for running outside Docker. The docker-compose
 
 ## 7. Build Progress
 
-**Phase 0–13 complete as of 29 April 2026. Phase F1 (Obligation Engine) complete as of 13 May 2026.**
+**Phase 0–13 complete as of 29 April 2026. Phase F1 (Obligation Engine) complete as of 13 May 2026. Phase F2 Stage 1a (nuqe_agent) complete as of 14 May 2026.**
 
 **Obligation Engine (nuqe_engine — Python package at E:\Nuqe\nuqe_engine):**
 - All 8 modules built: loader, validator, sync, trigger (DSL), requirement, evidence, deadline, audit
 - Engine API: process_event, due_obligations, evidence_for, audit_trail
 - CLI: nuqe-engine load/validate/sync/migrate/status
 - F1 Hardening: DSL date literals (fixes UK-DISP-018 silently dropped), library regression guard, CLI tests
-- 164 unit tests PASS, 83% coverage gate (enforced by pytest), 37 integration tests written
+- 305 unit tests PASS, 97% coverage (all modules ≥80%), ruff+mypy clean; 13 integration tests written (NOT RUN — require Docker Postgres)
+- F2 Prompt 0 complete: all 6 F1 carry-forward debt items closed 14 May 2026
 - F2 plan: REST API layer — see nuqe_engine/F2_PLAN.md
+
+**F2 Agent (nuqe_agent — Python package at E:\Nuqe\nuqe_agent):**
+- Stage 1a complete: schema.py, tokeniser.py, dictionary.py, prompts.py, seed_prompts.py, drafter.py, api.py, cli.py
+- Public surface: Agent class (draft_for_obligation, get_draft, list_drafts, dictionary management, from_env)
+- CLI: nuqe-agent migrate / seed-prompts / dictionary list/add/remove/reclassify / draft generate/show/list
+- PII tokenisation hard gate: regulatory references pass through; same value → same token always
+- MockAnthropicClient for tests; real Anthropic client via ANTHROPIC_API_KEY env var
+- 112 unit tests PASS, 83% coverage gate (enforced by pytest), 16 integration tests written (NOT RUN — require Docker Postgres)
 
 **Main Nuqe platform:**
 - 187 tests defined, 183 passing, 4 skipped (removed Mailgun inbound route)

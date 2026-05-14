@@ -18,7 +18,7 @@ import logging
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-from openpyxl import load_workbook  # type: ignore[import-untyped]
+from openpyxl import load_workbook
 
 from nuqe_engine.schema import RawObligationRow, ReviewStatus, column_order
 

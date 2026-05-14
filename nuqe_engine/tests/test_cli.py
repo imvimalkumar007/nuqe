@@ -9,6 +9,7 @@ so subprocess launch overhead and environment leakage are avoided.
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import patch
 
 import openpyxl
 import pytest
@@ -152,13 +153,18 @@ def test_validate_malformed_xlsx_exits_nonzero(tmp_path: Path) -> None:
 
 
 def test_status_without_db_exits_nonzero() -> None:
-    """status with no reachable database must exit non-zero."""
-    result = _runner().invoke(
-        cli,
-        ["status"],
-        env={"DATABASE_URL": "postgresql://nobody:x@localhost:19999/nonexistent?connect_timeout=2"},
-    )
+    """status with no reachable database must exit non-zero and complete in <100 ms."""
+    import time
+
+    import psycopg
+
+    start = time.monotonic()
+    with patch("psycopg.connect", side_effect=psycopg.OperationalError("refused")):
+        result = _runner().invoke(cli, ["status"])
+    elapsed_ms = (time.monotonic() - start) * 1000
+
     assert result.exit_code != 0
+    assert elapsed_ms < 100, f"status took {elapsed_ms:.0f} ms — expected < 100 ms"
 
 
 # ── verbose flag ───────────────────────────────────────────────────────────

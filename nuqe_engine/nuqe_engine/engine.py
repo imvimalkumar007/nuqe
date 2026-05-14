@@ -233,6 +233,51 @@ class Engine:
             audit_signing_key=signing_key,
         )
 
+    def health_check(self) -> dict[str, object]:
+        """
+        Lightweight liveness check.
+
+        Runs `SELECT 1` to verify DB reachability and reads the obligations
+        table metadata (total approved count and max updated_at as a proxy for
+        library version).
+
+        Returns:
+            {
+                "db_reachable": bool,
+                "approved_count": int | None,
+                "library_synced_at": datetime | None,
+            }
+
+        Never raises — always returns a dict so callers can decide how to handle
+        an unhealthy state.
+        """
+        try:
+            with psycopg.connect(self._database_url, autocommit=True) as conn:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT 1")
+                    cur.execute(
+                        """
+                        SELECT COUNT(*), MAX(synced_at)
+                        FROM nuqe_engine.obligations
+                        WHERE review_status = 'approved'
+                        """
+                    )
+                    row = cur.fetchone()
+            approved_count = int(row[0]) if row and row[0] is not None else 0
+            library_synced_at = row[1] if row else None
+            return {
+                "db_reachable": True,
+                "approved_count": approved_count,
+                "library_synced_at": library_synced_at,
+            }
+        except Exception as exc:
+            logger.warning("health_check failed: %s", exc)
+            return {
+                "db_reachable": False,
+                "approved_count": None,
+                "library_synced_at": None,
+            }
+
     def refresh_library(self, path: Path | None = None) -> SyncResult:
         """
         Load, validate, and sync the obligation library to Postgres.
