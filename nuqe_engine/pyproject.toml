@@ -51,7 +51,9 @@ addopts = [
     "--strict-markers",
     "--tb=short",
     "--cov=nuqe_engine",
+    "--cov=nuqe_api",
     "--cov-report=term-missing",
+    "--cov-report=json:coverage.json",
     "--cov-fail-under=80",
 ]
 markers = [
@@ -67,13 +69,15 @@ select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
 ignore = ["E501", "B008"]  # B008: FastAPI Query/Security/Depends in defaults is idiomatic
 
 [tool.coverage.run]
-source = ["nuqe_engine"]
-# Modules omitted from the unit-test coverage gate:
-# - engine.py, sync.py: DB-only infra, covered exclusively by integration tests.
-# - trigger.py, deadline.py, evidence.py, requirement.py: business logic modules
-#   that are covered by integration tests via engine.process_event(); unit tests
-#   for these are planned for F2 as part of the full API test suite.
+branch = true
+source = ["nuqe_engine", "nuqe_api"]
 omit = [
+    "*/__init__.py",
+    "*/migrations/*",
+    "tests/*",
+    "scripts/*",
+    # Integration-only modules: covered by docker-based integration tests, not unit tests.
+    # Remove each entry here only when a unit-test suite covers it directly.
     "nuqe_engine/engine.py",
     "nuqe_engine/sync.py",
     "nuqe_engine/trigger.py",
@@ -84,7 +88,12 @@ omit = [
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 80
+skip_covered = false
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == \"__main__\":",
+]
 
 [tool.mypy]
 python_version = "3.12"

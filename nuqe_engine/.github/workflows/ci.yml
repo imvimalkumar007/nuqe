@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: nuqe_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+        ports:
+          - 5432:5432
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nuqe_test
+      AUDIT_SIGNING_KEY: ${{ secrets.AUDIT_SIGNING_KEY_TEST }}
+      NUQE_API_TOKEN: test-token-ci
+      LIBRARY_PATH: ${{ github.workspace }}/Nuqe_Obligation_Library.xlsx
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Type check
+        run: mypy nuqe_engine/ nuqe_api/ --ignore-missing-imports
+
+      - name: Run migrations
+        run: nuqe-engine migrate
+
+      - name: Run tests with coverage
+        run: pytest
+
+      - name: Enforce per-module coverage gate
+        run: python scripts/check_coverage.py --threshold 80
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-json
+          path: coverage.json
