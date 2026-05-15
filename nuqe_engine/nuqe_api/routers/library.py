@@ -12,7 +12,6 @@ from __future__ import annotations
 import logging
 from uuid import UUID
 
-import psycopg
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 
@@ -70,12 +69,13 @@ def sync_library(request: Request) -> JSONResponse:
     sync_result = engine.refresh_library()
 
     # Append audit entry
-    signing_key = engine._signing_key
+    signing_key = engine.signing_key
     if isinstance(signing_key, str):
         signing_key = signing_key.encode()
 
     try:
-        with psycopg.connect(engine._database_url, autocommit=True) as conn:
+        with engine.connect() as conn:
+            conn.autocommit = True
             append_audit_entry(
                 conn,
                 entity_type="library",
@@ -117,18 +117,17 @@ def library_status(request: Request) -> JSONResponse:
     request_id: str = getattr(request.state, "request_id", "unknown")
 
     try:
-        with (
-            psycopg.connect(engine._database_url, autocommit=True) as conn,
-            conn.cursor() as cur,
-        ):
-            cur.execute(
-                """
-                SELECT COUNT(*), MAX(synced_at)
-                FROM nuqe_engine.obligations
-                WHERE review_status = 'approved'
-                """
-            )
-            row = cur.fetchone()
+        with engine.connect() as conn:
+            conn.autocommit = True
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT COUNT(*), MAX(synced_at)
+                    FROM nuqe_engine.obligations
+                    WHERE review_status = 'approved'
+                    """
+                )
+                row = cur.fetchone()
     except Exception as exc:
         logger.exception("library_status DB query failed: %s", exc)
         raise

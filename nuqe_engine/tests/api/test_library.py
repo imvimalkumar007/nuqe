@@ -119,8 +119,6 @@ class TestLibrarySyncSuccess:
             "nuqe_api.routers.library.validate",
             return_value=_make_validation_result(has_errors=False),
         ), patch(
-            "nuqe_api.routers.library.psycopg.connect"
-        ), patch(
             "nuqe_api.routers.library.append_audit_entry"
         ):
             resp = client.post("/library/sync", headers=AUTH_HEADERS)
@@ -137,8 +135,6 @@ class TestLibrarySyncSuccess:
             "nuqe_api.routers.library.validate",
             return_value=_make_validation_result(has_errors=False),
         ), patch(
-            "nuqe_api.routers.library.psycopg.connect"
-        ), patch(
             "nuqe_api.routers.library.append_audit_entry"
         ):
             resp = client.post("/library/sync", headers=AUTH_HEADERS)
@@ -151,39 +147,38 @@ class TestLibrarySyncSuccess:
 # ── Unit tests — GET /library/status ──────────────────────────────────────
 
 
+def _make_lib_mock_conn(fetchone_result: tuple) -> MagicMock:
+    """Return a mock conn configured to return fetchone_result from cursor."""
+    mock_cursor = MagicMock()
+    mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
+    mock_cursor.__exit__ = MagicMock(return_value=False)
+    mock_cursor.fetchone.return_value = fetchone_result
+    mock_conn = MagicMock()
+    mock_conn.__enter__ = MagicMock(return_value=mock_conn)
+    mock_conn.__exit__ = MagicMock(return_value=False)
+    mock_conn.cursor.return_value = mock_cursor
+    return mock_conn
+
+
 class TestLibraryStatusLoaded:
     def test_status_returns_200(
         self, client: TestClient, stub_engine: MagicMock
     ) -> None:
         synced_at = datetime(2026, 5, 14, 12, 0, 0, tzinfo=UTC)
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
-        mock_cursor.__exit__ = MagicMock(return_value=False)
-        mock_cursor.fetchone.return_value = (141, synced_at)
-        mock_conn.__enter__ = MagicMock(return_value=mock_conn)
-        mock_conn.__exit__ = MagicMock(return_value=False)
-        mock_conn.cursor.return_value = mock_cursor
-
-        with patch("nuqe_api.routers.library.psycopg.connect", return_value=mock_conn):
-            resp = client.get("/library/status", headers=AUTH_HEADERS)
+        mock_conn = _make_lib_mock_conn((141, synced_at))
+        stub_engine.connect.return_value.__enter__.return_value = mock_conn
+        stub_engine.connect.return_value.__exit__.return_value = False
+        resp = client.get("/library/status", headers=AUTH_HEADERS)
         assert resp.status_code == 200
 
     def test_status_body_shape(
         self, client: TestClient, stub_engine: MagicMock
     ) -> None:
         synced_at = datetime(2026, 5, 14, 12, 0, 0, tzinfo=UTC)
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
-        mock_cursor.__exit__ = MagicMock(return_value=False)
-        mock_cursor.fetchone.return_value = (141, synced_at)
-        mock_conn.__enter__ = MagicMock(return_value=mock_conn)
-        mock_conn.__exit__ = MagicMock(return_value=False)
-        mock_conn.cursor.return_value = mock_cursor
-
-        with patch("nuqe_api.routers.library.psycopg.connect", return_value=mock_conn):
-            body = client.get("/library/status", headers=AUTH_HEADERS).json()
+        mock_conn = _make_lib_mock_conn((141, synced_at))
+        stub_engine.connect.return_value.__enter__.return_value = mock_conn
+        stub_engine.connect.return_value.__exit__.return_value = False
+        body = client.get("/library/status", headers=AUTH_HEADERS).json()
         assert body["approved_count"] == 141
         assert "synced_at" in body
         assert "version" in body
@@ -193,33 +188,19 @@ class TestLibraryStatusEmpty:
     def test_no_library_returns_404(
         self, client: TestClient, stub_engine: MagicMock
     ) -> None:
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
-        mock_cursor.__exit__ = MagicMock(return_value=False)
-        mock_cursor.fetchone.return_value = (0, None)
-        mock_conn.__enter__ = MagicMock(return_value=mock_conn)
-        mock_conn.__exit__ = MagicMock(return_value=False)
-        mock_conn.cursor.return_value = mock_cursor
-
-        with patch("nuqe_api.routers.library.psycopg.connect", return_value=mock_conn):
-            resp = client.get("/library/status", headers=AUTH_HEADERS)
+        mock_conn = _make_lib_mock_conn((0, None))
+        stub_engine.connect.return_value.__enter__.return_value = mock_conn
+        stub_engine.connect.return_value.__exit__.return_value = False
+        resp = client.get("/library/status", headers=AUTH_HEADERS)
         assert resp.status_code == 404
 
     def test_no_library_error_code(
         self, client: TestClient, stub_engine: MagicMock
     ) -> None:
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
-        mock_cursor.__exit__ = MagicMock(return_value=False)
-        mock_cursor.fetchone.return_value = (0, None)
-        mock_conn.__enter__ = MagicMock(return_value=mock_conn)
-        mock_conn.__exit__ = MagicMock(return_value=False)
-        mock_conn.cursor.return_value = mock_cursor
-
-        with patch("nuqe_api.routers.library.psycopg.connect", return_value=mock_conn):
-            body = client.get("/library/status", headers=AUTH_HEADERS).json()
+        mock_conn = _make_lib_mock_conn((0, None))
+        stub_engine.connect.return_value.__enter__.return_value = mock_conn
+        stub_engine.connect.return_value.__exit__.return_value = False
+        body = client.get("/library/status", headers=AUTH_HEADERS).json()
         assert body["error_code"] == "NO_LIBRARY"
 
 
