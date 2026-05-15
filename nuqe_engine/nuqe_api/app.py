@@ -59,9 +59,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.api_token = settings.nuqe_api_token.get_secret_value()
 
     # Instantiate the Engine
+    # library_path is optional (F3.2): libraries are now stored in organisation_libraries.
+    # Only set if LIBRARY_PATH is configured (used by legacy POST /library/sync).
+    lib_path = Path(settings.library_path) if settings.library_path is not None else None
     engine = Engine(
         database_url=settings.database_url,
-        library_path=Path(settings.library_path),
+        library_path=lib_path,
         audit_signing_key=settings.audit_signing_key.get_secret_value().encode(),
     )
     app.state.engine = engine

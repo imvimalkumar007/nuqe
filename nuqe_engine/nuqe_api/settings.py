@@ -20,10 +20,13 @@ class Settings(BaseSettings):
     Required:
         NUQE_API_TOKEN      Static Bearer token for API auth.
         DATABASE_URL        Postgres connection string.
-        LIBRARY_PATH        Absolute path to obligation library xlsx.
         AUDIT_SIGNING_KEY   HMAC signing key for audit log entries.
 
     Optional:
+        LIBRARY_PATH        Legacy path to obligation library xlsx. Only used by
+                            POST /library/sync (deprecated). Libraries are now
+                            uploaded via POST /library/upload and activated via
+                            POST /library/{id}/activate. Will be removed in F3.3.
         LOG_LEVEL           Logging verbosity (default INFO).
         SCHEDULER_ENABLED   Set false in tests (default true).
         SENTRY_DSN          Enables Sentry when set.
@@ -32,7 +35,7 @@ class Settings(BaseSettings):
     nuqe_api_token: SecretStr
     database_url: str
     migration_database_url: str | None = None  # Falls back to database_url if unset
-    library_path: Path
+    library_path: Path | None = None  # F3.2: now optional — libraries stored in DB
     audit_signing_key: SecretStr
     log_level: str = "INFO"
     scheduler_enabled: bool = True
