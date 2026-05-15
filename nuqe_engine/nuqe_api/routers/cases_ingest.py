@@ -11,14 +11,14 @@ Authentication required.
 from __future__ import annotations
 
 import logging
-from typing import Annotated
 from uuid import UUID
 
 import psycopg.errors
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 
-from nuqe_api.deps import current_org_id, get_engine, verify_bearer_token
+from nuqe_api.auth.auth0 import AuthenticatedPrincipal
+from nuqe_api.deps import current_principal, get_engine
 from nuqe_api.models import CaseCreate
 from nuqe_engine.audit import AuditEventType, append_audit_entry
 from nuqe_engine.trigger import Event
@@ -28,7 +28,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter(
     prefix="/cases",
     tags=["cases"],
-    dependencies=[Depends(verify_bearer_token)],
 )
 
 
@@ -36,7 +35,7 @@ router = APIRouter(
 def create_case(
     body: CaseCreate,
     request: Request,
-    org_id: Annotated[UUID, Depends(current_org_id)],
+    principal: AuthenticatedPrincipal = Depends(current_principal),
 ) -> JSONResponse:
     """
     Create a new case and process its opening event atomically.
@@ -45,19 +44,19 @@ def create_case(
       1. engine.connect(org_id) — opens connection, sets RLS, begins tx.
       2. INSERT INTO nuqe_engine.cases RETURNING id.
       3. Construct the opening Event using the server-assigned case_id.
-      4. Call engine.process_event(org_id, event, conn=conn) — caller owns tx.
-      5. Append CASE_OPENED audit entry.
+      4. Call engine.process_event(org_id, event, actor, conn=conn) — caller owns tx.
+      5. Append CASE_OPENED audit entry with principal.sub as actor.
       6. Commit on clean exit.
-
-    Requires X-Org-Id header (UUID). TODO(F3.3): replace with JWT claim.
 
     Errors:
         409  Duplicate external_ref (UniqueViolation).
-        422  Pydantic validation failure or missing X-Org-Id.
+        422  Pydantic validation failure.
         500  Any other engine or DB error.
     """
     engine = get_engine(request)
     request_id: str = getattr(request.state, "request_id", "unknown")
+    org_id: UUID = principal.org_id
+    actor: str = principal.sub
 
     try:
         with engine.connect(org_id) as conn:  # sets RLS, begins tx, commits on exit  # noqa: SIM117
@@ -89,7 +88,7 @@ def create_case(
                     context=opening.context,
                 )
 
-                result = engine.process_event(org_id, event, conn=conn)
+                result = engine.process_event(org_id, event, actor, conn=conn)
 
                 signing_key = engine.signing_key
                 if isinstance(signing_key, str):
@@ -100,7 +99,7 @@ def create_case(
                     entity_type="case",
                     entity_id=case_id,
                     event_type=AuditEventType.CASE_OPENED,
-                    actor="api",
+                    actor=actor,
                     payload={
                         "case_id": str(case_id),
                         "type": body.type,

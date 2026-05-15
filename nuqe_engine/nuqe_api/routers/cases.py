@@ -11,20 +11,20 @@ added in F2.2.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 
-from nuqe_api.deps import current_org_id, get_engine, verify_bearer_token
+from nuqe_api.auth.auth0 import AuthenticatedPrincipal
+from nuqe_api.deps import current_principal, get_engine
 from nuqe_engine.audit import AuditEventType, get_audit_trail
 from nuqe_engine.engine import ObligationStatus
 
 router = APIRouter(
     prefix="/cases",
     tags=["cases"],
-    dependencies=[Depends(verify_bearer_token)],
 )
 
 
@@ -45,22 +45,23 @@ def _case_exists(engine: Any, org_id: UUID, case_id: UUID) -> bool:
 def get_obligations(
     case_id: UUID,
     request: Request,
-    org_id: Annotated[UUID, Depends(current_org_id)],
+    principal: AuthenticatedPrincipal = Depends(current_principal),
     as_of: datetime | None = Query(default=None, description="Reference time (ISO 8601)"),
 ) -> JSONResponse:
     """
     Return current obligation statuses for a case.
 
     Args:
-        case_id: The case UUID.
-        org_id:  Organisation context from X-Org-Id header.
-        as_of:   Optional reference timestamp for deadline status evaluation.
+        case_id:   The case UUID.
+        principal: Authenticated principal (org_id extracted from JWT or static header).
+        as_of:     Optional reference timestamp for deadline status evaluation.
 
     Returns:
         200 list[ObligationStatus]
         404 if case_id is not in the DB.
     """
     engine = get_engine(request)
+    org_id = principal.org_id
 
     if not _case_exists(engine, org_id, case_id):
         raise HTTPException(status_code=404, detail={"error_code": "CASE_NOT_FOUND"})
@@ -76,7 +77,7 @@ def get_obligations(
 def get_audit(
     case_id: UUID,
     request: Request,
-    org_id: Annotated[UUID, Depends(current_org_id)],
+    principal: AuthenticatedPrincipal = Depends(current_principal),
     limit: int = Query(default=100, ge=1, le=500),
     before: datetime | None = Query(default=None),
     event_type: str | None = Query(default=None),
@@ -86,7 +87,7 @@ def get_audit(
 
     Args:
         case_id:    The case UUID.
-        org_id:     Organisation context from X-Org-Id header.
+        principal:  Authenticated principal (org_id extracted from JWT or static header).
         limit:      Maximum entries to return (default 100, max 500).
         before:     Return entries with created_at < before (for pagination).
         event_type: Filter by audit event type string.
@@ -96,6 +97,7 @@ def get_audit(
         404 if case_id is not in the DB.
     """
     engine = get_engine(request)
+    org_id = principal.org_id
 
     if not _case_exists(engine, org_id, case_id):
         raise HTTPException(status_code=404, detail={"error_code": "CASE_NOT_FOUND"})

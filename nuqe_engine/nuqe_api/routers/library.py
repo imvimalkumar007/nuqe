@@ -7,7 +7,7 @@ POST /library/upload           — upload a new xlsx, validate, store in DB (ina
 POST /library/{id}/activate    — activate a stored library version for this org.
 
 Authentication required on all endpoints.
-Org context required via X-Org-Id header on all endpoints (F3.2).
+Org context resolved from authenticated principal on all endpoints.
 """
 
 from __future__ import annotations
@@ -15,13 +15,13 @@ from __future__ import annotations
 import hashlib
 import logging
 from datetime import UTC, datetime
-from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import JSONResponse
 
-from nuqe_api.deps import current_org_id, get_engine, verify_bearer_token
+from nuqe_api.auth.auth0 import AuthenticatedPrincipal
+from nuqe_api.deps import current_principal, get_engine
 from nuqe_engine.audit import AuditEventType, append_audit_entry
 from nuqe_engine.loader import load_library, load_library_from_bytes
 from nuqe_engine.validator import validate
@@ -31,14 +31,13 @@ logger = logging.getLogger(__name__)
 router = APIRouter(
     prefix="/library",
     tags=["library"],
-    dependencies=[Depends(verify_bearer_token)],
 )
 
 
 @router.post("/sync")
 def sync_library(
     request: Request,
-    org_id: Annotated[UUID, Depends(current_org_id)],
+    principal: AuthenticatedPrincipal = Depends(current_principal),
 ) -> JSONResponse:
     """
     Load, validate, and sync the obligation library to Postgres.
@@ -47,11 +46,11 @@ def sync_library(
     If the library path is not configured → 422 NO_LIBRARY_PATH.
     If validation finds error-severity defects → 422 with defect list (no sync).
     On success → 200 with insert/unchanged counts.
-
-    Requires X-Org-Id header (UUID). TODO(F3.3): replace with JWT claim.
     """
     engine = get_engine(request)
     request_id: str = getattr(request.state, "request_id", "unknown")
+    org_id: UUID = principal.org_id
+    actor: str = principal.sub
 
     if engine._library_path is None:
         return JSONResponse(
@@ -92,7 +91,7 @@ def sync_library(
                 entity_type="library",
                 entity_id=_zero_uuid(),
                 event_type=AuditEventType.LIBRARY_SYNCED,
-                actor="api",
+                actor=actor,
                 payload={
                     "inserted": sync_result.inserted,
                     "unchanged": sync_result.unchanged,
@@ -118,7 +117,7 @@ def sync_library(
 @router.get("/status")
 def library_status(
     request: Request,
-    org_id: Annotated[UUID, Depends(current_org_id)],
+    principal: AuthenticatedPrincipal = Depends(current_principal),
 ) -> JSONResponse:
     """
     Return current library statistics for this org from the DB.
@@ -129,11 +128,10 @@ def library_status(
     Returns:
         200 {"version": str, "row_count": int, "approved_count": int, "synced_at": str}
         404 NO_LIBRARY if no active library exists for this org.
-
-    Requires X-Org-Id header (UUID). TODO(F3.3): replace with JWT claim.
     """
     engine = get_engine(request)
     request_id: str = getattr(request.state, "request_id", "unknown")
+    org_id: UUID = principal.org_id
 
     try:
         with engine.connect(org_id) as conn, conn.cursor() as cur:
@@ -177,7 +175,7 @@ def library_status(
 @router.post("/upload")
 async def upload_library(
     request: Request,
-    org_id: Annotated[UUID, Depends(current_org_id)],
+    principal: AuthenticatedPrincipal = Depends(current_principal),
     file: UploadFile = File(...),
     version: str | None = Query(default=None, description="Library version label"),
 ) -> JSONResponse:
@@ -194,12 +192,10 @@ async def upload_library(
 
     The `version` query param is optional. If omitted, the first 12 chars of
     the SHA-256 hex are used as the version label.
-
-    Requires X-Org-Id header. TODO(F3.3): add org_admin permission check.
-    TODO(F3.3): replace X-Org-Id with JWT claim.
     """
     engine = get_engine(request)
     request_id: str = getattr(request.state, "request_id", "unknown")
+    org_id: UUID = principal.org_id
 
     xlsx_bytes = await file.read()
     content_hash = hashlib.sha256(xlsx_bytes).hexdigest()
@@ -265,11 +261,11 @@ async def upload_library(
                     content_hash,
                     row_count,
                     approved_count,
-                    "api_upload",
+                    principal.sub,
                 ),
             )
             row_result = cur.fetchone()
-            library_id = UUID(str(row_result[0]))
+            library_id = UUID(str(row_result[0]))  # type: ignore[index]
     except Exception as exc:
         logger.exception("library upload DB insert failed: %s", exc)
         return JSONResponse(
@@ -299,7 +295,7 @@ async def upload_library(
 def activate_library(
     library_id: UUID,
     request: Request,
-    org_id: Annotated[UUID, Depends(current_org_id)],
+    principal: AuthenticatedPrincipal = Depends(current_principal),
 ) -> JSONResponse:
     """
     Activate a stored library version for this org.
@@ -310,12 +306,11 @@ def activate_library(
       3. If step 2 matches 0 rows: 404 (library not found in this org).
       4. Append LIBRARY_ACTIVATED audit entry.
       5. Return {library_id, activated_at}.
-
-    Requires X-Org-Id header. TODO(F3.3): add org_admin permission check.
-    TODO(F3.3): replace X-Org-Id with JWT claim.
     """
     engine = get_engine(request)
     request_id: str = getattr(request.state, "request_id", "unknown")
+    org_id: UUID = principal.org_id
+    actor: str = principal.sub
 
     signing_key = engine.signing_key
     if isinstance(signing_key, str):
@@ -362,7 +357,7 @@ def activate_library(
                 entity_type="library",
                 entity_id=org_id,
                 event_type=AuditEventType.LIBRARY_SYNCED,  # reuse closest existing type
-                actor="api",
+                actor=actor,
                 payload={
                     "library_id": str(library_id),
                     "activated_at": activated_at.isoformat(),
