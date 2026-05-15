@@ -13,7 +13,6 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
-import pytest
 from fastapi.testclient import TestClient
 
 AUTH_HEADERS = {"Authorization": "Bearer test-secret-token-abc123"}

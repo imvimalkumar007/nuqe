@@ -51,7 +51,7 @@ def create_case(body: CaseCreate, request: Request) -> JSONResponse:
     request_id: str = getattr(request.state, "request_id", "unknown")
 
     try:
-        with engine.connect() as conn:  # autocommit=False (default)
+        with engine.connect() as conn:  # autocommit=False (default)  # noqa: SIM117
             with conn:
                 with conn.cursor() as cur:
                     cur.execute(

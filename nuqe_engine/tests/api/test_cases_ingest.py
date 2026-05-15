@@ -8,13 +8,11 @@ Integration tests require @pytest.mark.integration and a live Postgres instance.
 from __future__ import annotations
 
 from typing import Any
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 from uuid import UUID, uuid4
 
 import pytest
 from fastapi.testclient import TestClient
-
-from nuqe_engine.engine import ProcessEventResult
 
 AUTH_HEADERS = {"Authorization": "Bearer test-secret-token-abc123"}
 

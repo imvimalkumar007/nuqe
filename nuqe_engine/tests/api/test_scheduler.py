@@ -17,7 +17,6 @@ import pytest
 from nuqe_api.scheduler import scan_deadlines
 from nuqe_engine.engine import ObligationStatus
 
-
 # ── Unit tests — no DB ─────────────────────────────────────────────────────
 
 

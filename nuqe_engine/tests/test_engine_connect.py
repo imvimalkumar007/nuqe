@@ -29,7 +29,7 @@ def test_connect_closes_on_exit() -> None:
 @pytest.mark.integration
 def test_connect_closes_on_exception() -> None:
     engine = Engine.from_env()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError):  # noqa: SIM117
         with engine.connect() as conn:
             raise RuntimeError("boom")
     assert conn.closed

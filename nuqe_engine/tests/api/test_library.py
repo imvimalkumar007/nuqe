@@ -220,7 +220,6 @@ class TestLibraryIntegration:
 
     def test_sync_appends_audit_entry(self, real_client: TestClient, real_engine: Any) -> None:
         real_client.post("/library/sync", headers=AUTH_HEADERS)
-        from uuid import UUID
 
         import psycopg as _psycopg
 

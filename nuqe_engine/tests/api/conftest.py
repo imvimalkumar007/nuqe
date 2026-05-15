@@ -109,7 +109,6 @@ def client(stub_engine: MagicMock) -> Generator[TestClient, None, None]:
 def real_engine() -> Engine:  # type: ignore[return]
     """Real Engine pointing at the integration test database. Skip if unavailable."""
     import os
-    import re
     from pathlib import Path
 
     import psycopg
