@@ -45,6 +45,12 @@ def _make_mock_conn(case_id: UUID) -> MagicMock:
     return mock_conn
 
 
+def _configure_engine_connect(stub_engine: MagicMock, mock_conn: MagicMock) -> None:
+    """Configure stub_engine.connect() to yield mock_conn as a context manager."""
+    stub_engine.connect.return_value.__enter__.return_value = mock_conn
+    stub_engine.connect.return_value.__exit__.return_value = False
+
+
 # ── Unit tests (no DB) ─────────────────────────────────────────────────────
 
 
@@ -52,9 +58,9 @@ class TestCreateCaseValid:
     def test_returns_201(self, client: TestClient, stub_engine: MagicMock) -> None:
         case_id = uuid4()
         mock_conn = _make_mock_conn(case_id)
-        with patch("nuqe_api.routers.cases_ingest.psycopg.connect", return_value=mock_conn):
-            with patch("nuqe_api.routers.cases_ingest.append_audit_entry"):
-                resp = client.post("/cases/", json=_VALID_BODY, headers=AUTH_HEADERS)
+        _configure_engine_connect(stub_engine, mock_conn)
+        with patch("nuqe_api.routers.cases_ingest.append_audit_entry"):
+            resp = client.post("/cases/", json=_VALID_BODY, headers=AUTH_HEADERS)
         assert resp.status_code == 201
 
     def test_response_has_case_id_uuid(
@@ -62,9 +68,9 @@ class TestCreateCaseValid:
     ) -> None:
         case_id = uuid4()
         mock_conn = _make_mock_conn(case_id)
-        with patch("nuqe_api.routers.cases_ingest.psycopg.connect", return_value=mock_conn):
-            with patch("nuqe_api.routers.cases_ingest.append_audit_entry"):
-                resp = client.post("/cases/", json=_VALID_BODY, headers=AUTH_HEADERS)
+        _configure_engine_connect(stub_engine, mock_conn)
+        with patch("nuqe_api.routers.cases_ingest.append_audit_entry"):
+            resp = client.post("/cases/", json=_VALID_BODY, headers=AUTH_HEADERS)
         body = resp.json()
         assert "case_id" in body
         UUID(body["case_id"])  # raises ValueError if not valid UUID
@@ -73,9 +79,9 @@ class TestCreateCaseValid:
     def test_response_shape(self, client: TestClient, stub_engine: MagicMock) -> None:
         case_id = uuid4()
         mock_conn = _make_mock_conn(case_id)
-        with patch("nuqe_api.routers.cases_ingest.psycopg.connect", return_value=mock_conn):
-            with patch("nuqe_api.routers.cases_ingest.append_audit_entry"):
-                resp = client.post("/cases/", json=_VALID_BODY, headers=AUTH_HEADERS)
+        _configure_engine_connect(stub_engine, mock_conn)
+        with patch("nuqe_api.routers.cases_ingest.append_audit_entry"):
+            resp = client.post("/cases/", json=_VALID_BODY, headers=AUTH_HEADERS)
         body = resp.json()
         for key in ("case_id", "fired_obligations", "deadlines", "requirements", "audit_entries"):
             assert key in body, f"Missing key: {key}"
@@ -85,9 +91,9 @@ class TestCreateCaseValid:
     ) -> None:
         case_id = uuid4()
         mock_conn = _make_mock_conn(case_id)
-        with patch("nuqe_api.routers.cases_ingest.psycopg.connect", return_value=mock_conn):
-            with patch("nuqe_api.routers.cases_ingest.append_audit_entry"):
-                client.post("/cases/", json=_VALID_BODY, headers=AUTH_HEADERS)
+        _configure_engine_connect(stub_engine, mock_conn)
+        with patch("nuqe_api.routers.cases_ingest.append_audit_entry"):
+            client.post("/cases/", json=_VALID_BODY, headers=AUTH_HEADERS)
         stub_engine.process_event.assert_called_once()
         # Called with conn= keyword argument
         _, kwargs = stub_engine.process_event.call_args
@@ -122,9 +128,9 @@ class TestCreateCaseForbidCaseId:
         }
         case_id = uuid4()
         mock_conn = _make_mock_conn(case_id)
-        with patch("nuqe_api.routers.cases_ingest.psycopg.connect", return_value=mock_conn):
-            with patch("nuqe_api.routers.cases_ingest.append_audit_entry"):
-                resp = client.post("/cases/", json=body, headers=AUTH_HEADERS)
+        _configure_engine_connect(stub_engine, mock_conn)
+        with patch("nuqe_api.routers.cases_ingest.append_audit_entry"):
+            resp = client.post("/cases/", json=body, headers=AUTH_HEADERS)
         assert resp.status_code == 201
 
 
@@ -144,13 +150,12 @@ class TestCreateCaseDuplicateRef:
         mock_conn.cursor.return_value = mock_cursor
         mock_conn.__enter__ = MagicMock(return_value=mock_conn)
         mock_conn.__exit__ = MagicMock(return_value=False)
-
-        with patch("nuqe_api.routers.cases_ingest.psycopg.connect", return_value=mock_conn):
-            resp = client.post(
-                "/cases/",
-                json={**_VALID_BODY, "external_ref": "REF-001"},
-                headers=AUTH_HEADERS,
-            )
+        _configure_engine_connect(stub_engine, mock_conn)
+        resp = client.post(
+            "/cases/",
+            json={**_VALID_BODY, "external_ref": "REF-001"},
+            headers=AUTH_HEADERS,
+        )
         assert resp.status_code == 409
 
     def test_unique_violation_body_has_error_code(
@@ -168,13 +173,12 @@ class TestCreateCaseDuplicateRef:
         mock_conn.cursor.return_value = mock_cursor
         mock_conn.__enter__ = MagicMock(return_value=mock_conn)
         mock_conn.__exit__ = MagicMock(return_value=False)
-
-        with patch("nuqe_api.routers.cases_ingest.psycopg.connect", return_value=mock_conn):
-            resp = client.post(
-                "/cases/",
-                json={**_VALID_BODY, "external_ref": "REF-001"},
-                headers=AUTH_HEADERS,
-            )
+        _configure_engine_connect(stub_engine, mock_conn)
+        resp = client.post(
+            "/cases/",
+            json={**_VALID_BODY, "external_ref": "REF-001"},
+            headers=AUTH_HEADERS,
+        )
         body = resp.json()
         assert body["error_code"] == "DUPLICATE_EXTERNAL_REF"
 
@@ -186,9 +190,8 @@ class TestCreateCaseEngineError:
         case_id = uuid4()
         mock_conn = _make_mock_conn(case_id)
         stub_engine.process_event.side_effect = RuntimeError("engine exploded")
-
-        with patch("nuqe_api.routers.cases_ingest.psycopg.connect", return_value=mock_conn):
-            resp = client.post("/cases/", json=_VALID_BODY, headers=AUTH_HEADERS)
+        _configure_engine_connect(stub_engine, mock_conn)
+        resp = client.post("/cases/", json=_VALID_BODY, headers=AUTH_HEADERS)
         assert resp.status_code == 500
 
 

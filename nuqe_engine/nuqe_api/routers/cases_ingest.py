@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import logging
 
-import psycopg
 import psycopg.errors
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
@@ -52,61 +51,56 @@ def create_case(body: CaseCreate, request: Request) -> JSONResponse:
     request_id: str = getattr(request.state, "request_id", "unknown")
 
     try:
-        conn = psycopg.connect(engine._database_url)  # autocommit=False (default)
-    except Exception as exc:
-        logger.exception("Failed to open DB connection: %s", exc)
-        raise
+        with engine.connect() as conn:  # autocommit=False (default)
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        """
+                        INSERT INTO nuqe_engine.cases
+                            (external_ref, type, status, customer_id)
+                        VALUES (%s, %s, %s, %s)
+                        RETURNING id
+                        """,
+                        (
+                            body.external_ref,
+                            body.type,
+                            body.status,
+                            body.customer_id,
+                        ),
+                    )
+                    row = cur.fetchone()
 
-    try:
-        with conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    INSERT INTO nuqe_engine.cases
-                        (external_ref, type, status, customer_id)
-                    VALUES (%s, %s, %s, %s)
-                    RETURNING id
-                    """,
-                    (
-                        body.external_ref,
-                        body.type,
-                        body.status,
-                        body.customer_id,
-                    ),
+                case_id = row[0]  # type: ignore[index]
+
+                opening = body.opening_event
+                event = Event(
+                    event=opening.event,
+                    case_id=case_id,
+                    occurred_at=opening.occurred_at,
+                    context=opening.context,
                 )
-                row = cur.fetchone()
 
-            case_id = row[0]  # type: ignore[index]
+                result = engine.process_event(event, conn=conn)
 
-            opening = body.opening_event
-            event = Event(
-                event=opening.event,
-                case_id=case_id,
-                occurred_at=opening.occurred_at,
-                context=opening.context,
-            )
+                signing_key = engine.signing_key
+                if isinstance(signing_key, str):
+                    signing_key = signing_key.encode()
 
-            result = engine.process_event(event, conn=conn)
-
-            signing_key = engine._signing_key
-            if isinstance(signing_key, str):
-                signing_key = signing_key.encode()
-
-            append_audit_entry(
-                conn,
-                entity_type="case",
-                entity_id=case_id,
-                event_type=AuditEventType.CASE_OPENED,
-                actor="api",
-                payload={
-                    "case_id": str(case_id),
-                    "type": body.type,
-                    "external_ref": body.external_ref,
-                    "customer_id": body.customer_id,
-                },
-                signing_key=signing_key,
-            )
-            # conn.__exit__ commits on clean exit
+                append_audit_entry(
+                    conn,
+                    entity_type="case",
+                    entity_id=case_id,
+                    event_type=AuditEventType.CASE_OPENED,
+                    actor="api",
+                    payload={
+                        "case_id": str(case_id),
+                        "type": body.type,
+                        "external_ref": body.external_ref,
+                        "customer_id": body.customer_id,
+                    },
+                    signing_key=signing_key,
+                )
+                # conn.__exit__ commits on clean exit
 
     except psycopg.errors.UniqueViolation:
         logger.info("Duplicate external_ref for case creation: %s", body.external_ref)
@@ -120,8 +114,6 @@ def create_case(body: CaseCreate, request: Request) -> JSONResponse:
     except Exception as exc:
         logger.exception("Case creation failed: %s", exc)
         raise
-    finally:
-        conn.close()
 
     return JSONResponse(
         status_code=201,
