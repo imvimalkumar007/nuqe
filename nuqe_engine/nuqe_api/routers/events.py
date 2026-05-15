@@ -7,10 +7,13 @@ a ProcessEventResult. Authentication required.
 
 from __future__ import annotations
 
+from typing import Annotated
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 
-from nuqe_api.deps import get_engine, verify_bearer_token
+from nuqe_api.deps import current_org_id, get_engine, verify_bearer_token
 from nuqe_api.metrics import events_processed, obligations_fired
 from nuqe_engine.engine import ProcessEventResult
 from nuqe_engine.trigger import Event
@@ -19,22 +22,28 @@ router = APIRouter(tags=["events"], dependencies=[Depends(verify_bearer_token)])
 
 
 @router.post("/events", response_model=ProcessEventResult)
-def post_event(body: Event, request: Request) -> JSONResponse:
+def post_event(
+    body: Event,
+    request: Request,
+    org_id: Annotated[UUID, Depends(current_org_id)],
+) -> JSONResponse:
     """
     Process a compliance event.
 
-    Calls engine.process_event(event) and returns the full result including
+    Calls engine.process_event(org_id, event) and returns the full result including
     fired obligations, deadlines, requirements, and audit entries.
 
+    Requires X-Org-Id header (UUID). TODO(F3.3): replace with JWT claim.
+
     Errors:
-        422  Pydantic validation failure on the request body.
+        422  Pydantic validation failure on the request body or missing X-Org-Id.
         500  Engine raised an unexpected exception.
     """
     engine = get_engine(request)
     request_id: str = getattr(request.state, "request_id", "unknown")
 
     try:
-        result = engine.process_event(body)
+        result = engine.process_event(org_id, body)
     except Exception as exc:
         return JSONResponse(
             status_code=500,

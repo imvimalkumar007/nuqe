@@ -16,7 +16,11 @@ from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
-AUTH_HEADERS = {"Authorization": "Bearer test-secret-token-abc123"}
+_PILOT_ORG_ID = "a9f318f7-d5be-4235-974e-b3864cc487c1"
+AUTH_HEADERS = {
+    "Authorization": "Bearer test-secret-token-abc123",
+    "X-Org-Id": _PILOT_ORG_ID,
+}
 
 # Minimal valid Event payload for POST /events
 _EVENT_BODY = {

@@ -16,7 +16,9 @@ from __future__ import annotations
 
 import logging
 from datetime import date, datetime, timedelta
+from io import BytesIO
 from pathlib import Path
+from typing import IO
 
 from openpyxl import load_workbook
 
@@ -86,16 +88,18 @@ def _normalise_cell(value: object, column_name: str | None = None) -> object:
 
 
 def load_library(
-    path: str | Path,
+    path: str | Path | IO[bytes],
     *,
     sheet_name: str = "obligation_library",
     approved_only: bool = True,
 ) -> list[RawObligationRow]:
     """
-    Load all obligations from the given xlsx file.
+    Load all obligations from the given xlsx file or file-like object.
 
     Args:
-        path: Path to Nuqe_Obligation_Library.xlsx.
+        path: Path to Nuqe_Obligation_Library.xlsx, or a file-like object
+              (e.g. BytesIO). When a file-like object is given, path checks
+              are skipped and the workbook is read directly from the stream.
         sheet_name: Sheet to read. Defaults to 'obligation_library'.
         approved_only: If True (default), only rows with review_status='approved'
             are returned. This is the engine's normal operating mode: it never
@@ -110,16 +114,23 @@ def load_library(
             row does not match the canonical column order, or any cell has the
             wrong type for its column.
     """
-    p = Path(path)
-    if not p.exists():
-        raise LoaderError(f"Library file not found: {p}")
-    if not p.is_file():
-        raise LoaderError(f"Library path is not a file: {p}")
+    # Handle file-like objects (BytesIO from DB)
+    if hasattr(path, "read"):
+        try:
+            wb = load_workbook(filename=path, data_only=True, read_only=True)  # type: ignore[arg-type]
+        except Exception as exc:
+            raise LoaderError(f"Failed to open workbook from stream: {exc}") from exc
+    else:
+        p = Path(path)  # type: ignore[arg-type]
+        if not p.exists():
+            raise LoaderError(f"Library file not found: {p}")
+        if not p.is_file():
+            raise LoaderError(f"Library path is not a file: {p}")
 
-    try:
-        wb = load_workbook(filename=p, data_only=True, read_only=True)
-    except Exception as exc:
-        raise LoaderError(f"Failed to open workbook {p}: {exc}") from exc
+        try:
+            wb = load_workbook(filename=p, data_only=True, read_only=True)
+        except Exception as exc:
+            raise LoaderError(f"Failed to open workbook {p}: {exc}") from exc
 
     if sheet_name not in wb.sheetnames:
         raise LoaderError(
@@ -185,6 +196,33 @@ def load_library(
         approved_only,
     )
     return rows
+
+
+def load_library_from_bytes(
+    data: bytes,
+    *,
+    sheet_name: str = "obligation_library",
+    approved_only: bool = True,
+) -> list[RawObligationRow]:
+    """
+    Load obligation library from in-memory bytes (from DB BYTEA column).
+
+    This is the F3.2+ path: the xlsx is stored in organisation_libraries.xlsx_bytes
+    and retrieved as a bytes object by psycopg. We wrap it in BytesIO and delegate
+    to load_library.
+
+    Args:
+        data:         Raw xlsx bytes (from DB BYTEA column).
+        sheet_name:   Sheet to read. Defaults to 'obligation_library'.
+        approved_only: If True, only approved rows are returned.
+
+    Returns:
+        List of RawObligationRow.
+
+    Raises:
+        LoaderError: If the bytes cannot be parsed as an xlsx workbook.
+    """
+    return load_library(BytesIO(data), sheet_name=sheet_name, approved_only=approved_only)
 
 
 def load_all_statuses(path: str | Path) -> dict[str, list[RawObligationRow]]:

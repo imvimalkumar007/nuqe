@@ -18,7 +18,11 @@ from fastapi.testclient import TestClient
 from nuqe_engine.sync import SyncResult
 from nuqe_engine.validator import ValidationDefect, ValidationResult
 
-AUTH_HEADERS = {"Authorization": "Bearer test-secret-token-abc123"}
+_PILOT_ORG_ID = "a9f318f7-d5be-4235-974e-b3864cc487c1"
+AUTH_HEADERS = {
+    "Authorization": "Bearer test-secret-token-abc123",
+    "X-Org-Id": _PILOT_ORG_ID,
+}
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────
@@ -165,7 +169,8 @@ class TestLibraryStatusLoaded:
         self, client: TestClient, stub_engine: MagicMock
     ) -> None:
         synced_at = datetime(2026, 5, 14, 12, 0, 0, tzinfo=UTC)
-        mock_conn = _make_lib_mock_conn((141, synced_at))
+        # F3.2: query returns (version, row_count, approved_count, synced_at)
+        mock_conn = _make_lib_mock_conn(("2026-05-14", 141, 141, synced_at))
         stub_engine.connect.return_value.__enter__.return_value = mock_conn
         stub_engine.connect.return_value.__exit__.return_value = False
         resp = client.get("/library/status", headers=AUTH_HEADERS)
@@ -175,7 +180,8 @@ class TestLibraryStatusLoaded:
         self, client: TestClient, stub_engine: MagicMock
     ) -> None:
         synced_at = datetime(2026, 5, 14, 12, 0, 0, tzinfo=UTC)
-        mock_conn = _make_lib_mock_conn((141, synced_at))
+        # F3.2: query returns (version, row_count, approved_count, synced_at)
+        mock_conn = _make_lib_mock_conn(("2026-05-14", 141, 141, synced_at))
         stub_engine.connect.return_value.__enter__.return_value = mock_conn
         stub_engine.connect.return_value.__exit__.return_value = False
         body = client.get("/library/status", headers=AUTH_HEADERS).json()
@@ -188,7 +194,8 @@ class TestLibraryStatusEmpty:
     def test_no_library_returns_404(
         self, client: TestClient, stub_engine: MagicMock
     ) -> None:
-        mock_conn = _make_lib_mock_conn((0, None))
+        # F3.2: None means no active library row found for this org
+        mock_conn = _make_lib_mock_conn(None)
         stub_engine.connect.return_value.__enter__.return_value = mock_conn
         stub_engine.connect.return_value.__exit__.return_value = False
         resp = client.get("/library/status", headers=AUTH_HEADERS)
@@ -197,7 +204,8 @@ class TestLibraryStatusEmpty:
     def test_no_library_error_code(
         self, client: TestClient, stub_engine: MagicMock
     ) -> None:
-        mock_conn = _make_lib_mock_conn((0, None))
+        # F3.2: None means no active library row found for this org
+        mock_conn = _make_lib_mock_conn(None)
         stub_engine.connect.return_value.__enter__.return_value = mock_conn
         stub_engine.connect.return_value.__exit__.return_value = False
         body = client.get("/library/status", headers=AUTH_HEADERS).json()

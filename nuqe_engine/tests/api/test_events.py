@@ -18,7 +18,11 @@ from fastapi.testclient import TestClient
 from nuqe_engine.schema import TriggerEvent
 from nuqe_engine.trigger import Event
 
-AUTH_HEADERS = {"Authorization": "Bearer test-secret-token-abc123"}
+_PILOT_ORG_ID = "a9f318f7-d5be-4235-974e-b3864cc487c1"
+AUTH_HEADERS = {
+    "Authorization": "Bearer test-secret-token-abc123",
+    "X-Org-Id": _PILOT_ORG_ID,
+}
 
 _CASE_ID = uuid4()
 _VALID_BODY = {
@@ -39,7 +43,8 @@ class TestPostEventsValid:
     ) -> None:
         client.post("/events", json=_VALID_BODY, headers=AUTH_HEADERS)
         stub_engine.process_event.assert_called_once()
-        call_arg: Event = stub_engine.process_event.call_args[0][0]
+        # F3.2: signature is process_event(org_id, event) — event is [0][1]
+        call_arg: Event = stub_engine.process_event.call_args[0][1]
         assert call_arg.event == TriggerEvent.COMPLAINT_RECEIVED
         assert call_arg.case_id == _CASE_ID
 

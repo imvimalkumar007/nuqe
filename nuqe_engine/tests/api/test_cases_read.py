@@ -14,7 +14,11 @@ from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
 
-AUTH_HEADERS = {"Authorization": "Bearer test-secret-token-abc123"}
+_PILOT_ORG_ID = "a9f318f7-d5be-4235-974e-b3864cc487c1"
+AUTH_HEADERS = {
+    "Authorization": "Bearer test-secret-token-abc123",
+    "X-Org-Id": _PILOT_ORG_ID,
+}
 
 _KNOWN_CASE_ID = uuid4()
 _UNKNOWN_CASE_ID = uuid4()
@@ -22,9 +26,10 @@ _UNKNOWN_CASE_ID = uuid4()
 
 def _mock_case_exists(case_id: UUID, exists: bool) -> patch:  # type: ignore[type-arg]
     """Patch _case_exists in cases router."""
+    # F3.2: _case_exists now takes (engine, org_id, case_id)
     return patch(
         "nuqe_api.routers.cases._case_exists",
-        side_effect=lambda engine, cid: cid == _KNOWN_CASE_ID if exists else False,
+        side_effect=lambda engine, org_id, cid: cid == _KNOWN_CASE_ID if exists else False,
     )
 
 

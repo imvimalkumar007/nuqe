@@ -7,9 +7,10 @@ implementation details.
 
 Usage:
     engine = Engine.from_env()
-    engine.refresh_library()
+    pilot_org_id = UUID("...")
+    engine.refresh_library(pilot_org_id)
 
-    result = engine.process_event(Event(
+    result = engine.process_event(pilot_org_id, Event(
         event=TriggerEvent.COMPLAINT_RECEIVED,
         case_id=case_id,
         occurred_at=datetime.now(UTC),
@@ -19,12 +20,18 @@ Usage:
 Design notes:
 - Each public method opens its own DB connection and closes it before returning.
   This keeps the Engine stateless and safe to share across threads.
+- connect(org_id) opens a transaction, sets app.current_org_id via SET LOCAL
+  (transaction-scoped — does not leak across connections), and commits/rolls back
+  on exit. Every public method MUST pass org_id to connect().
 - process_event writes fired_obligations and deadlines to Postgres and appends
   audit entries. It is idempotent via the UNIQUE (case_id, obligation_id, version)
   constraint: re-processing the same event is a no-op (INSERT ON CONFLICT DO NOTHING).
 - F1 does not implement requirement satisfaction or evidence checks against real
   Postgres tables (those arrive in F2). evidence_for uses the injected backend,
   which defaults to InMemoryEvidenceBackend (always returns not-found).
+- F3.2: org_id is now a required first argument on every public method and on
+  connect(). No "no org context" path exists in the public API — that is only
+  for migrations (nuqe role) and ops queries.
 """
 
 from __future__ import annotations
@@ -54,7 +61,7 @@ from nuqe_engine.evidence import (
     InMemoryEvidenceBackend,
     check_evidence,
 )
-from nuqe_engine.loader import load_library
+from nuqe_engine.loader import load_library, load_library_from_bytes
 from nuqe_engine.requirement import RequirementRegistration, register_requirement
 from nuqe_engine.schema import ObligationRow, TriggerEvent
 from nuqe_engine.sync import SyncResult, sync_to_database
@@ -62,6 +69,13 @@ from nuqe_engine.trigger import Event, FiredObligation, find_fired_obligations
 from nuqe_engine.validator import validate
 
 logger = logging.getLogger(__name__)
+
+
+# ── Exceptions ────────────────────────────────────────────────────────────
+
+
+class NoActiveLibraryError(Exception):
+    """Raised when no active library row exists for an organisation."""
 
 
 # ── Public result models ──────────────────────────────────────────────────
@@ -208,19 +222,27 @@ class Engine:
         )
 
     @contextmanager
-    def connect(self) -> Iterator[psycopg.Connection]:
-        """Yield a psycopg connection against the engine's database.
+    def connect(self, org_id: UUID) -> Iterator[psycopg.Connection]:
+        """Yield a psycopg connection with RLS org context set via SET LOCAL.
 
-        The caller controls the transaction. The connection is closed on
-        exit regardless of whether the caller committed or rolled back.
+        Opens a connection, BEGINs explicitly, sets app.current_org_id via
+        SET LOCAL (transaction-scoped — does not leak across pool checkouts),
+        yields to caller, commits on clean exit or rolls back on exception.
 
-        Routers MUST use this instead of constructing their own
-        `psycopg.connect(...)` — otherwise they couple to Engine's
-        private `_database_url` attribute and become hard to stub.
+        Callers MUST pass org_id explicitly. No "no org context" path exists
+        in the public API — that's only for migrations (nuqe role) and ops
+        queries (nuqe_admin role).
         """
         conn = psycopg.connect(self._database_url)
         try:
-            yield conn
+            conn.execute("BEGIN")
+            conn.execute("SET LOCAL app.current_org_id = %s", (str(org_id),))
+            try:
+                yield conn
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                raise
         finally:
             conn.close()
 
@@ -262,13 +284,18 @@ class Engine:
             audit_signing_key=signing_key,
         )
 
-    def health_check(self) -> dict[str, object]:
+    def health_check(self, org_id: UUID | None = None) -> dict[str, object]:
         """
         Lightweight liveness check.
 
         Runs `SELECT 1` to verify DB reachability and reads the obligations
         table metadata (total approved count and max updated_at as a proxy for
         library version).
+
+        Args:
+            org_id: Optional org context. When supplied, the count is scoped to
+                    that org (via RLS). When None, a raw connection is used for
+                    basic DB reachability only (approved_count will be None).
 
         Returns:
             {
@@ -281,21 +308,28 @@ class Engine:
         an unhealthy state.
         """
         try:
-            with (
-                psycopg.connect(self._database_url, autocommit=True) as conn,
-                conn.cursor() as cur,
-            ):
-                cur.execute("SELECT 1")
-                cur.execute(
-                    """
-                    SELECT COUNT(*), MAX(synced_at)
-                    FROM nuqe_engine.obligations
-                    WHERE review_status = 'approved'
-                    """
-                )
-                row = cur.fetchone()
-            approved_count = int(row[0]) if row and row[0] is not None else 0
-            library_synced_at = row[1] if row else None
+            if org_id is not None:
+                with self.connect(org_id) as conn, conn.cursor() as cur:
+                    cur.execute("SELECT 1")
+                    cur.execute(
+                        """
+                            SELECT COUNT(*), MAX(synced_at)
+                            FROM nuqe_engine.obligations
+                            WHERE review_status = 'approved'
+                            """
+                    )
+                    row = cur.fetchone()
+                approved_count = int(row[0]) if row and row[0] is not None else 0
+                library_synced_at = row[1] if row else None
+            else:
+                with (
+                    psycopg.connect(self._database_url, autocommit=True) as conn,
+                    conn.cursor() as cur,
+                ):
+                    cur.execute("SELECT 1")
+                    row = None
+                approved_count = None
+                library_synced_at = None
             return {
                 "db_reachable": True,
                 "approved_count": approved_count,
@@ -309,24 +343,51 @@ class Engine:
                 "library_synced_at": None,
             }
 
-    def refresh_library(self, path: Path | None = None) -> SyncResult:
+    def refresh_library(self, org_id: UUID, path: Path | None = None) -> SyncResult:
         """
         Load, validate, and sync the obligation library to Postgres.
 
+        F3.2+: Loads the active library from nuqe_engine.organisation_libraries
+        for the given org. Falls back to loading from `path` if provided (for
+        the legacy /library/sync endpoint during the F3.2 transition).
+
         Args:
-            path: Override the library path. Falls back to the Engine's
-                  library_path, then raises ValueError if neither is set.
+            org_id: The organisation whose library to sync.
+            path:   Legacy override — load from this file path instead of DB.
+                    TODO(F3.3): remove once /library/sync is fully DB-backed.
 
         Returns:
             SyncResult with inserted/unchanged counts.
-        """
-        lib_path = path or self._library_path
-        if lib_path is None:
-            raise ValueError(
-                "No library_path provided. Supply it to Engine() or refresh_library(path=...)."
-            )
 
-        raw = load_library(lib_path, approved_only=True)
+        Raises:
+            NoActiveLibraryError: If no active library row exists in DB and no
+                                  path override was provided.
+        """
+        if path is not None:
+            # Legacy path-based load (used by /library/sync during F3.2 transition)
+            raw = load_library(path, approved_only=True)
+        else:
+            # F3.2: load from organisation_libraries
+            with self.connect(org_id) as conn, conn.cursor() as cur:
+                cur.execute(
+                    """
+                        SELECT xlsx_bytes, version, content_hash, id
+                        FROM nuqe_engine.organisation_libraries
+                        WHERE org_id = %s AND is_active = TRUE
+                        """,
+                    (str(org_id),),
+                )
+                row = cur.fetchone()
+
+            if row is None:
+                raise NoActiveLibraryError(
+                    f"No active library found for org {org_id}. "
+                    "Upload a library via POST /library/upload and activate it."
+                )
+
+            xlsx_bytes, _lib_version, _content_hash, lib_id = row
+            raw = load_library_from_bytes(bytes(xlsx_bytes), approved_only=True)
+
         result = validate(raw)
 
         if result.defects:
@@ -339,8 +400,29 @@ class Engine:
                     defect.message,
                 )
 
-        with psycopg.connect(self._database_url, autocommit=True) as conn:
+        error_defects = [d for d in result.defects if d.severity == "error"]
+        if error_defects:
+            return SyncResult(
+                inserted=0,
+                updated=0,
+                unchanged=0,
+                skipped_versions=[],
+            )
+
+        with self.connect(org_id) as conn:
             sync_result = sync_to_database(result.valid, conn)
+
+            # Update synced_at on the library row (DB-based path only)
+            if path is None:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        """
+                        UPDATE nuqe_engine.organisation_libraries
+                        SET synced_at = NOW()
+                        WHERE id = %s
+                        """,
+                        (str(lib_id),),
+                    )
 
         logger.info(
             "refresh_library: %d inserted, %d unchanged",
@@ -439,14 +521,14 @@ class Engine:
         )
 
     def process_event(
-        self, event: Event, *, conn: psycopg.Connection | None = None
+        self, org_id: UUID, event: Event, *, conn: psycopg.Connection | None = None
     ) -> ProcessEventResult:
         """
         Process an event: fire obligations, calculate deadlines, register
         requirements, and write everything to Postgres with audit entries.
 
         Steps:
-          1. Load approved obligations from Postgres.
+          1. Load approved obligations from Postgres (RLS-scoped to org_id).
           2. Find fired obligations (M4 trigger evaluator).
           3. For each fired obligation:
              a. INSERT into fired_obligations (idempotent via UNIQUE conflict).
@@ -456,24 +538,28 @@ class Engine:
              e. Append audit entries for OBLIGATION_FIRED and DEADLINE_SET.
 
         Args:
-            event: The event to process.
-            conn:  Optional caller-provided psycopg connection. When supplied,
-                   this method does NOT open a new connection and does NOT commit
-                   — the caller owns the transaction. When None (default), a new
-                   autocommit connection is opened and closed automatically.
+            org_id: The organisation context. Sets RLS via SET LOCAL.
+            event:  The event to process.
+            conn:   Optional caller-provided psycopg connection. When supplied,
+                    the caller already set the RLS context — do NOT call
+                    connect() again. The caller owns the transaction.
+                    When None (default), a new connection is opened via
+                    self.connect(org_id) which sets RLS automatically.
 
         Returns:
             ProcessEventResult containing all fired obligations, deadlines,
             requirements, and audit entries created in this call.
         """
         if conn is not None:
+            # Caller already set org context and owns the transaction
             return self._run_process_event(conn, event)
 
-        with psycopg.connect(self._database_url, autocommit=True) as _conn:
+        with self.connect(org_id) as _conn:
             return self._run_process_event(_conn, event)
 
     def due_obligations(
         self,
+        org_id: UUID,
         case_id: UUID,
         as_of: datetime | None = None,
     ) -> list[ObligationStatus]:
@@ -481,8 +567,9 @@ class Engine:
         Return the current status of all fired obligations for a case.
 
         Args:
+            org_id:  The organisation context. Sets RLS via SET LOCAL.
             case_id: The case to query.
-            as_of: Reference time for deadline status. Defaults to now (UTC).
+            as_of:   Reference time for deadline status. Defaults to now (UTC).
 
         Returns:
             List of ObligationStatus, one per fired obligation.
@@ -490,7 +577,7 @@ class Engine:
         if as_of is None:
             as_of = datetime.now(tz=UTC)
 
-        with psycopg.connect(self._database_url, autocommit=True) as conn:
+        with self.connect(org_id) as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     """
@@ -558,6 +645,7 @@ class Engine:
 
     def evidence_for(
         self,
+        org_id: UUID,
         obligation_id: str,
         version: str,
         case_id: UUID,
@@ -566,14 +654,15 @@ class Engine:
         Check evidence for a specific obligation/case combination.
 
         Args:
+            org_id:        The organisation context. Sets RLS via SET LOCAL.
             obligation_id: The obligation identifier.
-            version: The obligation version string.
-            case_id: The case to check evidence for.
+            version:       The obligation version string.
+            case_id:       The case to check evidence for.
 
         Returns:
             List of EvidenceResult, one per evidence spec in evidence_required.
         """
-        with psycopg.connect(self._database_url, autocommit=True) as conn:
+        with self.connect(org_id) as conn:
             cols = ", ".join(_OBLIGATION_COLUMNS)
             with conn.cursor() as cur:
                 cur.execute(
@@ -611,6 +700,7 @@ class Engine:
 
     def audit_trail(
         self,
+        org_id: UUID,
         *,
         entity_id: UUID,
         entity_type: str | None = None,
@@ -619,13 +709,14 @@ class Engine:
         Retrieve the audit trail for an entity.
 
         Args:
-            entity_id: The entity UUID (case_id, fired_obligation_id, etc.).
+            org_id:      The organisation context. Sets RLS via SET LOCAL.
+            entity_id:   The entity UUID (case_id, fired_obligation_id, etc.).
             entity_type: Optional filter by entity type.
 
         Returns:
             List of AuditEntry in chronological order, with signatures verified.
         """
-        with psycopg.connect(self._database_url, autocommit=True) as conn:
+        with self.connect(org_id) as conn:
             return get_audit_trail(
                 conn,
                 entity_id=entity_id,

@@ -13,7 +13,11 @@ from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
-AUTH_HEADERS = {"Authorization": "Bearer test-secret-token-abc123"}
+_PILOT_ORG_ID = "a9f318f7-d5be-4235-974e-b3864cc487c1"
+AUTH_HEADERS = {
+    "Authorization": "Bearer test-secret-token-abc123",
+    "X-Org-Id": _PILOT_ORG_ID,
+}
 _CASE_ID = uuid4()
 
 
@@ -54,7 +58,8 @@ class TestGetObligations:
             client.get(f"/cases/{_CASE_ID}/obligations", headers=AUTH_HEADERS)
         stub_engine.due_obligations.assert_called_once()
         call_kwargs = stub_engine.due_obligations.call_args
-        assert call_kwargs[0][0] == _CASE_ID
+        # F3.2: signature is due_obligations(org_id, case_id, ...) — org_id is [0][0]
+        assert call_kwargs[0][1] == _CASE_ID
 
     def test_as_of_param_forwarded(
         self, client: TestClient, stub_engine: MagicMock

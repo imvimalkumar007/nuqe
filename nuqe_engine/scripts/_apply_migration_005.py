@@ -1,7 +1,8 @@
 """Apply migration 005 as the nuqe (migration) role."""
 import os
-import psycopg
 from pathlib import Path
+
+import psycopg
 
 migration_url = os.environ.get(
     "MIGRATION_DATABASE_URL",

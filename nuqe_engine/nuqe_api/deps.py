@@ -3,13 +3,16 @@ nuqe_api.deps — FastAPI dependencies shared across routers.
 
 - get_engine: returns the Engine stored on app.state at startup.
 - verify_bearer_token: validates the Authorization header in constant time.
+- current_org_id: reads org_id from the X-Org-Id request header (F3.2).
 """
 
 from __future__ import annotations
 
 import hmac
+from typing import Annotated
+from uuid import UUID
 
-from fastapi import HTTPException, Request, Security
+from fastapi import Header, HTTPException, Request, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from nuqe_engine.engine import Engine
@@ -52,3 +55,23 @@ def verify_bearer_token(
             status_code=401,
             detail={"error_code": "AUTH_INVALID", "message": "Invalid Bearer token"},
         )
+
+
+def current_org_id(
+    x_org_id: Annotated[UUID, Header(alias="X-Org-Id")],
+) -> UUID:
+    """
+    Read the organisation UUID from the X-Org-Id request header.
+
+    This is a temporary dependency for F3.2 while static-Bearer auth is in
+    place. The header value is trusted as-is.
+
+    TODO(F3.3): replace with Auth0 JWT org_id extraction — this header-based
+    approach MUST be removed once Auth0 is wired. The header can be spoofed
+    by any caller who knows the bearer token.
+
+    Raises:
+        422: FastAPI raises automatically if the header is missing or not a
+             valid UUID.
+    """
+    return x_org_id

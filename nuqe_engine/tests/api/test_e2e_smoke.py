@@ -30,7 +30,8 @@ def test_full_pipeline(real_engine: Engine, integration_settings: Any) -> None:
     with TestClient(app, raise_server_exceptions=False) as client:
         app.state.engine = real_engine
         headers = {
-            "Authorization": f"Bearer {integration_settings.nuqe_api_token.get_secret_value()}"
+            "Authorization": f"Bearer {integration_settings.nuqe_api_token.get_secret_value()}",
+            "X-Org-Id": "a9f318f7-d5be-4235-974e-b3864cc487c1",
         }
 
         # 1. Create case
@@ -93,7 +94,8 @@ def test_duplicate_external_ref_returns_409(real_engine: Engine, integration_set
     with TestClient(app, raise_server_exceptions=False) as client:
         app.state.engine = real_engine
         headers = {
-            "Authorization": f"Bearer {integration_settings.nuqe_api_token.get_secret_value()}"
+            "Authorization": f"Bearer {integration_settings.nuqe_api_token.get_secret_value()}",
+            "X-Org-Id": "a9f318f7-d5be-4235-974e-b3864cc487c1",
         }
         resp1 = client.post("/cases/", json=body, headers=headers)
         assert resp1.status_code == 201

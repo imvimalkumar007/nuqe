@@ -11,12 +11,14 @@ Authentication required.
 from __future__ import annotations
 
 import logging
+from typing import Annotated
+from uuid import UUID
 
 import psycopg.errors
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 
-from nuqe_api.deps import get_engine, verify_bearer_token
+from nuqe_api.deps import current_org_id, get_engine, verify_bearer_token
 from nuqe_api.models import CaseCreate
 from nuqe_engine.audit import AuditEventType, append_audit_entry
 from nuqe_engine.trigger import Event
@@ -31,27 +33,34 @@ router = APIRouter(
 
 
 @router.post("/", status_code=201)
-def create_case(body: CaseCreate, request: Request) -> JSONResponse:
+def create_case(
+    body: CaseCreate,
+    request: Request,
+    org_id: Annotated[UUID, Depends(current_org_id)],
+) -> JSONResponse:
     """
     Create a new case and process its opening event atomically.
 
-    Steps (single transaction, no autocommit):
-      1. INSERT INTO nuqe_engine.cases RETURNING id.
-      2. Construct the opening Event using the server-assigned case_id.
-      3. Call engine.process_event(event, conn=conn) — caller owns the tx.
-      4. Append CASE_OPENED audit entry.
-      5. Commit.
+    Steps (single transaction):
+      1. engine.connect(org_id) — opens connection, sets RLS, begins tx.
+      2. INSERT INTO nuqe_engine.cases RETURNING id.
+      3. Construct the opening Event using the server-assigned case_id.
+      4. Call engine.process_event(org_id, event, conn=conn) — caller owns tx.
+      5. Append CASE_OPENED audit entry.
+      6. Commit on clean exit.
+
+    Requires X-Org-Id header (UUID). TODO(F3.3): replace with JWT claim.
 
     Errors:
         409  Duplicate external_ref (UniqueViolation).
-        422  Pydantic validation failure.
+        422  Pydantic validation failure or missing X-Org-Id.
         500  Any other engine or DB error.
     """
     engine = get_engine(request)
     request_id: str = getattr(request.state, "request_id", "unknown")
 
     try:
-        with engine.connect() as conn:  # autocommit=False (default)  # noqa: SIM117
+        with engine.connect(org_id) as conn:  # sets RLS, begins tx, commits on exit  # noqa: SIM117
             with conn:
                 with conn.cursor() as cur:
                     cur.execute(
@@ -80,7 +89,7 @@ def create_case(body: CaseCreate, request: Request) -> JSONResponse:
                     context=opening.context,
                 )
 
-                result = engine.process_event(event, conn=conn)
+                result = engine.process_event(org_id, event, conn=conn)
 
                 signing_key = engine.signing_key
                 if isinstance(signing_key, str):

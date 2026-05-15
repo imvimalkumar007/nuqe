@@ -8,10 +8,12 @@ and one notification row per breach.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from datetime import UTC, datetime
 from uuid import UUID
 
+import psycopg as _psycopg
 import psycopg.types.json
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -46,18 +48,23 @@ def scan_deadlines(engine: Engine) -> dict[str, int]:
     if isinstance(signing_key, str):
         signing_key = signing_key.encode()
 
-    with engine.connect() as conn:
-        conn.autocommit = True
+    # The scheduler is an admin/background process that scans across all orgs.
+    # It uses a direct psycopg connection (not engine.connect()) to bypass RLS
+    # and retrieve cases for all organisations, then passes org_id to per-case
+    # engine methods so they set the correct RLS context.
+    with _psycopg.connect(engine._database_url, autocommit=True) as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id FROM nuqe_engine.cases WHERE status NOT IN ('closed', 'withdrawn')"
+                "SELECT id, org_id FROM nuqe_engine.cases WHERE status NOT IN ('closed', 'withdrawn')"
             )
-            case_ids = [UUID(str(row[0])) for row in cur.fetchall()]
+            case_rows = [(UUID(str(row[0])), row[1]) for row in cur.fetchall()]
 
-        for case_id in case_ids:
+        for case_id, org_id_raw in case_rows:
             cases_scanned += 1
+            # Use pilot org as fallback for rows without org_id (pre-F3.1 data)
+            org_id = UUID(str(org_id_raw)) if org_id_raw is not None else UUID("a9f318f7-d5be-4235-974e-b3864cc487c1")
             try:
-                statuses = engine.due_obligations(case_id, as_of=now)
+                statuses = engine.due_obligations(org_id, case_id, as_of=now)
             except Exception as exc:
                 logger.warning("due_obligations failed for case %s: %s", case_id, exc)
                 continue
@@ -68,6 +75,13 @@ def scan_deadlines(engine: Engine) -> dict[str, int]:
                 breaches_found += 1
                 obl_id = status.obligation.obligation_id
                 version = status.obligation.version
+
+                # Set org context for RLS-protected audit_log queries.
+                # This is safe in autocommit mode: SET LOCAL applies only to the
+                # current pseudo-transaction (each statement is its own tx in autocommit).
+                # Using SET (not SET LOCAL) to persist across statements in autocommit.
+                with contextlib.suppress(Exception):
+                    conn.execute("SET app.current_org_id = %s", (str(org_id),))
 
                 # Idempotency: check for an existing DEADLINE_BREACHED entry
                 try:

@@ -1,4 +1,7 @@
 """Check DB state for F3.2 pre-migration."""
+import os
+from pathlib import Path
+
 import psycopg
 
 conn = psycopg.connect("postgresql://nuqe:nuqe_secret@localhost:5432/nuqe", autocommit=True)
@@ -20,11 +23,9 @@ orgs = cur.fetchall()
 print(f"Organisations: {orgs}")
 
 # Check if LIBRARY_PATH is in env
-import os
 lib_path = os.environ.get("LIBRARY_PATH", "")
 print(f"LIBRARY_PATH env: {lib_path!r}")
 
-from pathlib import Path
 if lib_path:
     p = Path(lib_path)
     print(f"LIBRARY_PATH exists: {p.exists()}")

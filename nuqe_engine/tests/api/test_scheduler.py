@@ -31,21 +31,35 @@ def _mock_engine(
     return engine
 
 
-def _configure_engine_connect_with_cases(
-    engine: MagicMock, case_ids: list[UUID]
-) -> MagicMock:
-    """Configure engine.connect() to yield a mock conn whose cursor returns case_ids."""
+def _make_scheduler_conn(case_ids: list[UUID]) -> MagicMock:
+    """Build a mock psycopg connection that returns case_ids from fetchall.
+
+    F3.2: scan_deadlines() uses _psycopg.connect(engine._database_url) directly
+    (admin path, bypasses RLS). Returns (id, org_id) pairs — org_id None for legacy rows.
+    """
     mock_cursor = MagicMock()
-    mock_cursor.fetchall.return_value = [(str(cid),) for cid in case_ids]
+    mock_cursor.fetchall.return_value = [(str(cid), None) for cid in case_ids]
     mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
     mock_cursor.__exit__ = MagicMock(return_value=False)
     mock_conn = MagicMock()
     mock_conn.cursor.return_value = mock_cursor
     mock_conn.__enter__ = MagicMock(return_value=mock_conn)
     mock_conn.__exit__ = MagicMock(return_value=False)
-    engine.connect.return_value.__enter__.return_value = mock_conn
-    engine.connect.return_value.__exit__.return_value = False
+    mock_conn.execute = MagicMock()  # absorbs SET app.current_org_id calls
     return mock_conn
+
+
+def _configure_engine_connect_with_cases(
+    engine: MagicMock, case_ids: list[UUID]
+) -> MagicMock:
+    """Return the mock conn (caller must patch _psycopg.connect to use it).
+
+    Usage in tests:
+        mock_conn = _configure_engine_connect_with_cases(engine, case_ids)
+        with patch("nuqe_api.scheduler._psycopg.connect", return_value=mock_conn):
+            result = scan_deadlines(engine)
+    """
+    return _make_scheduler_conn(case_ids)
 
 
 def _make_breached_status(obl_id: str = "UK-DISP-001", version: str = "1.0") -> MagicMock:
@@ -61,19 +75,24 @@ def _make_breached_status(obl_id: str = "UK-DISP-001", version: str = "1.0") -> 
     return status
 
 
+_PSYCOPG_CONNECT = "nuqe_api.scheduler._psycopg.connect"
+
+
 class TestScanDeadlinesUnit:
     def test_returns_correct_keys(self) -> None:
         engine = _mock_engine()
-        _configure_engine_connect_with_cases(engine, [])
-        result = scan_deadlines(engine)
+        mock_conn = _configure_engine_connect_with_cases(engine, [])
+        with patch(_PSYCOPG_CONNECT, return_value=mock_conn):
+            result = scan_deadlines(engine)
         assert "cases_scanned" in result
         assert "breaches_found" in result
         assert "breaches_recorded" in result
 
     def test_no_cases_returns_zeros(self) -> None:
         engine = _mock_engine()
-        _configure_engine_connect_with_cases(engine, [])
-        result = scan_deadlines(engine)
+        mock_conn = _configure_engine_connect_with_cases(engine, [])
+        with patch(_PSYCOPG_CONNECT, return_value=mock_conn):
+            result = scan_deadlines(engine)
         assert result["cases_scanned"] == 0
         assert result["breaches_found"] == 0
         assert result["breaches_recorded"] == 0
@@ -81,8 +100,9 @@ class TestScanDeadlinesUnit:
     def test_empty_due_obligations_no_breaches(self) -> None:
         case_id = uuid4()
         engine = _mock_engine(due_obligations_return=[])
-        _configure_engine_connect_with_cases(engine, [case_id])
-        result = scan_deadlines(engine)
+        mock_conn = _configure_engine_connect_with_cases(engine, [case_id])
+        with patch(_PSYCOPG_CONNECT, return_value=mock_conn):
+            result = scan_deadlines(engine)
         assert result["cases_scanned"] == 1
         assert result["breaches_found"] == 0
         assert result["breaches_recorded"] == 0
@@ -99,8 +119,9 @@ class TestScanDeadlinesUnit:
         status.due_at = datetime.now(tz=UTC) + timedelta(days=10)
 
         engine = _mock_engine(due_obligations_return=[status])
-        _configure_engine_connect_with_cases(engine, [case_id])
-        result = scan_deadlines(engine)
+        mock_conn = _configure_engine_connect_with_cases(engine, [case_id])
+        with patch(_PSYCOPG_CONNECT, return_value=mock_conn):
+            result = scan_deadlines(engine)
         assert result["breaches_found"] == 0
 
     def test_breached_deadline_calls_append_audit_and_insert(self) -> None:
@@ -108,9 +129,10 @@ class TestScanDeadlinesUnit:
         case_id = uuid4()
         breached_status = _make_breached_status()
         engine = _mock_engine(due_obligations_return=[breached_status])
-        _configure_engine_connect_with_cases(engine, [case_id])
+        mock_conn = _configure_engine_connect_with_cases(engine, [case_id])
 
         with (
+            patch(_PSYCOPG_CONNECT, return_value=mock_conn),
             patch("nuqe_api.scheduler.get_audit_trail", return_value=[]),
             patch("nuqe_api.scheduler.append_audit_entry") as mock_append,
         ):
@@ -125,13 +147,14 @@ class TestScanDeadlinesUnit:
         case_id = uuid4()
         breached_status = _make_breached_status(obl_id="UK-DISP-001", version="1.0")
         engine = _mock_engine(due_obligations_return=[breached_status])
-        _configure_engine_connect_with_cases(engine, [case_id])
+        mock_conn = _configure_engine_connect_with_cases(engine, [case_id])
 
         # Existing audit entry matches this obligation
         existing_entry = MagicMock()
         existing_entry.payload = {"obligation_id": "UK-DISP-001", "version": "1.0"}
 
         with (
+            patch(_PSYCOPG_CONNECT, return_value=mock_conn),
             patch("nuqe_api.scheduler.get_audit_trail", return_value=[existing_entry]),
             patch("nuqe_api.scheduler.append_audit_entry") as mock_append,
         ):
@@ -146,23 +169,26 @@ class TestScanDeadlinesUnit:
         case_id = uuid4()
         engine = _mock_engine()
         engine.due_obligations.side_effect = RuntimeError("DB error")
-        _configure_engine_connect_with_cases(engine, [case_id])
-        result = scan_deadlines(engine)
+        mock_conn = _configure_engine_connect_with_cases(engine, [case_id])
+        with patch(_PSYCOPG_CONNECT, return_value=mock_conn):
+            result = scan_deadlines(engine)
         assert result["cases_scanned"] == 1
         assert result["breaches_recorded"] == 0
 
     def test_multiple_cases_scanned(self) -> None:
         case_ids = [uuid4(), uuid4(), uuid4()]
         engine = _mock_engine(due_obligations_return=[])
-        _configure_engine_connect_with_cases(engine, case_ids)
-        result = scan_deadlines(engine)
+        mock_conn = _configure_engine_connect_with_cases(engine, case_ids)
+        with patch(_PSYCOPG_CONNECT, return_value=mock_conn):
+            result = scan_deadlines(engine)
         assert result["cases_scanned"] == 3
 
     def test_signing_key_str_converted_to_bytes(self) -> None:
         """Engine with str signing_key should not crash."""
         engine = _mock_engine(signing_key="string-key-not-bytes")
-        _configure_engine_connect_with_cases(engine, [])
-        result = scan_deadlines(engine)
+        mock_conn = _configure_engine_connect_with_cases(engine, [])
+        with patch(_PSYCOPG_CONNECT, return_value=mock_conn):
+            result = scan_deadlines(engine)
         assert result["cases_scanned"] == 0
 
 

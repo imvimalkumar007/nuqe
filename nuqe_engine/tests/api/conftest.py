@@ -10,15 +10,21 @@ Unit test strategy:
 Integration test strategy:
   - Provide a `real_client` fixture backed by a real Engine pointing at the
     test Postgres database. Marked @pytest.mark.integration.
+
+F3.2: org_id is now required on all engine methods and connect(). Unit tests
+use PILOT_ORG_ID as the X-Org-Id header. The `auth_and_org_headers` fixture
+provides both auth + org headers.
 """
 
 from __future__ import annotations
 
 import contextlib
+import os
 from collections.abc import Generator
 from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
+from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
@@ -27,10 +33,17 @@ from nuqe_api.app import create_app
 from nuqe_api.settings import Settings
 from nuqe_engine.engine import Engine, ProcessEventResult
 
-# ── Token used in all unit tests ─────────────────────────────────────────
+# ── Token and org context used in all unit tests ─────────────────────────
 
 TEST_TOKEN = "test-secret-token-abc123"
 AUTH_HEADERS = {"Authorization": f"Bearer {TEST_TOKEN}"}
+
+# Pilot org UUID — matches the development database
+PILOT_ORG_ID = UUID(
+    os.environ.get("PILOT_ORG_ID", "a9f318f7-d5be-4235-974e-b3864cc487c1")
+)
+ORG_HEADERS = {"X-Org-Id": str(PILOT_ORG_ID)}
+AUTH_AND_ORG_HEADERS = {**AUTH_HEADERS, **ORG_HEADERS}
 
 
 # ── Stub Engine ───────────────────────────────────────────────────────────
@@ -39,9 +52,13 @@ AUTH_HEADERS = {"Authorization": f"Bearer {TEST_TOKEN}"}
 def _stub_engine() -> MagicMock:
     """Return a MagicMock Engine with sensible defaults for unit tests.
 
-    Routers reach the database via `engine.connect()` and read the
+    Routers reach the database via `engine.connect(org_id)` and read the
     signing key via `engine.signing_key`. The stub mocks both as
     public surface — no reaching into private attributes.
+
+    F3.2: engine methods now accept org_id as first positional arg.
+    MagicMock accepts any args by default, so no special configuration needed
+    for the method signatures — but we set return values to match.
     """
     engine = MagicMock(spec=Engine)
     engine.health_check.return_value = {
@@ -57,7 +74,7 @@ def _stub_engine() -> MagicMock:
     )
     engine.due_obligations.return_value = []
     engine.audit_trail.return_value = []
-    # connect() is a context manager. Tests that need DB interaction
+    # connect(org_id) is a context manager. Tests that need DB interaction
     # patch this with a context manager yielding a configured mock conn.
     engine.connect.return_value.__enter__.return_value = MagicMock()
     engine.connect.return_value.__exit__.return_value = False
@@ -103,15 +120,24 @@ def client(stub_engine: MagicMock) -> Generator[TestClient, None, None]:
         yield c
 
 
+@pytest.fixture
+def auth_and_org_headers() -> dict[str, str]:
+    """
+    Return both Authorization and X-Org-Id headers for unit tests.
+
+    F3.2: All authenticated endpoints now also require X-Org-Id.
+    Use this fixture instead of AUTH_HEADERS when the endpoint calls
+    an engine method that takes org_id.
+    """
+    return AUTH_AND_ORG_HEADERS
+
+
 # ── Integration fixtures ──────────────────────────────────────────────────
 
 
 @pytest.fixture(scope="session")
 def real_engine() -> Engine:  # type: ignore[return]
     """Real Engine pointing at the integration test database. Skip if unavailable."""
-    import os
-    from pathlib import Path
-
     import psycopg
 
     from scripts.migrate import run_migrations
@@ -145,7 +171,7 @@ def real_engine() -> Engine:  # type: ignore[return]
     # Sync library if available
     if library_path and library_path.exists():
         with contextlib.suppress(Exception):
-            eng.refresh_library()  # Non-fatal — tests that need it will handle themselves
+            eng.refresh_library(PILOT_ORG_ID, path=library_path)  # Non-fatal
 
     return eng
 
@@ -153,9 +179,6 @@ def real_engine() -> Engine:  # type: ignore[return]
 @pytest.fixture(scope="session")
 def integration_settings(real_engine: Engine) -> Settings:
     """Settings object pointing at the real integration DB."""
-    import os
-    from pathlib import Path
-
     db_url = os.environ.get(
         "DATABASE_URL",
         "postgresql://nuqe:nuqe_secret@localhost:5433/nuqe_engine",

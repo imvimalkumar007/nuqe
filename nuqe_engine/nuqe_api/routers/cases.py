@@ -11,13 +11,13 @@ added in F2.2.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 
-from nuqe_api.deps import get_engine, verify_bearer_token
+from nuqe_api.deps import current_org_id, get_engine, verify_bearer_token
 from nuqe_engine.audit import AuditEventType, get_audit_trail
 from nuqe_engine.engine import ObligationStatus
 
@@ -28,17 +28,15 @@ router = APIRouter(
 )
 
 
-def _case_exists(engine: Any, case_id: UUID) -> bool:
-    """Check whether a case row exists in the DB."""
+def _case_exists(engine: Any, org_id: UUID, case_id: UUID) -> bool:
+    """Check whether a case row exists in the DB under the given org context."""
     try:
-        with engine.connect() as conn:
-            conn.autocommit = True
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT 1 FROM nuqe_engine.cases WHERE id = %s",
-                    (str(case_id),),
-                )
-                return cur.fetchone() is not None
+        with engine.connect(org_id) as conn, conn.cursor() as cur:
+            cur.execute(
+                "SELECT 1 FROM nuqe_engine.cases WHERE id = %s",
+                (str(case_id),),
+            )
+            return cur.fetchone() is not None
     except Exception:
         return False
 
@@ -47,6 +45,7 @@ def _case_exists(engine: Any, case_id: UUID) -> bool:
 def get_obligations(
     case_id: UUID,
     request: Request,
+    org_id: Annotated[UUID, Depends(current_org_id)],
     as_of: datetime | None = Query(default=None, description="Reference time (ISO 8601)"),
 ) -> JSONResponse:
     """
@@ -54,6 +53,7 @@ def get_obligations(
 
     Args:
         case_id: The case UUID.
+        org_id:  Organisation context from X-Org-Id header.
         as_of:   Optional reference timestamp for deadline status evaluation.
 
     Returns:
@@ -62,10 +62,10 @@ def get_obligations(
     """
     engine = get_engine(request)
 
-    if not _case_exists(engine, case_id):
+    if not _case_exists(engine, org_id, case_id):
         raise HTTPException(status_code=404, detail={"error_code": "CASE_NOT_FOUND"})
 
-    statuses = engine.due_obligations(case_id, as_of=as_of)
+    statuses = engine.due_obligations(org_id, case_id, as_of=as_of)
     return JSONResponse(
         content=[s.model_dump(mode="json") for s in statuses],
         headers={"X-Request-ID": getattr(request.state, "request_id", "")},
@@ -76,6 +76,7 @@ def get_obligations(
 def get_audit(
     case_id: UUID,
     request: Request,
+    org_id: Annotated[UUID, Depends(current_org_id)],
     limit: int = Query(default=100, ge=1, le=500),
     before: datetime | None = Query(default=None),
     event_type: str | None = Query(default=None),
@@ -85,6 +86,7 @@ def get_audit(
 
     Args:
         case_id:    The case UUID.
+        org_id:     Organisation context from X-Org-Id header.
         limit:      Maximum entries to return (default 100, max 500).
         before:     Return entries with created_at < before (for pagination).
         event_type: Filter by audit event type string.
@@ -95,7 +97,7 @@ def get_audit(
     """
     engine = get_engine(request)
 
-    if not _case_exists(engine, case_id):
+    if not _case_exists(engine, org_id, case_id):
         raise HTTPException(status_code=404, detail={"error_code": "CASE_NOT_FOUND"})
 
     # Validate event_type string if provided
@@ -112,8 +114,7 @@ def get_audit(
                 },
             ) from None
 
-    with engine.connect() as conn:
-        conn.autocommit = True
+    with engine.connect(org_id) as conn:
         entries = get_audit_trail(
             conn,
             entity_id=case_id,
