@@ -31,6 +31,8 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
@@ -204,6 +206,33 @@ class Engine:
             evidence_backend if evidence_backend is not None
             else InMemoryEvidenceBackend()
         )
+
+    @contextmanager
+    def connect(self) -> Iterator[psycopg.Connection]:
+        """Yield a psycopg connection against the engine's database.
+
+        The caller controls the transaction. The connection is closed on
+        exit regardless of whether the caller committed or rolled back.
+
+        Routers MUST use this instead of constructing their own
+        `psycopg.connect(...)` — otherwise they couple to Engine's
+        private `_database_url` attribute and become hard to stub.
+        """
+        conn = psycopg.connect(self._database_url)
+        try:
+            yield conn
+        finally:
+            conn.close()
+
+    @property
+    def signing_key(self) -> bytes:
+        """HMAC signing key used by the audit log.
+
+        Read-only public accessor. Routers that need to verify audit
+        signatures call this; they MUST NOT reach into `_signing_key`
+        directly.
+        """
+        return self._signing_key
 
     @classmethod
     def from_env(cls) -> Engine:
