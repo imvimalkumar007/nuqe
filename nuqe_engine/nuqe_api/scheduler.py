@@ -12,7 +12,6 @@ import logging
 from datetime import UTC, datetime
 from uuid import UUID
 
-import psycopg
 import psycopg.types.json
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -43,11 +42,12 @@ def scan_deadlines(engine: Engine) -> dict[str, int]:
     now = datetime.now(tz=UTC)
     cases_scanned = breaches_found = breaches_recorded = 0
 
-    signing_key = engine._signing_key
+    signing_key = engine.signing_key
     if isinstance(signing_key, str):
         signing_key = signing_key.encode()
 
-    with psycopg.connect(engine._database_url, autocommit=True) as conn:
+    with engine.connect() as conn:
+        conn.autocommit = True
         with conn.cursor() as cur:
             cur.execute(
                 "SELECT id FROM nuqe_engine.cases WHERE status NOT IN ('closed', 'withdrawn')"
