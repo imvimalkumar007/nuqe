@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import os
 import uuid
-from typing import Generator
+from collections.abc import Generator
 
 import psycopg
 import pytest
@@ -120,14 +120,13 @@ def test_unset_org_context_blocks_all_reads() -> None:
         "nuqe_engine.notifications",
         "nuqe_engine.obligations",
     ]
-    with psycopg.connect(APP_DSN, autocommit=True) as conn:
-        with conn.cursor() as cur:
-            for table in tables:
-                cur.execute(f"SELECT count(*) FROM {table}")  # noqa: S608
-                count = cur.fetchone()[0]  # type: ignore[index]
-                assert count == 0, (
-                    f"{table}: expected 0 rows with no org context, got {count}"
-                )
+    with psycopg.connect(APP_DSN, autocommit=True) as conn, conn.cursor() as cur:
+        for table in tables:
+            cur.execute(f"SELECT count(*) FROM {table}")
+            count = cur.fetchone()[0]  # type: ignore[index]
+            assert count == 0, (
+                f"{table}: expected 0 rows with no org context, got {count}"
+            )
 
 
 @pytest.mark.integration
@@ -194,15 +193,14 @@ def test_cross_org_update_is_blocked(
     org_a, org_b = two_orgs
 
     # Get org_a's case id via migration role (superuser bypasses RLS)
-    with psycopg.connect(MIGRATION_DSN, autocommit=True) as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT id FROM nuqe_engine.cases WHERE org_id = %s LIMIT 1",
-                (org_a,),
-            )
-            row = cur.fetchone()
-            assert row is not None
-            case_id = row[0]
+    with psycopg.connect(MIGRATION_DSN, autocommit=True) as conn, conn.cursor() as cur:
+        cur.execute(
+            "SELECT id FROM nuqe_engine.cases WHERE org_id = %s LIMIT 1",
+            (org_a,),
+        )
+        row = cur.fetchone()
+        assert row is not None
+        case_id = row[0]
 
     # Attempt UPDATE under org_b context — should affect 0 rows
     with psycopg.connect(APP_DSN, autocommit=False) as conn:
@@ -228,15 +226,14 @@ def test_cross_org_delete_is_blocked(
     org_a, org_b = two_orgs
 
     # Get org_a's case id via migration role
-    with psycopg.connect(MIGRATION_DSN, autocommit=True) as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT id FROM nuqe_engine.cases WHERE org_id = %s LIMIT 1",
-                (org_a,),
-            )
-            row = cur.fetchone()
-            assert row is not None
-            case_id = row[0]
+    with psycopg.connect(MIGRATION_DSN, autocommit=True) as conn, conn.cursor() as cur:
+        cur.execute(
+            "SELECT id FROM nuqe_engine.cases WHERE org_id = %s LIMIT 1",
+            (org_a,),
+        )
+        row = cur.fetchone()
+        assert row is not None
+        case_id = row[0]
 
     # Attempt DELETE under org_b context — should affect 0 rows
     with psycopg.connect(APP_DSN, autocommit=False) as conn:
@@ -258,14 +255,13 @@ def test_cross_org_delete_is_blocked(
 def test_admin_role_bypasses_rls() -> None:
     """nuqe_admin (BYPASSRLS) sees all rows without setting org context."""
     try:
-        with psycopg.connect(ADMIN_BYPASS_DSN, autocommit=True) as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT count(*) FROM nuqe_engine.cases")
-                total = cur.fetchone()[0]  # type: ignore[index]
-                # There should be existing data from the backfill
-                assert total > 0, (
-                    "nuqe_admin should see all rows without org context"
-                )
+        with psycopg.connect(ADMIN_BYPASS_DSN, autocommit=True) as conn, conn.cursor() as cur:
+            cur.execute("SELECT count(*) FROM nuqe_engine.cases")
+            total = cur.fetchone()[0]  # type: ignore[index]
+            # There should be existing data from the backfill
+            assert total > 0, (
+                "nuqe_admin should see all rows without org context"
+            )
     except psycopg.OperationalError as exc:
         pytest.skip(
             f"nuqe_admin role not accessible (NUQE_ADMIN_DSN may need real password): {exc}"

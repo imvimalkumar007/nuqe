@@ -22,8 +22,7 @@ try:
 except ImportError:
     pass
 
-import psycopg  # noqa: E402
-
+import psycopg
 
 TABLES_WITH_ORG_ID = [
     "nuqe_engine.cases",
@@ -89,7 +88,7 @@ def main() -> None:
             # Update all tables where org_id is NULL
             for table in TABLES_WITH_ORG_ID:
                 cur.execute(
-                    f"UPDATE {table} SET org_id = %s WHERE org_id IS NULL",  # noqa: S608
+                    f"UPDATE {table} SET org_id = %s WHERE org_id IS NULL",
                     (pilot_org_id,),
                 )
                 updated = cur.rowcount
@@ -102,7 +101,7 @@ def main() -> None:
             print("Verifying NULL counts …")
             for table in TABLES_WITH_ORG_ID:
                 cur.execute(
-                    f"SELECT count(*) FROM {table} WHERE org_id IS NULL",  # noqa: S608
+                    f"SELECT count(*) FROM {table} WHERE org_id IS NULL",
                 )
                 null_count = cur.fetchone()[0]  # type: ignore[index]
                 if null_count != 0:
