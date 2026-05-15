@@ -33,7 +33,6 @@
 | 36 | Frontend | No mobile responsiveness | Low | Apr 2026 | Assess after first customer discovery conversations |
 | 38 | DevOps | No staging environment | Medium | Apr 2026 | Create before onboarding first client |
 | 39 | DevOps | Docker Compose not tested on clean machine | Low | Apr 2026 | Document setup steps |
-| 64 | nuqe_engine | cases.py _case_exists() uses engine._database_url directly | Low | May 2026 | Bypasses Engine abstraction; F2.2 POST /cases endpoint should use a proper repo layer instead of accessing private attrs |
 | ~~65~~ | ~~nuqe_engine~~ | ~~nuqe_api coverage gate not yet in pyproject.toml addopts~~ | ~~Low~~ | ~~May 2026~~ | **CLOSED 14 May 2026** — `--cov=nuqe_api` added to addopts; `branch=true`; `coverage.json` output; `scripts/check_coverage.py` per-module gate; `.github/workflows/ci.yml` stub wired. |
 | 66 | nuqe_engine | Static Bearer token auth (F2.1) — no expiry, no rotation | Medium | May 2026 | Sufficient for pilot; OAuth2 planned for F3 |
 
@@ -76,6 +75,7 @@
 | 51 | Security | MAILGUN_WEBHOOK_SIGNING_KEY not set in Render | 27 Apr 2026 | Mailgun inbound webhook removed entirely. IMAP polling replaces it; no Mailgun dependency. |
 | 53 | Frontend | EmailComposer signature field not wired to Settings API | 27 Apr 2026 | Replaced by gap 56 (per-channel signature) in Open Gaps. |
 | 58 | Frontend | No case status transition UI | 29 Apr 2026 | PATCH /api/v1/cases/:id added (status, assigned_to, category, notes, fos_ref); status dropdown in CaseView header calls it on change; confirmed working in production. |
+| 64 | nuqe_engine | Routers accessed engine._database_url and engine._signing_key directly | 15 May 2026 | Added `Engine.connect()` context manager and `Engine.signing_key` property. Refactored 4 files (cases.py, cases_ingest.py, library.py, scheduler.py) + their tests. stub_engine conftest simplified. 414 tests pass, coverage 94.96%. |
 
 ---
 
@@ -105,3 +105,4 @@
 | 29 April 2026 | Production pipeline hardening. PII tokenisation confirmed working in production (tokenise-check-001: [NI-0] [EMAIL-1] [SORTCODE-2] stored in DB). Added RAG context + confidence threshold (0.75) to classifyCommunication; auto-approval on meeting threshold. Added PATCH /cases/:id, GET /communications/:id/detokenise. Status dropdown + PII toggle wired in CaseView. Fixed 99+ badge (pendingCount formula). Migration 012 applied to Render via render.yaml buildCommand. Resolved gap 58 (status UI). Added gap 63 (QUIDO_WEBHOOK_SECRET not shared with Quido). Downgraded gap 62 to Medium (webhook path validated; IMAP path still pending). |
 | 14 May 2026 | nuqe_engine F2.1 FastAPI shell built. Added gaps 64 (engine private attr access in cases.py), 65 (coverage gate not unified), 66 (static auth token). All F1 debt items resolved in same session. |
 | 14 May 2026 | Gap 65 closed. `--cov=nuqe_api` + `branch=true` + JSON report in pyproject.toml. `scripts/check_coverage.py` per-module gate (exit 1 on any module <80%). `.github/workflows/ci.yml` stub. Sanity check verified gate catches new uncovered modules. |
+| 15 May 2026 | Gap 64 closed. Added `Engine.connect()` context manager and `Engine.signing_key` property. Refactored 4 production files (`cases.py`, `cases_ingest.py`, `library.py`, `scheduler.py`) and their corresponding test files to use public surface only. `stub_engine` conftest simplified to mock public surface. All 414 non-integration tests pass. Coverage: 94.96% total (all modules ≥80%). Production ruff: clean. |
