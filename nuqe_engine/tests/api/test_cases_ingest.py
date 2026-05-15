@@ -233,7 +233,7 @@ class TestCreateCaseIntegration:
         ext_ref = f"ROLLBACK-{uuid4()}"
         original_process_event = real_engine.process_event
 
-        def failing_process_event(event: Any, *, conn: Any = None) -> Any:
+        def failing_process_event(org_id: Any, event: Any, actor: str = "test", *, conn: Any = None) -> Any:
             raise RuntimeError("simulated engine failure")
 
         real_engine.process_event = failing_process_event

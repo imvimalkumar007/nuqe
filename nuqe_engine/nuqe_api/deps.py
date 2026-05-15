@@ -174,7 +174,9 @@ def _auth0_principal(
                 "message": "Token verification service temporarily unavailable",
             },
         ) from exc
-    except jwt.InvalidTokenError:
+    except (jwt.InvalidTokenError, jwt.InvalidKeyError):
+        # InvalidKeyError covers algorithm confusion attacks (e.g. HS256 token
+        # presented to an RS256-only verifier). Both are unrecoverable auth failures.
         raise HTTPException(
             status_code=401,
             detail={"error_code": "AUTH_INVALID", "message": "Token verification failed"},

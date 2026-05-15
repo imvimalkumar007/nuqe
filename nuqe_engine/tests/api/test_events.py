@@ -43,7 +43,7 @@ class TestPostEventsValid:
     ) -> None:
         client.post("/events", json=_VALID_BODY, headers=AUTH_HEADERS)
         stub_engine.process_event.assert_called_once()
-        # F3.2: signature is process_event(org_id, event) — event is [0][1]
+        # F3.3: signature is process_event(org_id, event, actor) — event is [0][1]
         call_arg: Event = stub_engine.process_event.call_args[0][1]
         assert call_arg.event == TriggerEvent.COMPLAINT_RECEIVED
         assert call_arg.case_id == _CASE_ID

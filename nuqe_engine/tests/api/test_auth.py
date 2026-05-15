@@ -32,9 +32,10 @@ _EVENT_BODY = {
 
 
 class TestAuthMissing:
-    def test_post_events_no_header_returns_403(self, client: TestClient) -> None:
+    def test_post_events_no_header_returns_401(self, client: TestClient) -> None:
+        # F3.3: missing auth header now returns 401 (AUTH_MISSING) not 403
         resp = client.post("/events", json=_EVENT_BODY)
-        assert resp.status_code == 403
+        assert resp.status_code == 401
 
     def test_post_events_no_header_error_code(self, client: TestClient) -> None:
         body = client.post("/events", json=_EVENT_BODY).json()

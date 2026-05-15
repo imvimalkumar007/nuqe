@@ -75,10 +75,11 @@ class TestGetObligations:
         assert as_of.year == 2026
         assert as_of.month == 3
 
-    def test_no_auth_returns_403(self, client: TestClient) -> None:
+    def test_no_auth_returns_401(self, client: TestClient) -> None:
+        # F3.3: missing auth header returns 401 (AUTH_MISSING) not 403
         with _patch_case_exists(True):
             resp = client.get(f"/cases/{_CASE_ID}/obligations")
-        assert resp.status_code == 403
+        assert resp.status_code == 401
 
 
 class TestGetAudit:
@@ -121,7 +122,8 @@ class TestGetAudit:
             )
         assert resp.status_code == 200
 
-    def test_no_auth_returns_403(self, client: TestClient) -> None:
+    def test_no_auth_returns_401(self, client: TestClient) -> None:
+        # F3.3: missing auth header returns 401 (AUTH_MISSING) not 403
         with _patch_case_exists(True):
             resp = client.get(f"/cases/{_CASE_ID}/audit")
-        assert resp.status_code == 403
+        assert resp.status_code == 401
