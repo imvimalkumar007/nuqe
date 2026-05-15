@@ -91,3 +91,86 @@ def client(stub_engine: MagicMock) -> Generator[TestClient, None, None]:
         # Replace the lifespan-created engine with our stub
         app.state.engine = stub_engine
         yield c
+
+
+# ── Integration fixtures ──────────────────────────────────────────────────
+
+
+@pytest.fixture(scope="session")
+def real_engine() -> Engine:  # type: ignore[return]
+    """Real Engine pointing at the integration test database. Skip if unavailable."""
+    import os
+    import re
+    from pathlib import Path
+
+    import psycopg
+
+    from scripts.migrate import run_migrations
+
+    db_url = os.environ.get(
+        "DATABASE_URL",
+        "postgresql://nuqe:nuqe_secret@localhost:5433/nuqe_engine",
+    )
+    signing_key_str = os.environ.get("AUDIT_SIGNING_KEY", "integration-test-signing-key")
+    library_path_str = os.environ.get("LIBRARY_PATH", "")
+    library_path = Path(library_path_str) if library_path_str else None
+
+    # Check DB is reachable
+    try:
+        with psycopg.connect(db_url, autocommit=True, connect_timeout=3) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
+    except Exception as exc:
+        pytest.skip(f"Integration DB not available: {exc}")
+
+    try:
+        run_migrations(db_url)
+    except Exception as exc:
+        pytest.skip(f"Migrations failed: {exc}")
+
+    eng = Engine(
+        database_url=db_url,
+        library_path=library_path,
+        audit_signing_key=signing_key_str.encode(),
+    )
+
+    # Sync library if available
+    if library_path and library_path.exists():
+        try:
+            eng.refresh_library()
+        except Exception:
+            pass  # Non-fatal — tests that need it will handle themselves
+
+    return eng
+
+
+@pytest.fixture(scope="session")
+def integration_settings(real_engine: Engine) -> Settings:
+    """Settings object pointing at the real integration DB."""
+    import os
+    from pathlib import Path
+
+    db_url = os.environ.get(
+        "DATABASE_URL",
+        "postgresql://nuqe:nuqe_secret@localhost:5433/nuqe_engine",
+    )
+    signing_key_str = os.environ.get("AUDIT_SIGNING_KEY", "integration-test-signing-key")
+    library_path_str = os.environ.get("LIBRARY_PATH", "/tmp/library.xlsx")
+    api_token = os.environ.get("NUQE_API_TOKEN", TEST_TOKEN)
+
+    return Settings(  # type: ignore[call-arg]
+        nuqe_api_token=api_token,
+        database_url=db_url,
+        library_path=Path(library_path_str),
+        audit_signing_key=signing_key_str,
+        scheduler_enabled=False,
+    )
+
+
+@pytest.fixture
+def real_client(real_engine: Engine, integration_settings: Settings) -> Generator[TestClient, None, None]:
+    """TestClient backed by a real Engine and real DB."""
+    app = create_app(settings=integration_settings)
+    with TestClient(app, raise_server_exceptions=False) as c:
+        app.state.engine = real_engine
+        yield c

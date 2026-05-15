@@ -27,6 +27,7 @@ from fastapi import FastAPI
 
 from nuqe_api.middleware.request_id import RequestIDMiddleware
 from nuqe_api.routers.cases import router as cases_router
+from nuqe_api.routers.cases_ingest import router as cases_ingest_router
 from nuqe_api.routers.errors import register_exception_handlers
 from nuqe_api.routers.events import router as events_router
 from nuqe_api.routers.health import router as health_router
@@ -106,5 +107,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(health_router)
     app.include_router(events_router)
     app.include_router(cases_router)
+    app.include_router(cases_ingest_router)
 
     return app

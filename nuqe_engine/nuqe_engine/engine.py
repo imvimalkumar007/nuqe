@@ -252,17 +252,19 @@ class Engine:
         an unhealthy state.
         """
         try:
-            with psycopg.connect(self._database_url, autocommit=True) as conn:
-                with conn.cursor() as cur:
-                    cur.execute("SELECT 1")
-                    cur.execute(
-                        """
-                        SELECT COUNT(*), MAX(synced_at)
-                        FROM nuqe_engine.obligations
-                        WHERE review_status = 'approved'
-                        """
-                    )
-                    row = cur.fetchone()
+            with (
+                psycopg.connect(self._database_url, autocommit=True) as conn,
+                conn.cursor() as cur,
+            ):
+                cur.execute("SELECT 1")
+                cur.execute(
+                    """
+                    SELECT COUNT(*), MAX(synced_at)
+                    FROM nuqe_engine.obligations
+                    WHERE review_status = 'approved'
+                    """
+                )
+                row = cur.fetchone()
             approved_count = int(row[0]) if row and row[0] is not None else 0
             library_synced_at = row[1] if row else None
             return {
@@ -318,7 +320,98 @@ class Engine:
         )
         return sync_result
 
-    def process_event(self, event: Event) -> ProcessEventResult:
+    def _run_process_event(
+        self, conn: psycopg.Connection, event: Event
+    ) -> ProcessEventResult:
+        """
+        Core logic for process_event. Operates on a caller-provided connection.
+
+        The caller owns the transaction: this method does NOT commit or rollback.
+        When called with autocommit=True, every statement auto-commits individually.
+        When called inside a transaction (autocommit=False), all statements are
+        part of the caller's transaction and will be rolled back if the caller
+        rolls back.
+        """
+        obligations = _load_obligations_from_db(conn)
+        fired_list = find_fired_obligations(event, obligations)
+
+        all_deadlines: list[DeadlineCalculation] = []
+        all_requirements: list[RequirementRegistration] = []
+        all_audit: list[AuditEntry] = []
+        actually_fired: list[FiredObligation] = []
+
+        for fired in fired_list:
+            obl = fired.obligation
+            insert_result = _insert_fired_obligation(
+                conn, event.case_id, obl, event.event
+            )
+            if insert_result is None:
+                logger.debug(
+                    "Obligation %s already fired for case %s — skipping",
+                    obl.obligation_id,
+                    event.case_id,
+                )
+                continue
+
+            fo_id, _fired_at = insert_result
+            actually_fired.append(fired)
+
+            # M7: deadline
+            calc = calculate_deadline(obl, event.occurred_at)
+            _insert_deadline(conn, fo_id, calc)
+            all_deadlines.append(calc)
+
+            # M5: requirement
+            req_reg = register_requirement(fired, fired_obligation_id=fo_id)
+            all_requirements.append(req_reg)
+
+            # M8: audit — OBLIGATION_FIRED
+            audit_fired = append_audit_entry(
+                conn,
+                entity_type="fired_obligation",
+                entity_id=event.case_id,
+                event_type=AuditEventType.OBLIGATION_FIRED,
+                actor="engine",
+                payload={
+                    "fired_obligation_id": str(fo_id),
+                    "obligation_id": obl.obligation_id,
+                    "obligation_version": obl.version,
+                    "trigger_event": str(event.event.value),
+                    "case_id": str(event.case_id),
+                },
+                signing_key=self._signing_key,
+            )
+            all_audit.append(audit_fired)
+
+            # M8: audit — DEADLINE_SET (only when there is a deadline)
+            if calc.due_at is not None:
+                audit_deadline = append_audit_entry(
+                    conn,
+                    entity_type="deadline",
+                    entity_id=event.case_id,
+                    event_type=AuditEventType.DEADLINE_SET,
+                    actor="engine",
+                    payload={
+                        "fired_obligation_id": str(fo_id),
+                        "obligation_id": obl.obligation_id,
+                        "due_at": calc.due_at.isoformat(),
+                        "deadline_value": calc.deadline_value,
+                        "deadline_unit": str(calc.deadline_unit.value),
+                    },
+                    signing_key=self._signing_key,
+                )
+                all_audit.append(audit_deadline)
+
+        return ProcessEventResult(
+            fired_obligations=actually_fired,
+            deadlines=all_deadlines,
+            requirements=all_requirements,
+            audit_entries=all_audit,
+        )
+
+    def process_event(
+        self, event: Event, *, conn: psycopg.Connection | None = None
+    ) -> ProcessEventResult:
         """
         Process an event: fire obligations, calculate deadlines, register
         requirements, and write everything to Postgres with audit entries.
@@ -333,87 +426,22 @@ class Engine:
              d. Register requirement (M5).
              e. Append audit entries for OBLIGATION_FIRED and DEADLINE_SET.
 
+        Args:
+            event: The event to process.
+            conn:  Optional caller-provided psycopg connection. When supplied,
+                   this method does NOT open a new connection and does NOT commit
+                   — the caller owns the transaction. When None (default), a new
+                   autocommit connection is opened and closed automatically.
+
         Returns:
             ProcessEventResult containing all fired obligations, deadlines,
             requirements, and audit entries created in this call.
         """
-        with psycopg.connect(self._database_url, autocommit=True) as conn:
-            obligations = _load_obligations_from_db(conn)
-            fired_list = find_fired_obligations(event, obligations)
+        if conn is not None:
+            return self._run_process_event(conn, event)
 
-            all_deadlines: list[DeadlineCalculation] = []
-            all_requirements: list[RequirementRegistration] = []
-            all_audit: list[AuditEntry] = []
-            actually_fired: list[FiredObligation] = []
-
-            for fired in fired_list:
-                obl = fired.obligation
-                insert_result = _insert_fired_obligation(
-                    conn, event.case_id, obl, event.event
-                )
-                if insert_result is None:
-                    logger.debug(
-                        "Obligation %s already fired for case %s — skipping",
-                        obl.obligation_id,
-                        event.case_id,
-                    )
-                    continue
-
-                fo_id, _fired_at = insert_result
-                actually_fired.append(fired)
-
-                # M7: deadline
-                calc = calculate_deadline(obl, event.occurred_at)
-                _insert_deadline(conn, fo_id, calc)
-                all_deadlines.append(calc)
-
-                # M5: requirement
-                req_reg = register_requirement(fired, fired_obligation_id=fo_id)
-                all_requirements.append(req_reg)
-
-                # M8: audit — OBLIGATION_FIRED
-                audit_fired = append_audit_entry(
-                    conn,
-                    entity_type="fired_obligation",
-                    entity_id=event.case_id,
-                    event_type=AuditEventType.OBLIGATION_FIRED,
-                    actor="engine",
-                    payload={
-                        "fired_obligation_id": str(fo_id),
-                        "obligation_id": obl.obligation_id,
-                        "obligation_version": obl.version,
-                        "trigger_event": str(event.event.value),
-                        "case_id": str(event.case_id),
-                    },
-                    signing_key=self._signing_key,
-                )
-                all_audit.append(audit_fired)
-
-                # M8: audit — DEADLINE_SET (only when there is a deadline)
-                if calc.due_at is not None:
-                    audit_deadline = append_audit_entry(
-                        conn,
-                        entity_type="deadline",
-                        entity_id=event.case_id,
-                        event_type=AuditEventType.DEADLINE_SET,
-                        actor="engine",
-                        payload={
-                            "fired_obligation_id": str(fo_id),
-                            "obligation_id": obl.obligation_id,
-                            "due_at": calc.due_at.isoformat(),
-                            "deadline_value": calc.deadline_value,
-                            "deadline_unit": str(calc.deadline_unit.value),
-                        },
-                        signing_key=self._signing_key,
-                    )
-                    all_audit.append(audit_deadline)
-
-        return ProcessEventResult(
-            fired_obligations=actually_fired,
-            deadlines=all_deadlines,
-            requirements=all_requirements,
-            audit_entries=all_audit,
-        )
+        with psycopg.connect(self._database_url, autocommit=True) as _conn:
+            return self._run_process_event(_conn, event)
 
     def due_obligations(
         self,

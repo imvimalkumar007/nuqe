@@ -39,12 +39,25 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def validation_exception_handler(
         request: Request, exc: RequestValidationError
     ) -> JSONResponse:
+        try:
+            raw_errors = exc.errors()
+            # Strip non-serializable ctx entries (e.g. raw Python exceptions)
+            errors = [
+                {k: v for k, v in e.items() if k != "ctx"} | (
+                    {"ctx": {"error": str(e["ctx"]["error"])}}
+                    if "ctx" in e
+                    else {}
+                )
+                for e in raw_errors
+            ]
+        except Exception:
+            errors = [{"msg": str(exc)}]
         return JSONResponse(
             status_code=422,
             content={
                 "error_code": "VALIDATION_ERROR",
                 "message": "Request body validation failed",
-                "errors": exc.errors(),
+                "errors": errors,
                 "request_id": _request_id(request),
             },
         )
