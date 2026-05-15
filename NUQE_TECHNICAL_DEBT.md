@@ -106,3 +106,50 @@
 | 14 May 2026 | nuqe_engine F2.1 FastAPI shell built. Added gaps 64 (engine private attr access in cases.py), 65 (coverage gate not unified), 66 (static auth token). All F1 debt items resolved in same session. |
 | 14 May 2026 | Gap 65 closed. `--cov=nuqe_api` + `branch=true` + JSON report in pyproject.toml. `scripts/check_coverage.py` per-module gate (exit 1 on any module <80%). `.github/workflows/ci.yml` stub. Sanity check verified gate catches new uncovered modules. |
 | 15 May 2026 | Gap 64 closed. Added `Engine.connect()` context manager and `Engine.signing_key` property. Refactored 4 production files (`cases.py`, `cases_ingest.py`, `library.py`, `scheduler.py`) and their corresponding test files to use public surface only. `stub_engine` conftest simplified to mock public surface. All 414 non-integration tests pass. Coverage: 94.96% total (all modules ≥80%). Production ruff: clean. |
+| 15 May 2026 | F3.0 reconciliation: classified all 26 open gaps against F3 work packages. See reconciliation section below. |
+
+---
+
+## F3 reconciliation (2026-05-15)
+
+All 26 open gaps have been classified against F3 work packages.
+
+### Gaps closing in F3
+
+| Gap # | Area | Closes in | Notes |
+|-------|------|-----------|-------|
+| 22 | Architecture | F3.1 | Multi-tenancy app-level filtering → PostgreSQL RLS; RLS is the core F3.1 deliverable |
+| 66 | nuqe_engine | F3.5 | Static Bearer token → Auth0 JWT validation; Auth0 integration is F3.5 |
+
+### Gaps deferred to F4 or later
+
+| Gap # | Area | Rationale |
+|-------|------|-----------|
+| 12 | Testing | Node.js seed script; not part of nuqe_engine F3 scope |
+| 15 | Performance | pgvector index tuning; only relevant when KB exceeds 100k rows — F4+ |
+| 18 | Reliability | UptimeRobot monitoring; operational, not F3 feature work |
+| 21 | Reliability | BullMQ dead-letter queue; Node.js queue infra — F4+ |
+| 23 | Architecture | Express monolith extraction; deferred until scaling beyond 10 clients |
+| 24 | Architecture | API versioning strategy; deferred until public API release |
+| 30 | Understanding | pgvector HNSW vs ivfflat; defer until KB exceeds 50k chunks |
+| 31 | Understanding | BullMQ failure modes under Redis loss; defer until reliability sprint |
+| 32 | Understanding | Supersession threshold (0.85) validation; defer until KB is seeded |
+| 34 | Frontend | Loading states on initial app load; UX polish — F4 |
+| 35 | Frontend | Network error handling / error boundary; UX polish — F4 |
+| 36 | Frontend | Mobile responsiveness; defer until post-discovery |
+| 38 | DevOps | Staging environment; needed before first client, so F4 pre-onboarding |
+| 39 | DevOps | Docker Compose clean-machine test; low-priority ops — F4 |
+| 52 | Security | RESEND_WEBHOOK_SECRET on Render; ops config — set before go-live (F4 pre-launch) |
+| 54 | Feature | OAuth2 for Google Workspace / M365; deferred per original gap note |
+| 55 | Infrastructure | IMAP polling on Render free dyno unreliable; ops — upgrade dyno pre-pilot |
+| 56 | Feature | Per-channel email signature not wired; low-priority UX — F4 |
+| 57 | Frontend | AI draft button no-op; depends on AI generation endpoint — F4 |
+| 59 | Frontend | CC/BCC not discoverable; UX — F4 |
+| 60 | Frontend | File attachments not implemented; F4 |
+| 61 | Frontend | Sidebar active state telltale AI pattern; UX — F4 |
+| 62 | Validation | IMAP inbound path not validated with real data; validation sprint — F4 |
+| 63 | Infrastructure | QUIDO_WEBHOOK_SECRET not shared with Quido platform; ops config — manual action before next Quido demo |
+
+### Uncategorised gaps requiring decision
+
+None.
