@@ -31,6 +31,7 @@ from nuqe_api.routers.cases_ingest import router as cases_ingest_router
 from nuqe_api.routers.errors import register_exception_handlers
 from nuqe_api.routers.events import router as events_router
 from nuqe_api.routers.health import router as health_router
+from nuqe_api.routers.library import router as library_router
 from nuqe_api.settings import Settings
 from nuqe_engine.engine import Engine
 
@@ -108,5 +109,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(events_router)
     app.include_router(cases_router)
     app.include_router(cases_ingest_router)
+    app.include_router(library_router)
 
     return app
