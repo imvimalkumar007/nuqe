@@ -17,7 +17,7 @@ from __future__ import annotations
 from collections.abc import Generator
 from datetime import UTC, datetime
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -36,7 +36,12 @@ AUTH_HEADERS = {"Authorization": f"Bearer {TEST_TOKEN}"}
 
 
 def _stub_engine() -> MagicMock:
-    """Return a MagicMock Engine with sensible defaults for unit tests."""
+    """Return a MagicMock Engine with sensible defaults for unit tests.
+
+    Routers reach the database via `engine.connect()` and read the
+    signing key via `engine.signing_key`. The stub mocks both as
+    public surface — no reaching into private attributes.
+    """
     engine = MagicMock(spec=Engine)
     engine.health_check.return_value = {
         "db_reachable": True,
@@ -51,9 +56,13 @@ def _stub_engine() -> MagicMock:
     )
     engine.due_obligations.return_value = []
     engine.audit_trail.return_value = []
-    # Instance attrs accessed directly in cases.py (not part of Engine's class-level spec)
-    engine._database_url = "postgresql://test:test@localhost:5432/test"
-    engine._signing_key = "test-signing-key"
+    # connect() is a context manager. Tests that need DB interaction
+    # patch this with a context manager yielding a configured mock conn.
+    engine.connect.return_value.__enter__.return_value = MagicMock()
+    engine.connect.return_value.__exit__.return_value = False
+    # signing_key is a property on the real Engine; on a MagicMock with
+    # spec=Engine, set it as a PropertyMock so attribute access works.
+    type(engine).signing_key = PropertyMock(return_value=b"stub-signing-key")
     return engine
 
 
