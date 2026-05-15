@@ -432,7 +432,7 @@ class Engine:
         return sync_result
 
     def _run_process_event(
-        self, conn: psycopg.Connection, event: Event
+        self, conn: psycopg.Connection, event: Event, actor: str
     ) -> ProcessEventResult:
         """
         Core logic for process_event. Operates on a caller-provided connection.
@@ -482,7 +482,7 @@ class Engine:
                 entity_type="fired_obligation",
                 entity_id=event.case_id,
                 event_type=AuditEventType.OBLIGATION_FIRED,
-                actor="engine",
+                actor=actor,
                 payload={
                     "fired_obligation_id": str(fo_id),
                     "obligation_id": obl.obligation_id,
@@ -501,7 +501,7 @@ class Engine:
                     entity_type="deadline",
                     entity_id=event.case_id,
                     event_type=AuditEventType.DEADLINE_SET,
-                    actor="engine",
+                    actor=actor,
                     payload={
                         "fired_obligation_id": str(fo_id),
                         "obligation_id": obl.obligation_id,
@@ -521,7 +521,12 @@ class Engine:
         )
 
     def process_event(
-        self, org_id: UUID, event: Event, *, conn: psycopg.Connection | None = None
+        self,
+        org_id: UUID,
+        event: Event,
+        actor: str,
+        *,
+        conn: psycopg.Connection | None = None,
     ) -> ProcessEventResult:
         """
         Process an event: fire obligations, calculate deadlines, register
@@ -540,6 +545,9 @@ class Engine:
         Args:
             org_id: The organisation context. Sets RLS via SET LOCAL.
             event:  The event to process.
+            actor:  Identity of the caller (principal.sub for router-originated
+                    calls; "scheduler" for system-initiated calls). Written to
+                    all audit entries produced by this call.
             conn:   Optional caller-provided psycopg connection. When supplied,
                     the caller already set the RLS context — do NOT call
                     connect() again. The caller owns the transaction.
@@ -552,10 +560,10 @@ class Engine:
         """
         if conn is not None:
             # Caller already set org context and owns the transaction
-            return self._run_process_event(conn, event)
+            return self._run_process_event(conn, event, actor)
 
         with self.connect(org_id) as _conn:
-            return self._run_process_event(_conn, event)
+            return self._run_process_event(_conn, event, actor)
 
     def due_obligations(
         self,
