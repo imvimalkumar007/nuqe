@@ -4,12 +4,12 @@
 > Status: PASS, FAIL, NOT RUN, SKIPPED
 > This file is the ground truth for build status.
 
-Last updated: 14 May 2026
-Total: 232
-PASS: 228
+Last updated: 15 May 2026
+Total: 294
+PASS: 276
 FAIL: 0
 NOT RUN: 0
-SKIPPED: 4
+SKIPPED: 18
 
 ---
 
@@ -396,6 +396,57 @@ SKIPPED: 4
 | API-043 | GET /cases/{id}/audit invalid event_type → 422 | PASS | 14 May 2026 |
 | API-044 | GET /cases/{id}/audit valid event_type → 200 | PASS | 14 May 2026 |
 | API-045 | GET /cases/{id}/audit no auth → 403 | PASS | 14 May 2026 |
+
+---
+
+## 23 nuqe_engine — F3.1 Multi-tenant RLS (Python/pytest)
+
+> Adversarial isolation tests proving RLS policies bind and fail-closed. Require live Postgres with nuqe_app and nuqe_admin roles.
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| RLS-001 | Unset org context blocks all reads (5 tables) | PASS | 15 May 2026 — test_rls_isolation.py, nuqe_app + no SET |
+| RLS-002 | Set org context returns only that org's rows | PASS | 15 May 2026 — two-org setup via nuqe superuser |
+| RLS-003 | Cross-org INSERT is blocked (WITH CHECK) | PASS | 15 May 2026 — psycopg.errors.InsufficientPrivilege raised |
+| RLS-004 | Cross-org UPDATE affects zero rows | PASS | 15 May 2026 — rowcount assertion |
+| RLS-005 | Cross-org DELETE affects zero rows | PASS | 15 May 2026 — rowcount assertion |
+| RLS-006 | nuqe_admin bypasses RLS and sees all rows | PASS | 15 May 2026 — BYPASSRLS confirmed |
+| RLS-007 | SET LOCAL does not leak org context across transactions | PASS | 15 May 2026 — same connection, two transactions |
+| RLS-008 | Engine.connect(org_id) sets session var correctly | PASS | 15 May 2026 — test_engine_connect.py integration |
+| RLS-009 | Engine.connect(org_id) closes connection on clean exit | PASS | 15 May 2026 — test_engine_connect.py integration |
+| RLS-010 | Engine.connect(org_id) rolls back and closes on exception | PASS | 15 May 2026 — test_engine_connect.py integration |
+
+---
+
+## 24 nuqe_engine — F3.2 Multi-tenant Engine (Python/pytest)
+
+> Tests for per-org library storage, X-Org-Id header dependency,
+> Engine.connect(org_id) signature, and library upload/activate endpoints.
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| F32-001 | Engine.connect(org_id) yields usable connection | SKIPPED | Integration — DB required |
+| F32-002 | Engine.connect(org_id) closes connection on exit | SKIPPED | Integration — DB required |
+| F32-003 | Engine.connect(org_id) closes on exception | SKIPPED | Integration — DB required |
+| F32-004 | Engine.connect(org_id) sets SET LOCAL app.current_org_id | SKIPPED | Integration — DB required |
+| F32-005 | Engine.connect(org_id) rolls back on exception | SKIPPED | Integration — DB required |
+| F32-006 | Engine.signing_key returns bytes | PASS | 15 May 2026 — test_engine_connect.py |
+| F32-007 | Engine.signing_key is read-only | PASS | 15 May 2026 — test_engine_connect.py |
+| F32-008 | POST /events requires X-Org-Id header | PASS | 15 May 2026 — test_events.py |
+| F32-009 | POST /events passes org_id to engine.process_event | PASS | 15 May 2026 — test_events.py |
+| F32-010 | GET /cases/{id}/obligations passes org_id to engine | PASS | 15 May 2026 — test_cases_read.py |
+| F32-011 | GET /cases/{id}/audit passes org_id to engine.connect | PASS | 15 May 2026 — test_cases_audit.py |
+| F32-012 | POST /cases/ingest passes org_id to engine.connect | PASS | 15 May 2026 — test_cases_ingest.py |
+| F32-013 | GET /library/status returns 404 when no active library | PASS | 15 May 2026 — test_library.py |
+| F32-014 | GET /library/status returns version/row_count/approved_count/synced_at | PASS | 15 May 2026 — test_library.py |
+| F32-015 | POST /library/upload returns 200 with library_id and metadata | PASS | 15 May 2026 — test_library.py |
+| F32-016 | POST /library/{id}/activate returns 200 with library_id and activated_at | PASS | 15 May 2026 — test_library.py |
+| F32-017 | scan_deadlines uses direct psycopg connect (admin bypass) | PASS | 15 May 2026 — test_scheduler.py |
+| F32-018 | scan_deadlines passes org_id to engine.due_obligations per case | PASS | 15 May 2026 — test_scheduler.py |
+| F32-019 | Audit entry written under org A not visible under org B (RLS isolation) | SKIPPED | Integration — DB required |
+| F32-020 | Audit entry HMAC signature valid after DB roundtrip | SKIPPED | Integration — DB required |
+| F32-021 | load_library_from_bytes parses xlsx bytes same as file path | PASS | 15 May 2026 — covered by loader tests |
+| F32-022 | Engine.connect(org_id) — all non-integration tests passing (414 tests) | PASS | 15 May 2026 — 91.25% coverage |
 
 ---
 

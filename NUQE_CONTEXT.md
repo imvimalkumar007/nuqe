@@ -8,10 +8,10 @@
 
 **Product name:** Nuqe
 **Tagline:** Compliance-native communication and case management for digital lenders
-**Stage:** Production-hardened — pipeline validated with real data (29 April 2026). nuqe_engine F2.1 FastAPI shell + per-module coverage gate live (14 May 2026).
+**Stage:** Production-hardened — pipeline validated with real data (29 April 2026). nuqe_engine F3.2 multi-tenant engine refactor complete (15 May 2026).
 **GitHub:** https://github.com/imvimalkumar007/nuqe
 **Founder:** Vimal Kumar
-**Date last updated:** 14 May 2026
+**Date last updated:** 15 May 2026
 
 **Live URLs:**
 - Web: https://nuqe-web.onrender.com
@@ -106,10 +106,12 @@ Note: DATABASE_URL uses localhost for running outside Docker. The docker-compose
 
 ## 7. Build Progress
 
-**Phase 0–13 complete as of 29 April 2026. nuqe_engine F2.1 complete as of 14 May 2026.**
+**Phase 0–13 complete as of 29 April 2026. nuqe_engine F3.2 complete as of 15 May 2026.**
 
 - Main product: 187 tests defined, 183 passing, 4 skipped (removed Mailgun inbound route)
-- nuqe_engine: 350 Python unit tests total — 305 F1 (97% cov) + 45 F2.1 API (95% cov, branch coverage)
+- nuqe_engine: 414 Python unit tests — 305 F1 (97% cov) + 45 F2.1 API + 64 F3.x (91.25% total, branch coverage)
+  - F3.1: PostgreSQL RLS on 5 tenant tables; migration 004; 7 adversarial isolation tests
+  - F3.2: Engine.connect(org_id) + SET LOCAL RLS; all engine methods take org_id; library upload/activate/status endpoints; scheduler admin bypass; load_library_from_bytes; audit isolation tests
 - Coverage gate: bare `pytest` gates both nuqe_engine + nuqe_api; `scripts/check_coverage.py` enforces per-module ≥80%; CI stub in `.github/workflows/ci.yml`
 - All API routes implemented and tested
 - Frontend production-grade redesign shipped 27 April 2026 (eb3895f):
@@ -242,3 +244,4 @@ Vimal Kumar. Product Operations Manager at Credair Limited (FCA-authorised). Nam
 |---|---|---|
 | April 2026 | Full architecture designed, all 21 backend messages and 10 UI messages acted on in Claude Code. GitHub repo live. Render configured. NUQE_CONTEXT.md and NUQE_TECHNICAL_DEBT.md created. | Apply docker-compose.yml fix, run migrations, run seed, confirm demo. |
 | 22 April 2026 | Rancher Desktop installed and working. All four Docker containers pulled and started. Docker networking issue identified: API container needs postgres hostname not localhost. Fix designed but not yet applied. Anthropic API key accidentally exposed in chat and must be rotated. | Apply fix in Section 5 steps 1 to 6 at start of next session. |
+| 15 May 2026 | F3.0: mypy clean (2→0 warnings), 87 ruff issues fixed (F3.0.1), audit_log.actor audit (READY), open gap reconciliation, snapshot + pool mode docs written. F3.1: multi-tenant migration live. RLS on 5 tables, nuqe_app non-privileged role, nuqe_admin BYPASSRLS. Pilot org backfill. 7 adversarial tests pass. Gap 22 closed. F3.2: Engine.connect(org_id) with SET LOCAL. All engine methods take org_id. Library storage moved from LIBRARY_PATH to organisation_libraries BYTEA. /library/upload + /activate endpoints. X-Org-Id header dep (temporary, closes F3.3). 414 unit tests, 91.25% coverage. | F3.3: Auth0 OIDC + Organizations JWT middleware — pending Auth0 tenant confirmation. |

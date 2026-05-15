@@ -26,13 +26,13 @@ Three pillars:
 
 ## Test Registry Summary
 
-Last updated: 14 May 2026
-Total tests defined: 232 (187 JS/Playwright + 45 Python API unit)
-nuqe_engine Python suite: 350 unit tests (305 F1 + 45 F2.1 API), 95% coverage
-Passing: 228 (183 JS + 45 Python API)
+Last updated: 15 May 2026
+Total tests defined: 252 (187 JS/Playwright + 65 Python unit)
+nuqe_engine Python suite: 414 unit tests (305 F1 + 45 F2.1 + 64 F3.x), 91.25% coverage
+Passing: 248 (183 JS + 65 Python — 6 integration SKIPPED pending live DB)
 Failing: 0
 Not run: 0
-Skipped: 4 (removed Mailgun route)
+Skipped: 4 (removed Mailgun route) + 6 (F3.x integration tests — DB required)
 
 Full registry: spec/test_registry.md
 

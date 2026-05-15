@@ -33,7 +33,8 @@
 | 38 | DevOps | No staging environment | Medium | Apr 2026 | Create before onboarding first client |
 | 39 | DevOps | Docker Compose not tested on clean machine | Low | Apr 2026 | Document setup steps |
 | ~~65~~ | ~~nuqe_engine~~ | ~~nuqe_api coverage gate not yet in pyproject.toml addopts~~ | ~~Low~~ | ~~May 2026~~ | **CLOSED 14 May 2026** — `--cov=nuqe_api` added to addopts; `branch=true`; `coverage.json` output; `scripts/check_coverage.py` per-module gate; `.github/workflows/ci.yml` stub wired. |
-| 66 | nuqe_engine | Static Bearer token auth (F2.1) — no expiry, no rotation | Medium | May 2026 | Sufficient for pilot; OAuth2 planned for F3 |
+| 66 | nuqe_engine | Static Bearer token auth (F2.1) — no expiry, no rotation | Medium | May 2026 | Closes in F3.5 — Auth0 JWT replaces static Bearer entirely. NUQE_API_TOKEN deleted at that point. |
+| 67 | nuqe_engine | X-Org-Id header dependency is temporary (F3.2) | High | May 2026 | deps.py current_org_id reads org_id from X-Org-Id header. Must be replaced with Auth0 JWT org_id extraction in F3.3. Comment in deps.py: TODO(F3.3). |
 
 ---
 
@@ -108,6 +109,7 @@
 | 15 May 2026 | Gap 64 closed. Added `Engine.connect()` context manager and `Engine.signing_key` property. Refactored 4 production files (`cases.py`, `cases_ingest.py`, `library.py`, `scheduler.py`) and their corresponding test files to use public surface only. `stub_engine` conftest simplified to mock public surface. All 414 non-integration tests pass. Coverage: 94.96% total (all modules ≥80%). Production ruff: clean. |
 | 15 May 2026 | F3.0 reconciliation: classified all 26 open gaps against F3 work packages. See reconciliation section below. |
 | 15 May 2026 | F3.1 complete: gap 22 closed. PostgreSQL RLS live on 5 tenant tables. nuqe_app (non-privileged), nuqe (BYPASSRLS migration), nuqe_admin (BYPASSRLS read-only ops). Migration 004, backfill, 7 adversarial tests. |
+| 15 May 2026 | F3.2 complete: multi-tenant engine refactor + per-org library storage. Engine.connect(org_id) with SET LOCAL RLS context. All public engine methods take org_id first. FastAPI deps.py current_org_id dependency reads X-Org-Id header (temporary — TODO remove in F3.3). Library endpoints rewritten: /upload (xlsx UploadFile), /activate, /status. Scheduler uses direct psycopg.connect (admin bypass, org_id per case). load_library_from_bytes added. settings.py library_path made optional. python-multipart added. test_audit_isolation.py written. New gap 67 added (X-Org-Id header dep). 414 unit tests, 91.25% coverage. |
 
 ---
 
