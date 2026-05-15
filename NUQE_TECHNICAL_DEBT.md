@@ -33,8 +33,7 @@
 | 38 | DevOps | No staging environment | Medium | Apr 2026 | Create before onboarding first client |
 | 39 | DevOps | Docker Compose not tested on clean machine | Low | Apr 2026 | Document setup steps |
 | ~~65~~ | ~~nuqe_engine~~ | ~~nuqe_api coverage gate not yet in pyproject.toml addopts~~ | ~~Low~~ | ~~May 2026~~ | **CLOSED 14 May 2026** — `--cov=nuqe_api` added to addopts; `branch=true`; `coverage.json` output; `scripts/check_coverage.py` per-module gate; `.github/workflows/ci.yml` stub wired. |
-| 66 | nuqe_engine | Static Bearer token auth (F2.1) — no expiry, no rotation | Medium | May 2026 | Closes in F3.5 — Auth0 JWT replaces static Bearer entirely. NUQE_API_TOKEN deleted at that point. |
-| 67 | nuqe_engine | X-Org-Id header dependency is temporary (F3.2) | High | May 2026 | deps.py current_org_id reads org_id from X-Org-Id header. Must be replaced with Auth0 JWT org_id extraction in F3.3. Comment in deps.py: TODO(F3.3). |
+| 66 | nuqe_engine | Static Bearer token auth (F2.1) — no expiry, no rotation | Medium | May 2026 | Audit actor resolved F3.3 (principal.sub now carried in all router-originated audit entries); static Bearer token closes F3.5. |
 
 ---
 
@@ -76,6 +75,7 @@
 | 53 | Frontend | EmailComposer signature field not wired to Settings API | 27 Apr 2026 | Replaced by gap 56 (per-channel signature) in Open Gaps. |
 | 58 | Frontend | No case status transition UI | 29 Apr 2026 | PATCH /api/v1/cases/:id added (status, assigned_to, category, notes, fos_ref); status dropdown in CaseView header calls it on change; confirmed working in production. |
 | 64 | nuqe_engine | Routers accessed engine._database_url and engine._signing_key directly | 15 May 2026 | Added `Engine.connect()` context manager and `Engine.signing_key` property. Refactored 4 files (cases.py, cases_ingest.py, library.py, scheduler.py) + their tests. stub_engine conftest simplified. 414 tests pass, coverage 94.96%. |
+| 67 | nuqe_engine | X-Org-Id header dependency is temporary (F3.2) | 15 May 2026 | Replaced X-Org-Id header dep with Auth0 JWT verification (AUTH_MODE=auth0) or static-principal wrapper (AUTH_MODE=static). All routers depend on current_principal. sub extracted from JWT and used as audit actor. |
 | 22 | Architecture | Multi-tenancy relies on application-level filtering only | 15 May 2026 | F3.1 live: PostgreSQL FORCE ROW LEVEL SECURITY on all 5 tenant tables. nuqe_app (rolsuper=f, rolbypassrls=f) is the runtime role. nuqe has BYPASSRLS for migrations. nuqe_admin has BYPASSRLS read-only for ops. 7 adversarial isolation tests all pass. pilot_org_id=a9f318f7-d5be-4235-974e-b3864cc487c1 |
 
 ---
@@ -110,6 +110,7 @@
 | 15 May 2026 | F3.0 reconciliation: classified all 26 open gaps against F3 work packages. See reconciliation section below. |
 | 15 May 2026 | F3.1 complete: gap 22 closed. PostgreSQL RLS live on 5 tenant tables. nuqe_app (non-privileged), nuqe (BYPASSRLS migration), nuqe_admin (BYPASSRLS read-only ops). Migration 004, backfill, 7 adversarial tests. |
 | 15 May 2026 | F3.2 complete: multi-tenant engine refactor + per-org library storage. Engine.connect(org_id) with SET LOCAL RLS context. All public engine methods take org_id first. FastAPI deps.py current_org_id dependency reads X-Org-Id header (temporary — TODO remove in F3.3). Library endpoints rewritten: /upload (xlsx UploadFile), /activate, /status. Scheduler uses direct psycopg.connect (admin bypass, org_id per case). load_library_from_bytes added. settings.py library_path made optional. python-multipart added. test_audit_isolation.py written. New gap 67 added (X-Org-Id header dep). 414 unit tests, 91.25% coverage. |
+| 15 May 2026 | F3.3 complete: Auth0 JWT verification shipped. New module nuqe_api/auth/auth0.py (AuthenticatedPrincipal, verify_jwt, resolve_org). deps.py current_principal replaces verify_bearer_token + current_org_id in all routers. process_event now takes required actor arg; all router-originated calls pass principal.sub. 14 AUTH-A0 tests (RSA fixture, no live Auth0 needed) all pass. Gap 67 closed. Gap 66 note updated (audit actor resolved F3.3; Bearer token closes F3.5). 432 unit tests, 90.75% coverage, auth0.py 100%, deps.py 82.6%. |
 
 ---
 
@@ -122,7 +123,8 @@ All 26 open gaps have been classified against F3 work packages.
 | Gap # | Area | Closes in | Notes |
 |-------|------|-----------|-------|
 | ~~22~~ | ~~Architecture~~ | ~~F3.1~~ | **CLOSED 15 May 2026** — PostgreSQL FORCE RLS live on all 5 tenant tables |
-| 66 | nuqe_engine | F3.5 | Static Bearer token → Auth0 JWT validation; Auth0 integration is F3.5 |
+| ~~67~~ | ~~nuqe_engine~~ | ~~F3.3~~ | **CLOSED 15 May 2026** — X-Org-Id header replaced by current_principal; JWT org_id claim wired |
+| 66 | nuqe_engine | F3.5 | Audit actor resolved F3.3; static Bearer token closes F3.5 |
 
 ### Gaps deferred to F4 or later
 
