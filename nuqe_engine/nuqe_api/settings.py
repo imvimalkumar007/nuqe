@@ -60,7 +60,7 @@ class Settings(BaseSettings):
     auth0_jwks_cache_ttl_seconds: int = 3600
 
     @model_validator(mode="after")
-    def _check_auth0_config(self) -> "Settings":
+    def _check_auth0_config(self) -> Settings:
         if self.auth_mode == AuthMode.auth0:
             missing = []
             if self.auth0_domain is None:

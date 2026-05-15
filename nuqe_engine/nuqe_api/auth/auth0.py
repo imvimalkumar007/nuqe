@@ -15,7 +15,7 @@ from typing import Any, Literal
 from uuid import UUID
 
 import jwt  # pyjwt
-from jwt import PyJWKClient, PyJWKClientError
+from jwt import PyJWKClient
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -77,7 +77,7 @@ def verify_jwt(
         issuer=f"https://{domain}/",
         options={"require": ["exp", "iat", "sub", "aud", "iss"]},
     )
-    return claims  # type: ignore[no-any-return]
+    return claims
 
 
 def classify_token_type(sub: str) -> Literal["user", "m2m"]:

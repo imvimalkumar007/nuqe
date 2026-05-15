@@ -30,9 +30,10 @@ AUTH-A0-014  scope claim parsed into list
 from __future__ import annotations
 
 import time
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any
 from unittest.mock import MagicMock, patch
 from uuid import UUID, uuid4
 
@@ -146,6 +147,7 @@ def _auth0_settings() -> Settings:
 
 def _make_stub_engine() -> MagicMock:
     from unittest.mock import PropertyMock
+
     from nuqe_engine.engine import Engine
 
     engine = MagicMock(spec=Engine)
@@ -522,3 +524,94 @@ class TestAuth0Scopes:
         assert resp.status_code == 200, resp.text
         # Verify engine was called — auth succeeded with scoped token
         engine.process_event.assert_called_once()
+
+
+# ── Unit tests for auth0.py internals ─────────────────────────────────────
+
+
+class TestAuth0Internals:
+    """Direct unit tests for auth0.py functions to hit uncovered lines."""
+
+    def test_get_jwks_client_returns_client(self) -> None:
+        """_get_jwks_client creates a PyJWKClient for the given domain."""
+        from unittest.mock import patch as _patch
+
+        from nuqe_api.auth import auth0 as auth0_module
+
+        # Reset module-level singleton so this test is isolated
+        original_client = auth0_module._jwks_client
+        original_domain = auth0_module._jwks_client_domain
+        auth0_module._jwks_client = None
+        auth0_module._jwks_client_domain = None
+
+        try:
+            with _patch("nuqe_api.auth.auth0.PyJWKClient") as mock_pyjwks:
+                mock_instance = MagicMock()
+                mock_pyjwks.return_value = mock_instance
+
+                result = auth0_module._get_jwks_client("example.auth0.com", cache_ttl=1800)
+
+                assert result is mock_instance
+                mock_pyjwks.assert_called_once_with(
+                    "https://example.auth0.com/.well-known/jwks.json",
+                    cache_keys=True,
+                    lifespan=1800,
+                )
+        finally:
+            auth0_module._jwks_client = original_client
+            auth0_module._jwks_client_domain = original_domain
+
+    def test_get_jwks_client_caches_for_same_domain(self) -> None:
+        """_get_jwks_client returns the same instance for the same domain."""
+        from unittest.mock import patch as _patch
+
+        from nuqe_api.auth import auth0 as auth0_module
+
+        original_client = auth0_module._jwks_client
+        original_domain = auth0_module._jwks_client_domain
+        auth0_module._jwks_client = None
+        auth0_module._jwks_client_domain = None
+
+        try:
+            with _patch("nuqe_api.auth.auth0.PyJWKClient") as mock_pyjwks:
+                mock_pyjwks.return_value = MagicMock()
+
+                r1 = auth0_module._get_jwks_client("same.auth0.com")
+                r2 = auth0_module._get_jwks_client("same.auth0.com")
+
+                assert r1 is r2
+                assert mock_pyjwks.call_count == 1  # only created once
+        finally:
+            auth0_module._jwks_client = original_client
+            auth0_module._jwks_client_domain = original_domain
+
+    def test_resolve_org_returns_uuid_for_known_org(self) -> None:
+        """resolve_org executes SQL and returns UUID for matching row."""
+        from nuqe_api.auth.auth0 import resolve_org
+
+        expected_uuid = UUID("a9f318f7-d5be-4235-974e-b3864cc487c1")
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_cursor.__exit__ = MagicMock(return_value=False)
+        mock_cursor.fetchone.return_value = (str(expected_uuid),)
+        mock_conn.cursor.return_value = mock_cursor
+
+        result = resolve_org("org_known", mock_conn)
+        assert result == expected_uuid
+
+    def test_resolve_org_raises_key_error_for_unknown_org(self) -> None:
+        """resolve_org raises KeyError when no matching row."""
+        import pytest as _pytest
+
+        from nuqe_api.auth.auth0 import resolve_org
+
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_cursor.__exit__ = MagicMock(return_value=False)
+        mock_cursor.fetchone.return_value = None
+        mock_conn.cursor.return_value = mock_cursor
+
+        with _pytest.raises(KeyError, match="Unknown Auth0 org"):
+            resolve_org("org_doesnotexist", mock_conn)

@@ -74,6 +74,9 @@ target-version = "py312"
 select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
 ignore = ["E501", "B008"]  # B008: FastAPI Query/Security/Depends in defaults is idiomatic
 
+[tool.ruff.lint.per-file-ignores]
+"tests/api/test_auth0.py" = ["N802"]  # AUTH-A0-NNN naming convention required by test registry
+
 [tool.coverage.run]
 branch = true
 source = ["nuqe_engine", "nuqe_api"]

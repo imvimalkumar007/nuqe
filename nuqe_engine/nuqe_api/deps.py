@@ -19,15 +19,15 @@ import logging
 from typing import Annotated
 from uuid import UUID
 
+import jwt
 import psycopg
 from fastapi import Depends, Header, HTTPException, Request, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jwt import PyJWKClientError
 
 from nuqe_api.auth.auth0 import (
     AuthenticatedPrincipal,
-    PyJWKClientError,
     classify_token_type,
-    jwt,
     resolve_org,
     verify_jwt,
 )
