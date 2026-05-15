@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 
 from nuqe_api.deps import get_engine, verify_bearer_token
+from nuqe_api.metrics import events_processed, obligations_fired
 from nuqe_engine.engine import ProcessEventResult
 from nuqe_engine.trigger import Event
 
@@ -44,6 +45,16 @@ def post_event(body: Event, request: Request) -> JSONResponse:
             },
             headers={"X-Request-ID": request_id},
         )
+
+    # Increment Prometheus metrics
+    events_processed.labels(event_type=str(body.event.value)).inc()
+    for fired in result.fired_obligations:
+        obl = fired.obligation
+        framework = str(obl.framework.value) if obl.framework else "unknown"
+        obligations_fired.labels(
+            obligation_id=obl.obligation_id,
+            framework=framework,
+        ).inc()
 
     return JSONResponse(
         content=result.model_dump(mode="json"),

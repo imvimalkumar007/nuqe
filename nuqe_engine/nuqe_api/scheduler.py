@@ -20,6 +20,12 @@ from apscheduler.triggers.cron import CronTrigger
 from nuqe_engine.audit import AuditEventType, append_audit_entry, get_audit_trail
 from nuqe_engine.engine import Engine
 
+
+# Lazy import to avoid circular imports and to keep metrics optional at module load
+def _get_metrics() -> tuple[object, object]:
+    from nuqe_api.metrics import deadline_breaches, scheduler_last_run
+    return deadline_breaches, scheduler_last_run
+
 logger = logging.getLogger(__name__)
 
 
@@ -139,6 +145,15 @@ def scan_deadlines(engine: Engine) -> dict[str, int]:
         "breaches_recorded": breaches_recorded,
     }
     logger.info("scan_deadlines complete: %s", summary)
+
+    # Update Prometheus metrics
+    try:
+        _deadline_breaches, _scheduler_last_run = _get_metrics()
+        _deadline_breaches.inc(breaches_recorded)  # type: ignore[attr-defined]
+        _scheduler_last_run.set(now.timestamp())  # type: ignore[attr-defined]
+    except Exception as exc:
+        logger.debug("Could not update Prometheus metrics: %s", exc)
+
     return summary
 
 

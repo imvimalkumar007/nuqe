@@ -12,6 +12,8 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from nuqe_api.metrics import engine_health
+
 router = APIRouter(tags=["health"])
 
 
@@ -35,6 +37,7 @@ def get_health(request: Request) -> JSONResponse:
     info = engine.health_check()
 
     db_reachable: bool = bool(info.get("db_reachable", False))
+    engine_health.set(1 if db_reachable else 0)
     status = "ok" if db_reachable else "degraded"
     http_status = 200 if db_reachable else 503
 

@@ -27,6 +27,7 @@ from pathlib import Path
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 
+from nuqe_api.logging_config import configure_logging
 from nuqe_api.middleware.request_id import RequestIDMiddleware
 from nuqe_api.routers.cases import router as cases_router
 from nuqe_api.routers.cases_ingest import router as cases_ingest_router
@@ -34,7 +35,9 @@ from nuqe_api.routers.errors import register_exception_handlers
 from nuqe_api.routers.events import router as events_router
 from nuqe_api.routers.health import router as health_router
 from nuqe_api.routers.library import router as library_router
+from nuqe_api.routers.metrics_router import router as metrics_router
 from nuqe_api.scheduler import create_scheduler
+from nuqe_api.sentry import init_sentry
 from nuqe_api.settings import Settings
 from nuqe_engine.engine import Engine
 
@@ -45,6 +48,12 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Startup / shutdown logic for the FastAPI app."""
     settings: Settings = app.state.settings
+
+    # Configure structured logging
+    configure_logging(settings.log_level)
+
+    # Initialize Sentry (no-op if SENTRY_DSN not set)
+    init_sentry(settings.sentry_dsn)
 
     # Store the raw token string for constant-time comparison in deps.py
     app.state.api_token = settings.nuqe_api_token.get_secret_value()
@@ -129,5 +138,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(cases_router)
     app.include_router(cases_ingest_router)
     app.include_router(library_router)
+    app.include_router(metrics_router)
 
     return app
