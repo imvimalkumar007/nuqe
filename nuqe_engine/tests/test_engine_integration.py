@@ -22,9 +22,9 @@ from __future__ import annotations
 
 import os
 import re
+from collections.abc import Generator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Generator
 from uuid import UUID, uuid4
 
 import psycopg
@@ -70,13 +70,12 @@ COMPLAINT_CONTEXT: dict = {
 
 def _ensure_test_database() -> None:
     maintenance_url = re.sub(r"/[^/]+$", "/postgres", ADMIN_DATABASE_URL)
-    with psycopg.connect(maintenance_url, autocommit=True) as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT 1 FROM pg_database WHERE datname = 'nuqe_engine_test'"
-            )
-            if not cur.fetchone():
-                cur.execute("CREATE DATABASE nuqe_engine_test")
+    with psycopg.connect(maintenance_url, autocommit=True) as conn, conn.cursor() as cur:
+        cur.execute(
+            "SELECT 1 FROM pg_database WHERE datname = 'nuqe_engine_test'"
+        )
+        if not cur.fetchone():
+            cur.execute("CREATE DATABASE nuqe_engine_test")
 
 
 @pytest.fixture(scope="module")
@@ -117,15 +116,14 @@ def _insert_case(case_id: UUID, context: dict) -> None:
     """Insert a case row directly. In F2+, the API will handle this."""
     import json
 
-    with psycopg.connect(TEST_DATABASE_URL, autocommit=True) as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
+    with psycopg.connect(TEST_DATABASE_URL, autocommit=True) as conn, conn.cursor() as cur:
+        cur.execute(
+            """
                 INSERT INTO nuqe_engine.cases (id, type, status, context)
                 VALUES (%s, 'complaint', 'received', %s::jsonb)
                 """,
-                (str(case_id), json.dumps(context)),
-            )
+            (str(case_id), json.dumps(context)),
+        )
 
 
 # ── Tests ──────────────────────────────────────────────────────────────────

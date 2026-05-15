@@ -12,8 +12,7 @@ from __future__ import annotations
 import json
 import os
 import re
-from datetime import UTC, datetime
-from typing import Generator
+from collections.abc import Generator
 from uuid import UUID, uuid4
 
 import psycopg
@@ -45,13 +44,12 @@ SIGNING_KEY = b"test-signing-key-for-audit-log"
 
 def _ensure_test_database() -> None:
     maintenance_url = re.sub(r"/[^/]+$", "/postgres", ADMIN_DATABASE_URL)
-    with psycopg.connect(maintenance_url, autocommit=True) as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT 1 FROM pg_database WHERE datname = 'nuqe_engine_test'"
-            )
-            if not cur.fetchone():
-                cur.execute("CREATE DATABASE nuqe_engine_test")
+    with psycopg.connect(maintenance_url, autocommit=True) as conn, conn.cursor() as cur:
+        cur.execute(
+            "SELECT 1 FROM pg_database WHERE datname = 'nuqe_engine_test'"
+        )
+        if not cur.fetchone():
+            cur.execute("CREATE DATABASE nuqe_engine_test")
 
 
 @pytest.fixture(scope="module")
@@ -277,21 +275,19 @@ def test_get_audit_trail_verify_requires_signing_key(
 def test_update_audit_log_raises_database_error(db_conn: psycopg.Connection) -> None:
     """The DB trigger must reject UPDATE on audit_log."""
     entry = _append(db_conn)
-    with pytest.raises(psycopg.errors.RestrictViolation):
-        with db_conn.cursor() as cur:
-            cur.execute(
-                "UPDATE nuqe_engine.audit_log SET actor = 'tampered' WHERE id = %s",
-                (str(entry.id),),
-            )
+    with pytest.raises(psycopg.errors.RestrictViolation), db_conn.cursor() as cur:
+        cur.execute(
+            "UPDATE nuqe_engine.audit_log SET actor = 'tampered' WHERE id = %s",
+            (str(entry.id),),
+        )
 
 
 @pytest.mark.integration
 def test_delete_audit_log_raises_database_error(db_conn: psycopg.Connection) -> None:
     """The DB trigger must reject DELETE on audit_log."""
     entry = _append(db_conn)
-    with pytest.raises(psycopg.errors.RestrictViolation):
-        with db_conn.cursor() as cur:
-            cur.execute(
-                "DELETE FROM nuqe_engine.audit_log WHERE id = %s",
-                (str(entry.id),),
-            )
+    with pytest.raises(psycopg.errors.RestrictViolation), db_conn.cursor() as cur:
+        cur.execute(
+            "DELETE FROM nuqe_engine.audit_log WHERE id = %s",
+            (str(entry.id),),
+        )

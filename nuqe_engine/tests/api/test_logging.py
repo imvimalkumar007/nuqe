@@ -4,9 +4,6 @@ Tests for the logging configuration.
 
 from __future__ import annotations
 
-import logging
-
-import pytest
 from fastapi.testclient import TestClient
 
 from nuqe_api.logging_config import configure_logging

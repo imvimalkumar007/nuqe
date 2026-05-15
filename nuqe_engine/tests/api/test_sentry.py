@@ -4,9 +4,7 @@ Tests for Sentry initialization and the before_send filter.
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, call, patch
-
-import pytest
+from unittest.mock import MagicMock, patch
 
 from nuqe_api.sentry import init_sentry
 

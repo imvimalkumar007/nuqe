@@ -186,40 +186,36 @@ class TestScanDeadlinesIntegration:
         import psycopg as _psycopg
 
         case_id = uuid4()
-        with _psycopg.connect(real_engine._database_url, autocommit=True) as conn:
-            with conn.cursor() as cur:
-                # Insert case
-                cur.execute(
-                    "INSERT INTO nuqe_engine.cases (id, type, status) VALUES (%s, 'complaint', 'open')",
-                    (str(case_id),),
-                )
-                # Insert fired_obligation
-                cur.execute(
-                    """
-                    INSERT INTO nuqe_engine.fired_obligations
-                        (case_id, obligation_id, obligation_version, trigger_event, status)
-                    VALUES (%s, 'UK-DISP-001', '1.0', 'complaint_received', 'open')
-                    RETURNING id
-                    """,
-                    (str(case_id),),
-                )
-                fo_row = cur.fetchone()
-                fo_id = fo_row[0]
+        with _psycopg.connect(real_engine._database_url, autocommit=True) as conn, conn.cursor() as cur:
+            # Insert case
+            cur.execute(
+                "INSERT INTO nuqe_engine.cases (id, type, status) VALUES (%s, 'complaint', 'open')",
+                (str(case_id),),
+            )
+            # Insert fired_obligation
+            cur.execute(
+                """
+                INSERT INTO nuqe_engine.fired_obligations
+                    (case_id, obligation_id, obligation_version, trigger_event, status)
+                VALUES (%s, 'UK-DISP-001', '1.0', 'complaint_received', 'open')
+                RETURNING id
+                """,
+                (str(case_id),),
+            )
+            fo_row = cur.fetchone()
+            fo_id = fo_row[0]
 
-                # Insert deadline — past if breached, future otherwise
-                if breached:
-                    due_at = "NOW() - INTERVAL '1 day'"
-                else:
-                    due_at = "NOW() + INTERVAL '30 days'"
-                cur.execute(
-                    f"""
-                    INSERT INTO nuqe_engine.deadlines
-                        (fired_obligation_id, due_at, anchor_event_at,
-                         deadline_value, deadline_unit, deadline_anchor, status)
-                    VALUES (%s, {due_at}, NOW(), 56, 'calendar_days', 'case_opened', 'pending')
-                    """,
-                    (str(fo_id),),
-                )
+            # Insert deadline — past if breached, future otherwise
+            due_at = "NOW() - INTERVAL '1 day'" if breached else "NOW() + INTERVAL '30 days'"
+            cur.execute(
+                f"""
+                INSERT INTO nuqe_engine.deadlines
+                    (fired_obligation_id, due_at, anchor_event_at,
+                     deadline_value, deadline_unit, deadline_anchor, status)
+                VALUES (%s, {due_at}, NOW(), 56, 'calendar_days', 'case_opened', 'pending')
+                """,
+                (str(fo_id),),
+            )
         return case_id
 
     def test_breached_deadline_creates_audit_and_notification(
@@ -232,25 +228,23 @@ class TestScanDeadlinesIntegration:
         assert result["breaches_recorded"] >= 1
 
         # Verify audit entry
-        with _psycopg.connect(real_engine._database_url, autocommit=True) as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT COUNT(*) FROM nuqe_engine.audit_log "
-                    "WHERE entity_id = %s AND event_type = 'deadline_breached'",
-                    (str(case_id),),
-                )
-                row = cur.fetchone()
+        with _psycopg.connect(real_engine._database_url, autocommit=True) as conn, conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) FROM nuqe_engine.audit_log "
+                "WHERE entity_id = %s AND event_type = 'deadline_breached'",
+                (str(case_id),),
+            )
+            row = cur.fetchone()
         assert row is not None
         assert row[0] >= 1
 
         # Verify notification row
-        with _psycopg.connect(real_engine._database_url, autocommit=True) as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT COUNT(*) FROM nuqe_engine.notifications WHERE case_id = %s",
-                    (str(case_id),),
-                )
-                row = cur.fetchone()
+        with _psycopg.connect(real_engine._database_url, autocommit=True) as conn, conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) FROM nuqe_engine.notifications WHERE case_id = %s",
+                (str(case_id),),
+            )
+            row = cur.fetchone()
         assert row is not None
         assert row[0] >= 1
 
@@ -263,19 +257,18 @@ class TestScanDeadlinesIntegration:
         scan_deadlines(real_engine)  # First run
         scan_deadlines(real_engine)  # Second run — should be idempotent
 
-        with _psycopg.connect(real_engine._database_url, autocommit=True) as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT COUNT(*) FROM nuqe_engine.audit_log "
-                    "WHERE entity_id = %s AND event_type = 'deadline_breached'",
-                    (str(case_id),),
-                )
-                audit_count = cur.fetchone()[0]
-                cur.execute(
-                    "SELECT COUNT(*) FROM nuqe_engine.notifications WHERE case_id = %s",
-                    (str(case_id),),
-                )
-                notif_count = cur.fetchone()[0]
+        with _psycopg.connect(real_engine._database_url, autocommit=True) as conn, conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) FROM nuqe_engine.audit_log "
+                "WHERE entity_id = %s AND event_type = 'deadline_breached'",
+                (str(case_id),),
+            )
+            audit_count = cur.fetchone()[0]
+            cur.execute(
+                "SELECT COUNT(*) FROM nuqe_engine.notifications WHERE case_id = %s",
+                (str(case_id),),
+            )
+            notif_count = cur.fetchone()[0]
 
         assert audit_count == 1, f"Expected 1 audit entry, got {audit_count}"
         assert notif_count == 1, f"Expected 1 notification, got {notif_count}"
@@ -288,14 +281,13 @@ class TestScanDeadlinesIntegration:
         case_id = self._insert_case_with_obligation(real_engine, breached=False)
         scan_deadlines(real_engine)
 
-        with _psycopg.connect(real_engine._database_url, autocommit=True) as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT COUNT(*) FROM nuqe_engine.audit_log "
-                    "WHERE entity_id = %s AND event_type = 'deadline_breached'",
-                    (str(case_id),),
-                )
-                row = cur.fetchone()
+        with _psycopg.connect(real_engine._database_url, autocommit=True) as conn, conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) FROM nuqe_engine.audit_log "
+                "WHERE entity_id = %s AND event_type = 'deadline_breached'",
+                (str(case_id),),
+            )
+            row = cur.fetchone()
         assert row is not None
         assert row[0] == 0
 
@@ -304,23 +296,21 @@ class TestScanDeadlinesIntegration:
 
         # Create a closed case with a breached deadline
         case_id = self._insert_case_with_obligation(real_engine, breached=True)
-        with _psycopg.connect(real_engine._database_url, autocommit=True) as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "UPDATE nuqe_engine.cases SET status = 'closed' WHERE id = %s",
-                    (str(case_id),),
-                )
+        with _psycopg.connect(real_engine._database_url, autocommit=True) as conn, conn.cursor() as cur:
+            cur.execute(
+                "UPDATE nuqe_engine.cases SET status = 'closed' WHERE id = %s",
+                (str(case_id),),
+            )
 
-        result = scan_deadlines(real_engine)
+        scan_deadlines(real_engine)
 
         # The closed case should not be included in cases_scanned for this case
-        with _psycopg.connect(real_engine._database_url, autocommit=True) as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT COUNT(*) FROM nuqe_engine.audit_log "
-                    "WHERE entity_id = %s AND event_type = 'deadline_breached'",
-                    (str(case_id),),
-                )
-                row = cur.fetchone()
+        with _psycopg.connect(real_engine._database_url, autocommit=True) as conn, conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) FROM nuqe_engine.audit_log "
+                "WHERE entity_id = %s AND event_type = 'deadline_breached'",
+                (str(case_id),),
+            )
+            row = cur.fetchone()
         assert row is not None
         assert row[0] == 0, "Closed case should not get a DEADLINE_BREACHED entry"

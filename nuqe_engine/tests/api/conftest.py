@@ -14,6 +14,7 @@ Integration test strategy:
 
 from __future__ import annotations
 
+import contextlib
 from collections.abc import Generator
 from datetime import UTC, datetime
 from pathlib import Path
@@ -125,9 +126,8 @@ def real_engine() -> Engine:  # type: ignore[return]
 
     # Check DB is reachable
     try:
-        with psycopg.connect(db_url, autocommit=True, connect_timeout=3) as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT 1")
+        with psycopg.connect(db_url, autocommit=True, connect_timeout=3) as conn, conn.cursor() as cur:
+            cur.execute("SELECT 1")
     except Exception as exc:
         pytest.skip(f"Integration DB not available: {exc}")
 
@@ -144,10 +144,8 @@ def real_engine() -> Engine:  # type: ignore[return]
 
     # Sync library if available
     if library_path and library_path.exists():
-        try:
-            eng.refresh_library()
-        except Exception:
-            pass  # Non-fatal — tests that need it will handle themselves
+        with contextlib.suppress(Exception):
+            eng.refresh_library()  # Non-fatal — tests that need it will handle themselves
 
     return eng
 

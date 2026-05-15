@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import date
 from pathlib import Path
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import pytest
 
@@ -15,27 +14,11 @@ from nuqe_engine.evidence import (
     check_evidence,
 )
 from nuqe_engine.schema import (
-    BreachConsequence,
-    CustomerSegment,
-    DeadlineAnchor,
-    DeadlineUnit,
     Evidence,
     EvidenceLocation,
     EvidenceType,
-    Framework,
-    Jurisdiction,
-    ObligationRow,
-    ProductType,
-    ProvisionType,
-    Regulator,
-    Requirement,
-    RequirementAction,
-    ReviewStatus,
-    TriggerCondition,
-    TriggerEvent,
 )
 from nuqe_engine.trigger import ExpressionError
-
 
 # ── Fixtures ───────────────────────────────────────────────────────────────
 

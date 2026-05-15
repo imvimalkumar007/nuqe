@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
-from freezegun import freeze_time
 
 from nuqe_engine.deadline import (
-    DeadlineCalculation,
     add_business_days,
     calculate_deadline,
     deadline_status,
@@ -18,7 +16,7 @@ from nuqe_engine.loader import load_library
 from nuqe_engine.schema import DeadlineUnit
 from nuqe_engine.validator import validate
 
-UTC = timezone.utc
+UTC = UTC
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────

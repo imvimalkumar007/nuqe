@@ -245,13 +245,12 @@ class TestCreateCaseIntegration:
         assert resp.status_code == 500
 
         # Verify no case row in DB
-        with _psycopg.connect(real_engine._database_url, autocommit=True) as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT COUNT(*) FROM nuqe_engine.cases WHERE external_ref = %s",
-                    (ext_ref,),
-                )
-                row = cur.fetchone()
+        with _psycopg.connect(real_engine._database_url, autocommit=True) as conn, conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) FROM nuqe_engine.cases WHERE external_ref = %s",
+                (ext_ref,),
+            )
+            row = cur.fetchone()
         assert row is not None
         assert row[0] == 0, "Case row should have been rolled back"
 

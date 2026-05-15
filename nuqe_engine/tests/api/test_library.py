@@ -223,13 +223,12 @@ class TestLibraryIntegration:
 
         import psycopg as _psycopg
 
-        with _psycopg.connect(real_engine._database_url, autocommit=True) as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT COUNT(*) FROM nuqe_engine.audit_log "
-                    "WHERE event_type = 'library_synced'"
-                )
-                row = cur.fetchone()
+        with _psycopg.connect(real_engine._database_url, autocommit=True) as conn, conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) FROM nuqe_engine.audit_log "
+                "WHERE event_type = 'library_synced'"
+            )
+            row = cur.fetchone()
         assert row is not None
         assert row[0] >= 1
 
@@ -252,9 +251,8 @@ class TestLibraryIntegration:
         """
         import psycopg as _psycopg
 
-        with _psycopg.connect(real_engine._database_url, autocommit=True) as conn:
-            with conn.cursor() as cur:
-                cur.execute("TRUNCATE nuqe_engine.obligations CASCADE")
+        with _psycopg.connect(real_engine._database_url, autocommit=True) as conn, conn.cursor() as cur:
+            cur.execute("TRUNCATE nuqe_engine.obligations CASCADE")
 
         resp = real_client.get("/library/status", headers=AUTH_HEADERS)
         assert resp.status_code == 404

@@ -6,6 +6,8 @@ Verifies that when scheduler_enabled=False, no scheduler is started.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
@@ -13,8 +15,6 @@ from fastapi.testclient import TestClient
 from nuqe_api.app import create_app
 from nuqe_api.settings import Settings
 from nuqe_engine.engine import Engine, ProcessEventResult
-from pathlib import Path
-from datetime import UTC, datetime
 
 
 def _make_settings(scheduler_enabled: bool) -> Settings:
@@ -51,7 +51,7 @@ class TestSchedulerLifespan:
         app = create_app(settings=settings)
         stub = _make_stub_engine()
 
-        with TestClient(app, raise_server_exceptions=False) as client:
+        with TestClient(app, raise_server_exceptions=False):
             app.state.engine = stub
             assert app.state.scheduler is None
 
@@ -63,7 +63,7 @@ class TestSchedulerLifespan:
         with patch("nuqe_api.app.create_scheduler") as mock_create:
             mock_scheduler = MagicMock()
             mock_create.return_value = mock_scheduler
-            with TestClient(app, raise_server_exceptions=False) as client:
+            with TestClient(app, raise_server_exceptions=False):
                 app.state.engine = stub
                 mock_scheduler.start.assert_called_once()
             # After context exit, shutdown is called
@@ -75,6 +75,6 @@ class TestSchedulerLifespan:
         stub = _make_stub_engine()
 
         with patch("nuqe_api.app.create_scheduler") as mock_create:
-            with TestClient(app, raise_server_exceptions=False) as client:
+            with TestClient(app, raise_server_exceptions=False):
                 app.state.engine = stub
             mock_create.assert_not_called()

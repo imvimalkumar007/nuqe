@@ -14,14 +14,14 @@ never touch the development database.
 from __future__ import annotations
 
 import os
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 
 import psycopg
 import pytest
 
 from nuqe_engine.loader import load_library
-from nuqe_engine.sync import SyncResult, sync_to_database
+from nuqe_engine.sync import sync_to_database
 from nuqe_engine.validator import validate
 from scripts.migrate import run_migrations
 
@@ -48,13 +48,12 @@ def _ensure_test_database() -> None:
     # Build the maintenance URL by swapping the database name to 'postgres'
     import re
     maintenance_url = re.sub(r"/[^/]+$", "/postgres", ADMIN_DATABASE_URL)
-    with psycopg.connect(maintenance_url, autocommit=True) as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT 1 FROM pg_database WHERE datname = 'nuqe_engine_test'"
-            )
-            if not cur.fetchone():
-                cur.execute("CREATE DATABASE nuqe_engine_test")
+    with psycopg.connect(maintenance_url, autocommit=True) as conn, conn.cursor() as cur:
+        cur.execute(
+            "SELECT 1 FROM pg_database WHERE datname = 'nuqe_engine_test'"
+        )
+        if not cur.fetchone():
+            cur.execute("CREATE DATABASE nuqe_engine_test")
 
 
 def _drop_schema(conn: psycopg.Connection) -> None:  # type: ignore[type-arg]
@@ -201,9 +200,8 @@ def test_sync_raises_on_version_content_conflict(
         update={"obligation_name": "DELIBERATELY CHANGED NAME"}
     )
 
-    with psycopg.connect(TEST_DATABASE_URL) as conn:
-        with pytest.raises(ValueError, match="Version conflict"):
-            sync_to_database([mutated], conn)
+    with psycopg.connect(TEST_DATABASE_URL) as conn, pytest.raises(ValueError, match="Version conflict"):
+        sync_to_database([mutated], conn)
 
 
 @pytest.mark.integration
@@ -226,14 +224,13 @@ def test_audit_log_rejects_update(migrated_conn: psycopg.Connection) -> None:  #
             )
         conn.commit()
 
-    with psycopg.connect(TEST_DATABASE_URL) as conn:
-        with pytest.raises(psycopg.errors.RestrictViolation):
-            with conn.cursor() as cur:
-                cur.execute(
-                    "UPDATE nuqe_engine.audit_log SET actor = 'tampered' WHERE id = %s",
-                    (row_id,),
-                )
-            conn.commit()
+    with psycopg.connect(TEST_DATABASE_URL) as conn, pytest.raises(psycopg.errors.RestrictViolation):
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE nuqe_engine.audit_log SET actor = 'tampered' WHERE id = %s",
+                (row_id,),
+            )
+        conn.commit()
 
 
 @pytest.mark.integration
@@ -256,11 +253,10 @@ def test_audit_log_rejects_delete(migrated_conn: psycopg.Connection) -> None:  #
             )
         conn.commit()
 
-    with psycopg.connect(TEST_DATABASE_URL) as conn:
-        with pytest.raises(psycopg.errors.RestrictViolation):
-            with conn.cursor() as cur:
-                cur.execute(
-                    "DELETE FROM nuqe_engine.audit_log WHERE id = %s",
-                    (row_id,),
-                )
-            conn.commit()
+    with psycopg.connect(TEST_DATABASE_URL) as conn, pytest.raises(psycopg.errors.RestrictViolation):
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM nuqe_engine.audit_log WHERE id = %s",
+                (row_id,),
+            )
+        conn.commit()

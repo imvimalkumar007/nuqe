@@ -14,15 +14,14 @@ from __future__ import annotations
 
 import os
 import re
+from collections.abc import Generator
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Generator
 from uuid import UUID, uuid4
 
 import psycopg
 import pytest
 
-from nuqe_engine.audit import AuditEventType
 from nuqe_engine.engine import Engine
 from nuqe_engine.schema import TriggerEvent
 from nuqe_engine.trigger import Event
@@ -57,13 +56,12 @@ COMPLAINT_CONTEXT: dict = {
 
 def _ensure_test_database() -> None:
     maintenance_url = re.sub(r"/[^/]+$", "/postgres", ADMIN_DATABASE_URL)
-    with psycopg.connect(maintenance_url, autocommit=True) as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT 1 FROM pg_database WHERE datname = 'nuqe_engine_test'"
-            )
-            if not cur.fetchone():
-                cur.execute("CREATE DATABASE nuqe_engine_test")
+    with psycopg.connect(maintenance_url, autocommit=True) as conn, conn.cursor() as cur:
+        cur.execute(
+            "SELECT 1 FROM pg_database WHERE datname = 'nuqe_engine_test'"
+        )
+        if not cur.fetchone():
+            cur.execute("CREATE DATABASE nuqe_engine_test")
 
 
 @pytest.fixture(scope="module")
@@ -98,33 +96,30 @@ def _clean_tables(engine: Engine) -> Generator[None, None, None]:
 
 
 def _insert_case(case_id: UUID) -> None:
-    with psycopg.connect(TEST_DATABASE_URL, autocommit=True) as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO nuqe_engine.cases (id, type, status) VALUES (%s, 'complaint', 'open')",
-                (str(case_id),),
-            )
+    with psycopg.connect(TEST_DATABASE_URL, autocommit=True) as conn, conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO nuqe_engine.cases (id, type, status) VALUES (%s, 'complaint', 'open')",
+            (str(case_id),),
+        )
 
 
 def _count_fired_obligations(case_id: UUID) -> int:
-    with psycopg.connect(TEST_DATABASE_URL, autocommit=True) as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT COUNT(*) FROM nuqe_engine.fired_obligations WHERE case_id = %s",
-                (str(case_id),),
-            )
-            row = cur.fetchone()
+    with psycopg.connect(TEST_DATABASE_URL, autocommit=True) as conn, conn.cursor() as cur:
+        cur.execute(
+            "SELECT COUNT(*) FROM nuqe_engine.fired_obligations WHERE case_id = %s",
+            (str(case_id),),
+        )
+        row = cur.fetchone()
     return int(row[0]) if row else 0
 
 
 def _count_audit_entries(case_id: UUID) -> int:
-    with psycopg.connect(TEST_DATABASE_URL, autocommit=True) as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT COUNT(*) FROM nuqe_engine.audit_log WHERE entity_id = %s",
-                (str(case_id),),
-            )
-            row = cur.fetchone()
+    with psycopg.connect(TEST_DATABASE_URL, autocommit=True) as conn, conn.cursor() as cur:
+        cur.execute(
+            "SELECT COUNT(*) FROM nuqe_engine.audit_log WHERE entity_id = %s",
+            (str(case_id),),
+        )
+        row = cur.fetchone()
     return int(row[0]) if row else 0
 
 

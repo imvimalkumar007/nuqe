@@ -9,14 +9,10 @@ Covers:
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 from uuid import UUID, uuid4
 
-import pytest
 from fastapi.testclient import TestClient
-
-from nuqe_engine.engine import ObligationStatus
 
 AUTH_HEADERS = {"Authorization": "Bearer test-secret-token-abc123"}
 
@@ -24,7 +20,7 @@ _KNOWN_CASE_ID = uuid4()
 _UNKNOWN_CASE_ID = uuid4()
 
 
-def _mock_case_exists(case_id: UUID, exists: bool) -> "patch":  # type: ignore[type-arg]
+def _mock_case_exists(case_id: UUID, exists: bool) -> patch:  # type: ignore[type-arg]
     """Patch _case_exists in cases router."""
     return patch(
         "nuqe_api.routers.cases._case_exists",

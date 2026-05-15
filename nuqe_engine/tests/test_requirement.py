@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from pathlib import Path
 from uuid import UUID, uuid4
 
@@ -34,9 +34,9 @@ from nuqe_engine.schema import (
     TriggerCondition,
     TriggerEvent,
 )
-from nuqe_engine.trigger import ExpressionError, FiredObligation
+from nuqe_engine.trigger import FiredObligation
 
-UTC = timezone.utc
+UTC = UTC
 
 
 # ── Fixtures ───────────────────────────────────────────────────────────────

@@ -11,16 +11,15 @@ Method reference: /Nuqe_Obligation_Decomposition_Method.docx Section 4.
 from __future__ import annotations
 
 from datetime import date
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-
 # ── Controlled vocabularies (Method Section 9) ──────────────────────────
 
 
-class Jurisdiction(str, Enum):
+class Jurisdiction(StrEnum):
     UK = "UK"
     EU = "EU"
     IN = "IN"
@@ -28,7 +27,7 @@ class Jurisdiction(str, Enum):
     GLOBAL = "global"
 
 
-class Regulator(str, Enum):
+class Regulator(StrEnum):
     FCA = "FCA"
     FOS = "FOS"
     PRA = "PRA"
@@ -37,7 +36,7 @@ class Regulator(str, Enum):
     ASIC = "ASIC"
 
 
-class Framework(str, Enum):
+class Framework(StrEnum):
     DISP = "DISP"
     CONC = "CONC"
     CCA = "CCA"
@@ -48,14 +47,14 @@ class Framework(str, Enum):
     DPDP = "DPDP"
 
 
-class ProvisionType(str, Enum):
+class ProvisionType(StrEnum):
     RULE = "rule"
     GUIDANCE = "guidance"
     EVIDENTIAL_PROVISION = "evidential_provision"
     DIRECTION = "direction"
 
 
-class ProductType(str, Enum):
+class ProductType(StrEnum):
     LOAN = "loan"
     CARD = "card"
     BNPL = "bnpl"
@@ -64,7 +63,7 @@ class ProductType(str, Enum):
     MORTGAGE = "mortgage"
 
 
-class CustomerSegment(str, Enum):
+class CustomerSegment(StrEnum):
     RETAIL = "retail"
     VULNERABLE = "vulnerable"
     SME = "sme"
@@ -72,14 +71,14 @@ class CustomerSegment(str, Enum):
     ALL = "all"
 
 
-class DeadlineUnit(str, Enum):
+class DeadlineUnit(StrEnum):
     CALENDAR_DAYS = "calendar_days"
     BUSINESS_DAYS = "business_days"
     HOURS = "hours"
     NONE = "none"
 
 
-class DeadlineAnchor(str, Enum):
+class DeadlineAnchor(StrEnum):
     CASE_OPENED = "case_opened"
     COMPLAINT_RECEIVED = "complaint_received"
     BREACH_DETECTED = "breach_detected"
@@ -90,21 +89,21 @@ class DeadlineAnchor(str, Enum):
     SCHEDULED_CHECK = "scheduled_check"
 
 
-class BreachConsequence(str, Enum):
+class BreachConsequence(StrEnum):
     REGULATORY_REFERRAL = "regulatory_referral"
     FINANCIAL_PENALTY = "financial_penalty"
     CUSTOMER_REMEDY = "customer_remedy"
     AUDIT_FINDING = "audit_finding"
 
 
-class ReviewStatus(str, Enum):
+class ReviewStatus(StrEnum):
     DRAFT = "draft"
     PEER_REVIEW = "peer_review"
     APPROVED = "approved"
     DEPRECATED = "deprecated"
 
 
-class TriggerEvent(str, Enum):
+class TriggerEvent(StrEnum):
     """Events that can fire an obligation. See Method Section 5."""
 
     CASE_OPENED = "case_opened"
@@ -119,7 +118,7 @@ class TriggerEvent(str, Enum):
     SCHEDULED_CHECK = "scheduled_check"
 
 
-class RequirementAction(str, Enum):
+class RequirementAction(StrEnum):
     """Actions a firm must take. See Method Section 6."""
 
     SEND_COMMUNICATION = "send_communication"
@@ -132,7 +131,7 @@ class RequirementAction(str, Enum):
     NOTIFY_REGULATOR = "notify_regulator"
 
 
-class EvidenceType(str, Enum):
+class EvidenceType(StrEnum):
     """Evidence types. See Method Section 7."""
 
     COMMUNICATION = "communication"
@@ -143,7 +142,7 @@ class EvidenceType(str, Enum):
     PAYMENT_RECORD = "payment_record"
 
 
-class EvidenceLocation(str, Enum):
+class EvidenceLocation(StrEnum):
     """Where evidence is stored. See Method Section 7."""
 
     COMMUNICATIONS_TABLE = "communications_table"
@@ -206,7 +205,7 @@ class Evidence(BaseModel):
     retention_years: int = Field(..., ge=0, le=100)
 
 
-class Exception_(BaseModel):
+class Exception_(BaseModel):  # noqa: N801
     """One element of the exceptions array (column 18). Method Section 8."""
 
     model_config = ConfigDict(extra="forbid")
