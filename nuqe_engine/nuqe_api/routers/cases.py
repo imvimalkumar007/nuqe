@@ -14,7 +14,6 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-import psycopg
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 
@@ -32,15 +31,14 @@ router = APIRouter(
 def _case_exists(engine: Any, case_id: UUID) -> bool:
     """Check whether a case row exists in the DB."""
     try:
-        with (
-            psycopg.connect(engine._database_url, autocommit=True) as conn,
-            conn.cursor() as cur,
-        ):
-            cur.execute(
-                "SELECT 1 FROM nuqe_engine.cases WHERE id = %s",
-                (str(case_id),),
-            )
-            return cur.fetchone() is not None
+        with engine.connect() as conn:
+            conn.autocommit = True
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT 1 FROM nuqe_engine.cases WHERE id = %s",
+                    (str(case_id),),
+                )
+                return cur.fetchone() is not None
     except Exception:
         return False
 
@@ -114,7 +112,8 @@ def get_audit(
                 },
             ) from None
 
-    with psycopg.connect(engine._database_url, autocommit=True) as conn:
+    with engine.connect() as conn:
+        conn.autocommit = True
         entries = get_audit_trail(
             conn,
             entity_id=case_id,
@@ -122,7 +121,7 @@ def get_audit(
             event_type=ev_type_enum,
             since=before,
             verify_signatures=True,
-            signing_key=engine._signing_key,
+            signing_key=engine.signing_key,
         )
 
     # Apply limit + 1 to detect has_more

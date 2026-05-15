@@ -54,12 +54,7 @@ class TestGetAuditKnownCase:
                 "nuqe_api.routers.cases.get_audit_trail",
                 return_value=[],
             ),
-            patch("nuqe_api.routers.cases.psycopg.connect") as mock_connect,
         ):
-            mock_conn = MagicMock()
-            mock_conn.__enter__ = MagicMock(return_value=mock_conn)
-            mock_conn.__exit__ = MagicMock(return_value=False)
-            mock_connect.return_value = mock_conn
             resp = client.get(
                 f"/cases/{_KNOWN_CASE_ID}/audit",
                 headers=AUTH_HEADERS,
@@ -75,12 +70,7 @@ class TestGetAuditKnownCase:
                 "nuqe_api.routers.cases.get_audit_trail",
                 return_value=[],
             ),
-            patch("nuqe_api.routers.cases.psycopg.connect") as mock_connect,
         ):
-            mock_conn = MagicMock()
-            mock_conn.__enter__ = MagicMock(return_value=mock_conn)
-            mock_conn.__exit__ = MagicMock(return_value=False)
-            mock_connect.return_value = mock_conn
             body = client.get(
                 f"/cases/{_KNOWN_CASE_ID}/audit",
                 headers=AUTH_HEADERS,
@@ -96,12 +86,7 @@ class TestGetAuditKnownCase:
         with (
             patch("nuqe_api.routers.cases._case_exists", return_value=True),
             patch("nuqe_api.routers.cases.get_audit_trail", return_value=[]),
-            patch("nuqe_api.routers.cases.psycopg.connect") as mock_connect,
         ):
-            mock_conn = MagicMock()
-            mock_conn.__enter__ = MagicMock(return_value=mock_conn)
-            mock_conn.__exit__ = MagicMock(return_value=False)
-            mock_connect.return_value = mock_conn
             resp = client.get(
                 f"/cases/{_KNOWN_CASE_ID}/audit",
                 params={"limit": 10},
@@ -139,12 +124,7 @@ class TestGetAuditEventTypeValidation:
         with (
             patch("nuqe_api.routers.cases._case_exists", return_value=True),
             patch("nuqe_api.routers.cases.get_audit_trail", return_value=[]),
-            patch("nuqe_api.routers.cases.psycopg.connect") as mock_connect,
         ):
-            mock_conn = MagicMock()
-            mock_conn.__enter__ = MagicMock(return_value=mock_conn)
-            mock_conn.__exit__ = MagicMock(return_value=False)
-            mock_connect.return_value = mock_conn
             resp = client.get(
                 f"/cases/{_KNOWN_CASE_ID}/audit",
                 params={"event_type": "obligation_fired"},

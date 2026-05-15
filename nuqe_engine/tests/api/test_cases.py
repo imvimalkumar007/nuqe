@@ -85,14 +85,14 @@ class TestGetAudit:
     def test_known_case_returns_200(self, client: TestClient) -> None:
         with _patch_case_exists(True), patch(
             "nuqe_api.routers.cases.get_audit_trail", return_value=[]
-        ), patch("nuqe_api.routers.cases.psycopg"):
+        ):
             resp = client.get(f"/cases/{_CASE_ID}/audit", headers=AUTH_HEADERS)
         assert resp.status_code == 200
 
     def test_response_has_entries_and_has_more(self, client: TestClient) -> None:
         with _patch_case_exists(True), patch(
             "nuqe_api.routers.cases.get_audit_trail", return_value=[]
-        ), patch("nuqe_api.routers.cases.psycopg"):
+        ):
             body = client.get(f"/cases/{_CASE_ID}/audit", headers=AUTH_HEADERS).json()
         assert "entries" in body
         assert "has_more" in body
@@ -109,7 +109,7 @@ class TestGetAudit:
     def test_valid_event_type_accepted(self, client: TestClient) -> None:
         with _patch_case_exists(True), patch(
             "nuqe_api.routers.cases.get_audit_trail", return_value=[]
-        ), patch("nuqe_api.routers.cases.psycopg"):
+        ):
             resp = client.get(
                 f"/cases/{_CASE_ID}/audit?event_type=obligation_fired",
                 headers=AUTH_HEADERS,
