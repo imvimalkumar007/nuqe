@@ -19,10 +19,12 @@ Shutdown:
 from __future__ import annotations
 
 import logging
+import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 
 from nuqe_api.middleware.request_id import RequestIDMiddleware
@@ -32,6 +34,7 @@ from nuqe_api.routers.errors import register_exception_handlers
 from nuqe_api.routers.events import router as events_router
 from nuqe_api.routers.health import router as health_router
 from nuqe_api.routers.library import router as library_router
+from nuqe_api.scheduler import create_scheduler
 from nuqe_api.settings import Settings
 from nuqe_engine.engine import Engine
 
@@ -68,7 +71,23 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             health.get("library_synced_at"),
         )
 
+    # Start the deadline scanner (unless disabled for tests)
+    scheduler: BackgroundScheduler | None = None
+    if settings.scheduler_enabled:
+        cron = os.environ.get("SCANNER_CRON", "0 2 * * *")
+        scheduler = create_scheduler(engine, cron_schedule=cron)
+        scheduler.start()
+        app.state.scheduler = scheduler
+        logger.info("Deadline scanner started (cron: %s)", cron)
+    else:
+        app.state.scheduler = None
+        logger.info("Deadline scanner disabled (SCHEDULER_ENABLED=false)")
+
     yield  # Application is now running
+
+    if scheduler is not None:
+        scheduler.shutdown(wait=False)
+        logger.info("Deadline scanner stopped")
 
     logger.info("nuqe_api shutting down")
 
