@@ -22,7 +22,6 @@
 | 60 | Frontend | File attachments not implemented | Medium | Apr 2026 | Not in any spec; EmailComposer has no file input; needed before real client pilots |
 | 61 | Frontend | Sidebar active state looks AI-generated | Low | Apr 2026 | Inset left-border ribbon (`inset 2px 0 0 var(--nuqe-purple)`) flagged as telltale AI pattern; replace with less generic active indicator |
 | 62 | Validation | IMAP inbound path not yet validated with real data | Medium | Apr 2026 | Webhook path (contact → tokenise → classify → case) validated 29 Apr with real data (tokenise-check-001, 97% confidence). Remaining: IMAP → comm → AI → approve → SMTP send path still untested with real Gmail channel |
-| 22 | Architecture | Multi-tenancy relies on application-level filtering only | Medium | Apr 2026 | Consider PostgreSQL row-level security |
 | 23 | Architecture | Express API is a monolith | Low | Apr 2026 | Plan to extract engines before scaling beyond 10 clients |
 | 24 | Architecture | No API versioning strategy | Low | Apr 2026 | Document before releasing public API |
 | 30 | Understanding | pgvector HNSW vs ivfflat trade-offs not fully understood | Low | Apr 2026 | Read docs before knowledge base exceeds 50,000 chunks |
@@ -76,6 +75,7 @@
 | 53 | Frontend | EmailComposer signature field not wired to Settings API | 27 Apr 2026 | Replaced by gap 56 (per-channel signature) in Open Gaps. |
 | 58 | Frontend | No case status transition UI | 29 Apr 2026 | PATCH /api/v1/cases/:id added (status, assigned_to, category, notes, fos_ref); status dropdown in CaseView header calls it on change; confirmed working in production. |
 | 64 | nuqe_engine | Routers accessed engine._database_url and engine._signing_key directly | 15 May 2026 | Added `Engine.connect()` context manager and `Engine.signing_key` property. Refactored 4 files (cases.py, cases_ingest.py, library.py, scheduler.py) + their tests. stub_engine conftest simplified. 414 tests pass, coverage 94.96%. |
+| 22 | Architecture | Multi-tenancy relies on application-level filtering only | 15 May 2026 | F3.1 live: PostgreSQL FORCE ROW LEVEL SECURITY on all 5 tenant tables. nuqe_app (rolsuper=f, rolbypassrls=f) is the runtime role. nuqe has BYPASSRLS for migrations. nuqe_admin has BYPASSRLS read-only for ops. 7 adversarial isolation tests all pass. pilot_org_id=a9f318f7-d5be-4235-974e-b3864cc487c1 |
 
 ---
 
@@ -107,6 +107,7 @@
 | 14 May 2026 | Gap 65 closed. `--cov=nuqe_api` + `branch=true` + JSON report in pyproject.toml. `scripts/check_coverage.py` per-module gate (exit 1 on any module <80%). `.github/workflows/ci.yml` stub. Sanity check verified gate catches new uncovered modules. |
 | 15 May 2026 | Gap 64 closed. Added `Engine.connect()` context manager and `Engine.signing_key` property. Refactored 4 production files (`cases.py`, `cases_ingest.py`, `library.py`, `scheduler.py`) and their corresponding test files to use public surface only. `stub_engine` conftest simplified to mock public surface. All 414 non-integration tests pass. Coverage: 94.96% total (all modules ≥80%). Production ruff: clean. |
 | 15 May 2026 | F3.0 reconciliation: classified all 26 open gaps against F3 work packages. See reconciliation section below. |
+| 15 May 2026 | F3.1 complete: gap 22 closed. PostgreSQL RLS live on 5 tenant tables. nuqe_app (non-privileged), nuqe (BYPASSRLS migration), nuqe_admin (BYPASSRLS read-only ops). Migration 004, backfill, 7 adversarial tests. |
 
 ---
 
@@ -118,7 +119,7 @@ All 26 open gaps have been classified against F3 work packages.
 
 | Gap # | Area | Closes in | Notes |
 |-------|------|-----------|-------|
-| 22 | Architecture | F3.1 | Multi-tenancy app-level filtering → PostgreSQL RLS; RLS is the core F3.1 deliverable |
+| ~~22~~ | ~~Architecture~~ | ~~F3.1~~ | **CLOSED 15 May 2026** — PostgreSQL FORCE RLS live on all 5 tenant tables |
 | 66 | nuqe_engine | F3.5 | Static Bearer token → Auth0 JWT validation; Auth0 integration is F3.5 |
 
 ### Gaps deferred to F4 or later
