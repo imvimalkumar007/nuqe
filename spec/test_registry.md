@@ -5,8 +5,8 @@
 > This file is the ground truth for build status.
 
 Last updated: 15 May 2026
-Total: 294
-PASS: 276
+Total: 330
+PASS: 312
 FAIL: 0
 NOT RUN: 0
 SKIPPED: 18
@@ -447,6 +447,61 @@ SKIPPED: 18
 | F32-020 | Audit entry HMAC signature valid after DB roundtrip | SKIPPED | Integration — DB required |
 | F32-021 | load_library_from_bytes parses xlsx bytes same as file path | PASS | 15 May 2026 — covered by loader tests |
 | F32-022 | Engine.connect(org_id) — all non-integration tests passing (414 tests) | PASS | 15 May 2026 — 91.25% coverage |
+
+---
+
+## 25 nuqe_engine — F3.3 Auth0 JWT Middleware (Python/pytest)
+
+> 18 Python unit tests for Auth0 OIDC JWT verification, principal extraction, and dep injection.
+> All tests use a self-signed RSA keypair fixture — no live Auth0 tenant required.
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| AUTH-A0-001 | Valid user JWT (sub=auth0|...) returns 200 on POST /events | PASS | 15 May 2026 — test_auth0.py |
+| AUTH-A0-002 | Valid M2M JWT (sub=clientid@clients) returns 200 | PASS | 15 May 2026 |
+| AUTH-A0-003 | Expired JWT returns 401 AUTH_INVALID | PASS | 15 May 2026 |
+| AUTH-A0-004 | Wrong audience returns 401 AUTH_INVALID | PASS | 15 May 2026 |
+| AUTH-A0-005 | Wrong issuer returns 401 AUTH_INVALID | PASS | 15 May 2026 |
+| AUTH-A0-006 | Missing org_id claim returns 403 AUTH_NO_ORG | PASS | 15 May 2026 |
+| AUTH-A0-007 | Unknown org_id returns 403 AUTH_UNKNOWN_ORG | PASS | 15 May 2026 |
+| AUTH-A0-008 | Tampered signature returns 401 AUTH_INVALID | PASS | 15 May 2026 |
+| AUTH-A0-009 | HS256 algorithm confusion attack rejected | PASS | 15 May 2026 — RS256 allowlist only |
+| AUTH-A0-010 | JWKS cache hit — PyJWKClient not re-instantiated | PASS | 15 May 2026 |
+| AUTH-A0-011 | KID miss triggers JWKS refresh | PASS | 15 May 2026 |
+| AUTH-A0-012 | Audit entry actor equals principal.sub | PASS | 15 May 2026 |
+| AUTH-A0-013 | Scope parsing extracts list from space-separated string | PASS | 15 May 2026 |
+| AUTH-A0-014 | AUTH_MODE=static uses NUQE_API_TOKEN when no Auth0 tenant | PASS | 15 May 2026 |
+| AUTH-A0-U01 | verify_jwt unit — returns decoded payload on valid token | PASS | 15 May 2026 |
+| AUTH-A0-U02 | resolve_org unit — returns UUID for known org | PASS | 15 May 2026 |
+| AUTH-A0-U03 | resolve_org unit — raises KeyError for unknown org | PASS | 15 May 2026 |
+| AUTH-A0-U04 | classify_token_type unit — @clients suffix → m2m, auth0| → user | PASS | 15 May 2026 |
+
+---
+
+## 26 nuqe_engine — F3.3 Coverage Fix — Library Upload/Activate + Loader BytesIO (Python/pytest)
+
+> 18 unit tests added to close coverage gate (library.py was 47.6%, loader.py was 79.8%).
+
+| ID | Description | Status | Notes |
+|---|---|---|---|
+| COV-001 | POST /library/upload parse error → 422 LIBRARY_PARSE_ERROR | PASS | 15 May 2026 — test_library.py |
+| COV-002 | POST /library/upload parse error body error_code | PASS | 15 May 2026 |
+| COV-003 | POST /library/upload validation errors → 422 LIBRARY_VALIDATION_ERRORS | PASS | 15 May 2026 |
+| COV-004 | POST /library/upload validation errors body has defects | PASS | 15 May 2026 |
+| COV-005 | POST /library/upload DB conflict → 422 LIBRARY_VERSION_CONFLICT | PASS | 15 May 2026 |
+| COV-006 | POST /library/upload DB conflict body error_code | PASS | 15 May 2026 |
+| COV-007 | POST /library/upload success → 200 with library_id | PASS | 15 May 2026 |
+| COV-008 | POST /library/upload success body has version, content_hash, is_active=false | PASS | 15 May 2026 |
+| COV-009 | POST /library/upload no version param → SHA-256 prefix used | PASS | 15 May 2026 |
+| COV-010 | POST /library/{id}/activate success → 200 | PASS | 15 May 2026 |
+| COV-011 | POST /library/{id}/activate success body has library_id and activated_at | PASS | 15 May 2026 |
+| COV-012 | POST /library/{id}/activate rowcount=0 → 404 | PASS | 15 May 2026 |
+| COV-013 | POST /library/{id}/activate 404 body error_code=LIBRARY_NOT_FOUND | PASS | 15 May 2026 |
+| COV-014 | load_library_from_bytes returns approved rows same as file path | PASS | 15 May 2026 — test_loader.py |
+| COV-015 | load_library_from_bytes obligation_ids match file-path load | PASS | 15 May 2026 |
+| COV-016 | load_library_from_bytes approved_only=False returns more rows | PASS | 15 May 2026 |
+| COV-017 | load_library_from_bytes bad bytes → LoaderError mentioning stream | PASS | 15 May 2026 |
+| COV-018 | load_library via BytesIO bad sheet → LoaderError | PASS | 15 May 2026 |
 
 ---
 

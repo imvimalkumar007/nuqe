@@ -626,6 +626,8 @@ Run the complete Playwright smoke test suite against the deployed Render instanc
 | nuqe_engine F3.0/F3.0.1 | 0 new tests — mypy cleanup, ruff cleanup (87 issues → 0). No test regression. | 414 |
 | nuqe_engine F3.1 | 10 integration tests (RLS-001–010): 7 adversarial RLS isolation + 3 Engine.connect integration | 424 |
 | nuqe_engine F3.2 | 22 tests (F32-001 to F32-022): multi-tenant engine, library upload/activate; 7 SKIPPED (integration), 15 PASS | 446 |
+| nuqe_engine F3.3 | 18 tests (AUTH-A0-001 to AUTH-A0-U04): Auth0 RS256 JWT, principal extraction, static fallback; all PASS | 464 |
+| nuqe_engine F3.3 coverage fix | 18 tests (COV-001 to COV-018): library upload/activate error paths + loader BytesIO branch; all PASS | 482 |
 
 ---
 
@@ -646,3 +648,5 @@ Run the complete Playwright smoke test suite against the deployed Render instanc
 | 15 May 2026 | F3.0: mypy 2 warnings → 0, audit_log.actor audit (READY verdict), open gap reconciliation (2 closing in F3, 24 deferred), db_snapshot_runbook.md + pool_mode_constraints.md written. F3.0.1: 87 ruff issues → 0 (StrEnum, import sort, unused imports, SIM117). 414 tests unchanged. |
 | 15 May 2026 | F3.1: multi-tenant data migration + RLS. New tables: organisations, users, organisation_memberships, admin_access_log (migration 004). org_id NOT NULL + RLS FORCE on 5 tenant tables. nuqe_app non-privileged role; nuqe_admin BYPASSRLS ops role. Pilot org backfill (a9f318f7). 7 adversarial isolation tests pass. Integration tests updated with org context. Rollback migration written + tested. Gap 22 closed. |
 | 15 May 2026 | F3.2: Engine.connect(org_id) + SET LOCAL RLS. All public engine methods take org_id first. library_path → per-org organisation_libraries BYTEA table (migration 005 + pilot library migrated). POST /library/upload + POST /library/{id}/activate endpoints. X-Org-Id header dep in deps.py (TODO F3.3). Audit isolation tests. 414 unit tests, 91.25% coverage, ruff+mypy clean. Gap 67 (X-Org-Id dep) opened, closes in F3.3. |
+| 15 May 2026 | F3.3: Auth0 RS256 JWT middleware. nuqe_api/auth/auth0.py: PyJWKClient singleton with threading.Lock, verify_jwt, resolve_org, classify_token_type. nuqe_api/deps.py: current_principal dispatches AUTH_MODE=static (NUQE_API_TOKEN) or auth0 (OIDC). AuthenticatedPrincipal Pydantic model (sub, org_id_external, org_id, token_type, scopes). 18 unit tests (AUTH-A0-001 to AUTH-A0-U04), RSA keypair fixture, HS256 algo confusion defence. Gap 67 closed. docs/f33_auth0_setup.md cutover runbook written. |
+| 15 May 2026 | F3.3 coverage fix: loader.py UnboundLocalError bug fixed (source_label replaces undefined p in file-like branch). 13 unit tests for POST /library/upload (parse error, validation errors, DB conflict, success) and POST /{id}/activate (success, 404). 5 unit tests for load_library_from_bytes / BytesIO branch. Coverage gate passes: 23 modules all >=80%. 330 tests total. |
