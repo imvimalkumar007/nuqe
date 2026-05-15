@@ -1,62 +1,88 @@
 name: CI
-
-on:
-  push:
-  pull_request:
+on: [push, pull_request]
 
 jobs:
-  test:
+  lint:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[dev]"
+        working-directory: nuqe_engine
+      - run: ruff check .
+        working-directory: nuqe_engine
+      - run: python -m mypy nuqe_engine/ nuqe_api/ --ignore-missing-imports
+        working-directory: nuqe_engine
 
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[dev]"
+        working-directory: nuqe_engine
+      - name: Run unit tests with coverage
+        run: pytest -m "not integration"
+        working-directory: nuqe_engine
+      - name: Per-module coverage gate
+        run: python scripts/check_coverage.py --threshold 80
+        working-directory: nuqe_engine
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-json
+          path: nuqe_engine/coverage.json
+
+  integration-tests:
+    runs-on: ubuntu-latest
     services:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: nuqe_test
+          POSTGRES_PASSWORD: nuqe_secret
+          POSTGRES_USER: nuqe
+          POSTGRES_DB: nuqe_engine
         options: >-
           --health-cmd pg_isready
           --health-interval 5s
           --health-timeout 3s
           --health-retries 10
         ports:
-          - 5432:5432
-
+          - 5433:5432
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nuqe_test
+      DATABASE_URL: postgresql://nuqe:nuqe_secret@localhost:5433/nuqe_engine
       AUDIT_SIGNING_KEY: ${{ secrets.AUDIT_SIGNING_KEY_TEST }}
       NUQE_API_TOKEN: test-token-ci
       LIBRARY_PATH: ${{ github.workspace }}/Nuqe_Obligation_Library.xlsx
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
+      - run: pip install -e ".[dev]"
+        working-directory: nuqe_engine
+      - run: nuqe-engine migrate
+        working-directory: nuqe_engine
+      - run: pytest -m integration -v
+        working-directory: nuqe_engine
 
-      - name: Install dependencies
-        run: pip install -e ".[dev]"
-
-      - name: Lint
-        run: ruff check .
-
-      - name: Type check
-        run: mypy nuqe_engine/ nuqe_api/ --ignore-missing-imports
-
-      - name: Run migrations
-        run: nuqe-engine migrate
-
-      - name: Run tests with coverage
-        run: pytest
-
-      - name: Enforce per-module coverage gate
-        run: python scripts/check_coverage.py --threshold 80
-
-      - name: Upload coverage report
-        if: always()
-        uses: actions/upload-artifact@v4
+  build-image:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    needs: [lint, unit-tests]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
         with:
-          name: coverage-json
-          path: coverage.json
+          context: nuqe_engine
+          push: false
+          tags: nuqe-api:${{ github.sha }}

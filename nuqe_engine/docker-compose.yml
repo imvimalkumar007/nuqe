@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16
     container_name: nuqe_engine_postgres
     environment:
       POSTGRES_USER: nuqe
@@ -13,8 +13,21 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U nuqe -d nuqe_engine"]
       interval: 5s
-      timeout: 5s
-      retries: 5
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://nuqe:nuqe_secret@postgres:5432/nuqe_engine
+    volumes:
+      - ../Nuqe_Obligation_Library.xlsx:/app/library.xlsx:ro
+    ports:
+      - "8000:8000"
 
 volumes:
   nuqe_engine_pgdata:
