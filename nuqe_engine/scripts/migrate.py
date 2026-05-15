@@ -80,7 +80,7 @@ def run_migrations(database_url: str) -> int:
 
 def main() -> None:
     try:
-        from dotenv import load_dotenv  # type: ignore[import-not-found]
+        from dotenv import load_dotenv
         load_dotenv()
     except ImportError:
         pass  # python-dotenv is optional; rely on environment variables directly

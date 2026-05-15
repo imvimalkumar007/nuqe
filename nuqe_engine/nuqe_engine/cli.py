@@ -19,7 +19,7 @@ from pathlib import Path
 import click
 
 try:
-    from dotenv import load_dotenv  # type: ignore[import-not-found]
+    from dotenv import load_dotenv
     load_dotenv()
 except ImportError:
     pass
