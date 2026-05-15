@@ -8,13 +8,24 @@ F1 milestone, May 2026. Active development.
 
 ## Test coverage
 
-Coverage is measured over all modules except the two that require a live Postgres instance (`engine.py`, `sync.py`). Those modules are exercised by `pytest -m integration` against a Docker database.
+Coverage is measured over modules with unit-testable logic. Modules that require a live Postgres instance (`engine.py`, `sync.py`, `trigger.py`, `deadline.py`, `evidence.py`, `requirement.py`) are exercised by `pytest -m integration` against a Docker database and excluded from the unit-test gate.
 
 | Scope | Tests | Coverage |
 |---|---|---|
-| Unit (no DB) | 164 | **83%** |
-| Integration (`-m integration`) | 13 | engine.py + sync.py |
-| Combined | 177 | ~90% est. |
+| Unit (no DB) | 305 | **97%** |
+| Integration (`-m integration`) | 13 | engine.py + sync.py + trigger.py + deadline.py + evidence.py + requirement.py |
+| Combined | 318 | ~97% est. |
+
+Per-module coverage (unit gate):
+
+| Module | Coverage |
+|---|---|
+| audit.py | 100% |
+| cli.py | 99% |
+| jsparser.py | 99% |
+| schema.py | 99% |
+| validator.py | 93% |
+| loader.py | 83% |
 
 The 80% gate applies to unit tests and is enforced automatically on every `pytest` run via `pyproject.toml`.
 
@@ -66,11 +77,22 @@ pytest
 
 Copy `.env.example` to `.env` and edit:
 
-```
-DATABASE_URL=postgresql://nuqe:nuqe_secret@localhost:5432/nuqe_engine
-LIBRARY_PATH=./Nuqe_Obligation_Library.xlsx
-AUDIT_SIGNING_KEY=replace-me
-```
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | Postgres connection string |
+| `AUDIT_SIGNING_KEY` | Yes | HMAC-SHA256 key for audit log entries (`openssl rand -hex 32`) |
+| `NUQE_API_TOKEN` | Yes (static mode) | Static Bearer token for API auth |
+| `AUTH_MODE` | No | `static` (default) or `auth0` |
+| `AUTH0_DOMAIN` | auth0 mode | Auth0 tenant domain (e.g. `your-tenant.eu.auth0.com`) |
+| `AUTH0_AUDIENCE` | auth0 mode | Auth0 API audience (e.g. `https://api.nuqe.io`) |
+| `AUTH0_ALGORITHMS` | No | JWT algorithms accepted (default: `RS256`) |
+| `AUTH0_JWKS_CACHE_TTL_SECONDS` | No | JWKS cache TTL in seconds (default: `3600`) |
+| `LIBRARY_PATH` | No | Legacy library xlsx path (used by `POST /library/sync` only) |
+| `LOG_LEVEL` | No | Logging verbosity (default: `INFO`) |
+| `SCHEDULER_ENABLED` | No | Set `false` to disable deadline scanner (default: `true`) |
+| `SENTRY_DSN` | No | Sentry DSN for error tracking |
+
+See `docs/f33_auth0_setup.md` for the full Auth0 cutover runbook.
 
 ## Method conformance
 
