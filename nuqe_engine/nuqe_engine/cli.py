@@ -32,6 +32,16 @@ def _database_url() -> str:
     )
 
 
+def _migration_database_url() -> str:
+    """Return MIGRATION_DATABASE_URL if set, else fall back to DATABASE_URL.
+
+    The migration role (nuqe) is a superuser and can run DDL.
+    The app role (nuqe_app) is non-privileged and cannot run DDL.
+    Always use this function for the ``migrate`` command.
+    """
+    return os.environ.get("MIGRATION_DATABASE_URL") or _database_url()
+
+
 @click.group()
 @click.option("--verbose", "-v", is_flag=True, help="Enable DEBUG logging.")
 def cli(verbose: bool) -> None:
@@ -48,7 +58,7 @@ def migrate() -> None:
     """Apply all pending SQL migrations to the database."""
     from scripts.migrate import run_migrations
 
-    db_url = _database_url()
+    db_url = _migration_database_url()
     click.echo(f"Connecting to {db_url!r} …")
     try:
         count = run_migrations(db_url)

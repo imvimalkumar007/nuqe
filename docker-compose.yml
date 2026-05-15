@@ -32,7 +32,7 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://nuqe:nuqe_secret@postgres:5432/nuqe
+      DATABASE_URL: postgresql://nuqe_app:nuqe_secret@postgres:5432/nuqe
       REDIS_URL: redis://redis:6379
       QUIDO_WEBHOOK_SECRET: ${QUIDO_WEBHOOK_SECRET}
     volumes:

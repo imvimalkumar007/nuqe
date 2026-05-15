@@ -31,11 +31,16 @@ class Settings(BaseSettings):
 
     nuqe_api_token: SecretStr
     database_url: str
+    migration_database_url: str | None = None  # Falls back to database_url if unset
     library_path: Path
     audit_signing_key: SecretStr
     log_level: str = "INFO"
     scheduler_enabled: bool = True
     sentry_dsn: str | None = None
+
+    def get_migration_database_url(self) -> str:
+        """Return MIGRATION_DATABASE_URL if set, else fall back to DATABASE_URL."""
+        return self.migration_database_url or self.database_url
 
     model_config = SettingsConfigDict(
         env_file=".env",
