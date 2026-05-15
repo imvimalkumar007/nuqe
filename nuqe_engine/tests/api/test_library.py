@@ -1,5 +1,6 @@
 """
-Unit + integration tests for POST /library/sync and GET /library/status.
+Unit + integration tests for POST /library/sync, GET /library/status,
+POST /library/upload, and POST /library/{id}/activate.
 
 Unit tests mock the engine and psycopg — no real DB.
 Integration tests require @pytest.mark.integration.
@@ -11,6 +12,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
+from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
@@ -210,6 +212,276 @@ class TestLibraryStatusEmpty:
         stub_engine.connect.return_value.__exit__.return_value = False
         body = client.get("/library/status", headers=AUTH_HEADERS).json()
         assert body["error_code"] == "NO_LIBRARY"
+
+
+# ── Unit tests — POST /library/upload ─────────────────────────────────────
+
+
+_FAKE_XLSX = b"PK\x03\x04fake-xlsx-bytes"  # Not a real xlsx — used only where parsing is mocked
+_UPLOAD_FILE = {"file": ("library.xlsx", _FAKE_XLSX, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}
+
+
+def _make_upload_cursor(library_id: str = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee") -> MagicMock:
+    """Return a mock conn/cursor configured for a successful upload INSERT."""
+    mock_cursor = MagicMock()
+    mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
+    mock_cursor.__exit__ = MagicMock(return_value=False)
+    mock_cursor.fetchone.return_value = (library_id,)
+    mock_conn = MagicMock()
+    mock_conn.__enter__ = MagicMock(return_value=mock_conn)
+    mock_conn.__exit__ = MagicMock(return_value=False)
+    mock_conn.cursor.return_value = mock_cursor
+    return mock_conn
+
+
+class TestLibraryUploadParseError:
+    def test_parse_error_returns_422(
+        self, client: TestClient, stub_engine: MagicMock
+    ) -> None:
+        with patch(
+            "nuqe_api.routers.library.load_library_from_bytes",
+            side_effect=Exception("corrupt xlsx"),
+        ):
+            resp = client.post("/library/upload", files=_UPLOAD_FILE, headers=AUTH_HEADERS)
+        assert resp.status_code == 422
+
+    def test_parse_error_error_code(
+        self, client: TestClient, stub_engine: MagicMock
+    ) -> None:
+        with patch(
+            "nuqe_api.routers.library.load_library_from_bytes",
+            side_effect=Exception("corrupt xlsx"),
+        ):
+            body = client.post("/library/upload", files=_UPLOAD_FILE, headers=AUTH_HEADERS).json()
+        assert body["error_code"] == "LIBRARY_PARSE_ERROR"
+
+
+class TestLibraryUploadValidationErrors:
+    def test_validation_errors_returns_422(
+        self, client: TestClient, stub_engine: MagicMock
+    ) -> None:
+        with patch(
+            "nuqe_api.routers.library.load_library_from_bytes",
+            return_value=[],
+        ), patch(
+            "nuqe_api.routers.library.validate",
+            return_value=_make_validation_result(has_errors=True),
+        ):
+            resp = client.post("/library/upload", files=_UPLOAD_FILE, headers=AUTH_HEADERS)
+        assert resp.status_code == 422
+
+    def test_validation_errors_error_code(
+        self, client: TestClient, stub_engine: MagicMock
+    ) -> None:
+        with patch(
+            "nuqe_api.routers.library.load_library_from_bytes",
+            return_value=[],
+        ), patch(
+            "nuqe_api.routers.library.validate",
+            return_value=_make_validation_result(has_errors=True),
+        ):
+            body = client.post("/library/upload", files=_UPLOAD_FILE, headers=AUTH_HEADERS).json()
+        assert body["error_code"] == "LIBRARY_VALIDATION_ERRORS"
+        assert len(body["defects"]) > 0
+
+
+class TestLibraryUploadDBConflict:
+    def test_db_conflict_returns_422(
+        self, client: TestClient, stub_engine: MagicMock
+    ) -> None:
+        mock_cursor = MagicMock()
+        mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_cursor.__exit__ = MagicMock(return_value=False)
+        mock_cursor.execute.side_effect = Exception("duplicate key value violates unique constraint")
+        mock_conn = MagicMock()
+        mock_conn.__enter__ = MagicMock(return_value=mock_conn)
+        mock_conn.__exit__ = MagicMock(return_value=False)
+        mock_conn.cursor.return_value = mock_cursor
+        stub_engine.connect.return_value.__enter__.return_value = mock_conn
+        stub_engine.connect.return_value.__exit__.return_value = False
+
+        with patch(
+            "nuqe_api.routers.library.load_library_from_bytes",
+            return_value=[],
+        ), patch(
+            "nuqe_api.routers.library.validate",
+            return_value=_make_validation_result(has_errors=False),
+        ):
+            resp = client.post("/library/upload", files=_UPLOAD_FILE, headers=AUTH_HEADERS)
+        assert resp.status_code == 422
+
+    def test_db_conflict_error_code(
+        self, client: TestClient, stub_engine: MagicMock
+    ) -> None:
+        mock_cursor = MagicMock()
+        mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_cursor.__exit__ = MagicMock(return_value=False)
+        mock_cursor.execute.side_effect = Exception("duplicate key value")
+        mock_conn = MagicMock()
+        mock_conn.__enter__ = MagicMock(return_value=mock_conn)
+        mock_conn.__exit__ = MagicMock(return_value=False)
+        mock_conn.cursor.return_value = mock_cursor
+        stub_engine.connect.return_value.__enter__.return_value = mock_conn
+        stub_engine.connect.return_value.__exit__.return_value = False
+
+        with patch(
+            "nuqe_api.routers.library.load_library_from_bytes",
+            return_value=[],
+        ), patch(
+            "nuqe_api.routers.library.validate",
+            return_value=_make_validation_result(has_errors=False),
+        ):
+            body = client.post("/library/upload", files=_UPLOAD_FILE, headers=AUTH_HEADERS).json()
+        assert body["error_code"] == "LIBRARY_VERSION_CONFLICT"
+
+
+class TestLibraryUploadSuccess:
+    _LIBRARY_ID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+
+    def test_success_returns_200(
+        self, client: TestClient, stub_engine: MagicMock
+    ) -> None:
+        mock_conn = _make_upload_cursor(self._LIBRARY_ID)
+        stub_engine.connect.return_value.__enter__.return_value = mock_conn
+        stub_engine.connect.return_value.__exit__.return_value = False
+
+        with patch(
+            "nuqe_api.routers.library.load_library_from_bytes",
+            return_value=[],
+        ), patch(
+            "nuqe_api.routers.library.validate",
+            return_value=_make_validation_result(has_errors=False),
+        ):
+            resp = client.post(
+                "/library/upload?version=2026-05-15",
+                files=_UPLOAD_FILE,
+                headers=AUTH_HEADERS,
+            )
+        assert resp.status_code == 200
+
+    def test_success_body_shape(
+        self, client: TestClient, stub_engine: MagicMock
+    ) -> None:
+        mock_conn = _make_upload_cursor(self._LIBRARY_ID)
+        stub_engine.connect.return_value.__enter__.return_value = mock_conn
+        stub_engine.connect.return_value.__exit__.return_value = False
+
+        with patch(
+            "nuqe_api.routers.library.load_library_from_bytes",
+            return_value=[],
+        ), patch(
+            "nuqe_api.routers.library.validate",
+            return_value=_make_validation_result(has_errors=False),
+        ):
+            body = client.post(
+                "/library/upload?version=2026-05-15",
+                files=_UPLOAD_FILE,
+                headers=AUTH_HEADERS,
+            ).json()
+        assert body["library_id"] == self._LIBRARY_ID
+        assert body["version"] == "2026-05-15"
+        assert body["is_active"] is False
+        assert "content_hash" in body
+
+    def test_success_version_defaults_to_hash_prefix(
+        self, client: TestClient, stub_engine: MagicMock
+    ) -> None:
+        """No version param → first 12 chars of sha256 used."""
+        mock_conn = _make_upload_cursor(self._LIBRARY_ID)
+        stub_engine.connect.return_value.__enter__.return_value = mock_conn
+        stub_engine.connect.return_value.__exit__.return_value = False
+
+        with patch(
+            "nuqe_api.routers.library.load_library_from_bytes",
+            return_value=[],
+        ), patch(
+            "nuqe_api.routers.library.validate",
+            return_value=_make_validation_result(has_errors=False),
+        ):
+            body = client.post(
+                "/library/upload",
+                files=_UPLOAD_FILE,
+                headers=AUTH_HEADERS,
+            ).json()
+        assert body["content_hash"].startswith(body["version"])
+
+
+# ── Unit tests — POST /library/{id}/activate ──────────────────────────────
+
+
+_LIBRARY_UUID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+
+
+def _make_activate_cursor(rowcount: int = 1) -> MagicMock:
+    """Return mock conn/cursor pair where the UPDATE returns `rowcount` affected rows."""
+    mock_cursor = MagicMock()
+    mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
+    mock_cursor.__exit__ = MagicMock(return_value=False)
+    mock_cursor.rowcount = rowcount
+    mock_conn = MagicMock()
+    mock_conn.__enter__ = MagicMock(return_value=mock_conn)
+    mock_conn.__exit__ = MagicMock(return_value=False)
+    mock_conn.cursor.return_value = mock_cursor
+    return mock_conn
+
+
+class TestLibraryActivateSuccess:
+    def test_activate_returns_200(
+        self, client: TestClient, stub_engine: MagicMock
+    ) -> None:
+        mock_conn = _make_activate_cursor(rowcount=1)
+        stub_engine.connect.return_value.__enter__.return_value = mock_conn
+        stub_engine.connect.return_value.__exit__.return_value = False
+
+        with patch("nuqe_api.routers.library.append_audit_entry"):
+            resp = client.post(
+                f"/library/{_LIBRARY_UUID}/activate",
+                headers=AUTH_HEADERS,
+            )
+        assert resp.status_code == 200
+
+    def test_activate_body_has_library_id(
+        self, client: TestClient, stub_engine: MagicMock
+    ) -> None:
+        mock_conn = _make_activate_cursor(rowcount=1)
+        stub_engine.connect.return_value.__enter__.return_value = mock_conn
+        stub_engine.connect.return_value.__exit__.return_value = False
+
+        with patch("nuqe_api.routers.library.append_audit_entry"):
+            body = client.post(
+                f"/library/{_LIBRARY_UUID}/activate",
+                headers=AUTH_HEADERS,
+            ).json()
+        assert body["library_id"] == _LIBRARY_UUID
+        assert "activated_at" in body
+
+
+class TestLibraryActivateNotFound:
+    def test_not_found_returns_404(
+        self, client: TestClient, stub_engine: MagicMock
+    ) -> None:
+        mock_conn = _make_activate_cursor(rowcount=0)
+        stub_engine.connect.return_value.__enter__.return_value = mock_conn
+        stub_engine.connect.return_value.__exit__.return_value = False
+
+        resp = client.post(
+            f"/library/{_LIBRARY_UUID}/activate",
+            headers=AUTH_HEADERS,
+        )
+        assert resp.status_code == 404
+
+    def test_not_found_error_code(
+        self, client: TestClient, stub_engine: MagicMock
+    ) -> None:
+        mock_conn = _make_activate_cursor(rowcount=0)
+        stub_engine.connect.return_value.__enter__.return_value = mock_conn
+        stub_engine.connect.return_value.__exit__.return_value = False
+
+        body = client.post(
+            f"/library/{_LIBRARY_UUID}/activate",
+            headers=AUTH_HEADERS,
+        ).json()
+        assert body["error_code"] == "LIBRARY_NOT_FOUND"
 
 
 # ── Integration tests ──────────────────────────────────────────────────────

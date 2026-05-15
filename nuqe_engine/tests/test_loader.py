@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+from io import BytesIO
 from pathlib import Path
 
 import pytest
 
-from nuqe_engine.loader import LoaderError, load_all_statuses, load_library
+from nuqe_engine.loader import LoaderError, load_all_statuses, load_library, load_library_from_bytes
 from nuqe_engine.schema import ReviewStatus
 
 
@@ -79,3 +80,44 @@ def test_load_library_review_status_breakdown(library_path: Path) -> None:
     assert len(grouped[ReviewStatus.APPROVED.value]) == 141
     assert len(grouped[ReviewStatus.PEER_REVIEW.value]) == 12
     assert len(grouped[ReviewStatus.DRAFT.value]) == 0
+
+
+# ── load_library_from_bytes (file-like / BytesIO branch) ──────────────────
+
+
+def test_load_library_from_bytes_returns_approved(library_path: Path) -> None:
+    """load_library_from_bytes produces the same approved rows as load_library."""
+    xlsx_bytes = library_path.read_bytes()
+    rows = load_library_from_bytes(xlsx_bytes, approved_only=True)
+    assert len(rows) > 0
+    for r in rows:
+        assert r.review_status == ReviewStatus.APPROVED.value
+
+
+def test_load_library_from_bytes_matches_file_load(library_path: Path) -> None:
+    """Bytes and file-path paths return identical obligation_ids."""
+    xlsx_bytes = library_path.read_bytes()
+    from_bytes = load_library_from_bytes(xlsx_bytes, approved_only=True)
+    from_file = load_library(library_path, approved_only=True)
+    assert [r.obligation_id for r in from_bytes] == [r.obligation_id for r in from_file]
+
+
+def test_load_library_from_bytes_approved_only_false(library_path: Path) -> None:
+    """approved_only=False returns more rows than approved_only=True."""
+    xlsx_bytes = library_path.read_bytes()
+    all_rows = load_library_from_bytes(xlsx_bytes, approved_only=False)
+    approved = load_library_from_bytes(xlsx_bytes, approved_only=True)
+    assert len(all_rows) >= len(approved)
+
+
+def test_load_library_from_bytes_bad_bytes_raises() -> None:
+    """Non-xlsx bytes raise LoaderError."""
+    with pytest.raises(LoaderError, match="stream"):
+        load_library_from_bytes(b"not an xlsx file at all")
+
+
+def test_load_library_via_bytesio_bad_sheet_raises(library_path: Path) -> None:
+    """Bad sheet name with BytesIO raises LoaderError mentioning <bytes stream>."""
+    xlsx_bytes = library_path.read_bytes()
+    with pytest.raises(LoaderError, match="no_such_sheet"):
+        load_library(BytesIO(xlsx_bytes), sheet_name="no_such_sheet")

@@ -115,13 +115,16 @@ def load_library(
             wrong type for its column.
     """
     # Handle file-like objects (BytesIO from DB)
+    source_label: str | Path
     if hasattr(path, "read"):
+        source_label = "<bytes stream>"
         try:
             wb = load_workbook(filename=path, data_only=True, read_only=True)  # type: ignore[arg-type]
         except Exception as exc:
             raise LoaderError(f"Failed to open workbook from stream: {exc}") from exc
     else:
         p = Path(path)  # type: ignore[arg-type]
+        source_label = p
         if not p.exists():
             raise LoaderError(f"Library file not found: {p}")
         if not p.is_file():
@@ -134,7 +137,7 @@ def load_library(
 
     if sheet_name not in wb.sheetnames:
         raise LoaderError(
-            f"Sheet '{sheet_name}' not found in {p}. "
+            f"Sheet '{sheet_name}' not found in {source_label}. "
             f"Available sheets: {wb.sheetnames}"
         )
 
@@ -192,7 +195,7 @@ def load_library(
     logger.info(
         "Loaded %d obligations from %s (approved_only=%s)",
         len(rows),
-        p.name,
+        source_label,
         approved_only,
     )
     return rows
